@@ -199,14 +199,6 @@ function renderSettingsProviders() {
               alt=""
               draggable="false"
             />
-            <span class="spr-icon-fallback">${escapeHtml(fallback)}</span>
-          </div>
-
-          <div class="spr-meta">
-            <span class="spr-name">${escapeHtml(provider.label)}</span>
-            <span class="spr-status ${isConnected ? 'connected' : 'disconnected'}">
-              ${isConnected ? '● Connected' : '○ Not connected'}
-            </span>
           </div>
 
           <div class="key-input-wrap spr-key-wrap">

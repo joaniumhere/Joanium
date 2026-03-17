@@ -1606,8 +1606,8 @@ body.modal-open {
 }
 
 #settings-modal {
-  width: min(980px, calc(100vw - 64px));
-  max-height: min(680px, calc(100vh - 64px));
+  width: min(980px, calc(100vw - 40px));
+  max-height: min(680px, calc(100vh - 40px));
   overflow: hidden;
   background: var(--bg-secondary);
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
@@ -2046,7 +2046,7 @@ body.modal-open {
   padding: 24px 0;
 }
 
-.settings-row + .settings-row {
+.settings-row+.settings-row {
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -2167,6 +2167,7 @@ body.modal-open {
 }
 
 @media (max-width: 860px) {
+
   #settings-modal-backdrop,
   #library-modal-backdrop {
     padding: 18px;
@@ -2244,4 +2245,91 @@ body.modal-open {
   .lp-list {
     min-height: 260px;
   }
+}
+
+/* ─────────────────────────────────────────────
+   PROVIDER ROW — SIMPLE PRACTICAL UI
+───────────────────────────────────────────── */
+
+.settings-provider-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.settings-provider-row:hover {
+  border-color: color-mix(in srgb, var(--p-color) 30%, var(--border));
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+}
+
+/* LEFT ICON */
+.spr-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.spr-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.spr-icon-fallback {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.spr-icon.icon-missing .spr-icon-img {
+  display: none;
+}
+
+/* CENTER INPUT */
+.spr-key-wrap {
+  width: 100%;
+}
+
+.spr-key-input {
+  width: 100%;
+  border-radius: 12px;
+  padding: 10px 40px 10px 12px;
+  font-size: 12px;
+}
+
+/* RIGHT SAVE BUTTON */
+.spr-save-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--p-color) 30%, transparent);
+  background: var(--p-color);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.spr-save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--p-color) 40%, transparent);
+}
+
+.spr-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
 }
