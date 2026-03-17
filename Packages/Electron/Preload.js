@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  openworld — Packages/Electron/preload.js
+//  openworld — Packages/Electron/Preload.js
 //  contextBridge between main process ↔ renderer
 // ─────────────────────────────────────────────
 
@@ -8,18 +8,24 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('electronAPI', {
 
   /* ── Setup ── */
-  saveUser:    (userData)    => ipcRenderer.invoke('save-user', userData),
-  saveAPIKeys: (keysMap)     => ipcRenderer.invoke('save-api-keys', keysMap),
-  launchMain:  ()            => ipcRenderer.invoke('launch-main'),
+  saveUser: (userData) => ipcRenderer.invoke('save-user', userData),
+  saveAPIKeys: (keysMap) => ipcRenderer.invoke('save-api-keys', keysMap),
+  launchMain: () => ipcRenderer.invoke('launch-main'),
 
   /* ── Runtime reads ── */
-  getUser:     ()            => ipcRenderer.invoke('get-user'),
-  getModels:   ()            => ipcRenderer.invoke('get-models'),
-  getAPIKey:   (providerId)  => ipcRenderer.invoke('get-api-key', providerId),
+  getUser: () => ipcRenderer.invoke('get-user'),
+  getModels: () => ipcRenderer.invoke('get-models'),
+  getAPIKey: (providerId) => ipcRenderer.invoke('get-api-key', providerId),
+
+  /* ── Chat storage ── */
+  saveChat: (chatData) => ipcRenderer.invoke('save-chat', chatData),
+  getChats: () => ipcRenderer.invoke('get-chats'),
+  loadChat: (chatId) => ipcRenderer.invoke('load-chat', chatId),
+  deleteChat: (chatId) => ipcRenderer.invoke('delete-chat', chatId),
 
   /* ── Frameless window controls ── */
-  minimize:    ()            => ipcRenderer.send('window-minimize'),
-  maximize:    ()            => ipcRenderer.send('window-maximize'),
-  close:       ()            => ipcRenderer.send('window-close'),
+  minimize: () => ipcRenderer.send('window-minimize'),
+  maximize: () => ipcRenderer.send('window-maximize'),
+  close: () => ipcRenderer.send('window-close'),
 
 });

@@ -12,17 +12,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /* ── Paths ── */
-const DATA_DIR    = path.join(__dirname, 'Data');
-const USER_FILE   = path.join(DATA_DIR, 'User.json');
+const DATA_DIR = path.join(__dirname, 'Data');
+const USER_FILE = path.join(DATA_DIR, 'User.json');
 const MODELS_FILE = path.join(DATA_DIR, 'Models.json');
-const PRELOAD     = path.join(__dirname, 'Packages', 'Electron', 'Preload.js');
-const SETUP_PAGE  = path.join(__dirname, 'Public', 'Setup.html');
-const MAIN_PAGE   = path.join(__dirname, 'Public', 'index.html');
+const CHATS_DIR = path.join(DATA_DIR, 'Chats');
+const PRELOAD = path.join(__dirname, 'Packages', 'Electron', 'Preload.js');
+const SETUP_PAGE = path.join(__dirname, 'Public', 'Setup.html');
+const MAIN_PAGE = path.join(__dirname, 'Public', 'index.html');
 
 /* ══════════════════════════════════════════
    HELPERS
 ══════════════════════════════════════════ */
-const readJSON  = (f) => JSON.parse(fs.readFileSync(f, 'utf-8'));
+const readJSON = (f) => JSON.parse(fs.readFileSync(f, 'utf-8'));
 const writeJSON = (f, d) => fs.writeFileSync(f, JSON.stringify(d, null, 2), 'utf-8');
 
 const isFirstRun = () => {
@@ -60,16 +61,15 @@ function createWindow(page) {
     shell.openExternal(url);
     return { action: 'deny' };
   });
-
-  if (process.argv.includes('--dev')) {
-    win.webContents.openDevTools({ mode: 'detach' });
-  }
 }
 
 /* ══════════════════════════════════════════
    LIFECYCLE
 ══════════════════════════════════════════ */
 app.whenReady().then(() => {
+  // Ensure Chats directory exists
+  if (!fs.existsSync(CHATS_DIR)) fs.mkdirSync(CHATS_DIR, { recursive: true });
+
   createWindow(isFirstRun() ? SETUP_PAGE : MAIN_PAGE);
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0)
@@ -84,8 +84,6 @@ app.on('window-all-closed', () => {
 /* ══════════════════════════════════════════
    IPC — SETUP
 ══════════════════════════════════════════ */
-
-/* Save user name + prefs → Data/User.json */
 ipcMain.handle('save-user', (_e, userData) => {
   try {
     writeJSON(USER_FILE, userData);
@@ -95,13 +93,7 @@ ipcMain.handle('save-user', (_e, userData) => {
   }
 });
 
-/*
-  Save API keys → Data/User.json (under api_keys field)
-  Models.json stays clean / key-free — safe to commit.
-  Add User.json to .gitignore to keep keys out of version control.
-*/
 ipcMain.handle('save-api-keys', (_e, keysMap) => {
-  // keysMap = { anthropic: 'sk-ant-...', google: 'AIza...', ... }
   try {
     const user = readJSON(USER_FILE);
     user.api_keys = { ...(user.api_keys ?? {}), ...keysMap };
@@ -112,7 +104,6 @@ ipcMain.handle('save-api-keys', (_e, keysMap) => {
   }
 });
 
-/* After setup completes, swap to main page */
 ipcMain.handle('launch-main', () => {
   win?.loadFile(MAIN_PAGE);
   return { ok: true };
@@ -123,24 +114,60 @@ ipcMain.handle('launch-main', () => {
 ══════════════════════════════════════════ */
 ipcMain.handle('get-user', () => readJSON(USER_FILE));
 
-/*
-  Returns providers from Models.json with api keys
-  injected from User.json so the renderer never has
-  to deal with two separate files.
-*/
 ipcMain.handle('get-models', () => {
-  const models  = readJSON(MODELS_FILE);
+  const models = readJSON(MODELS_FILE);
   const apiKeys = readJSON(USER_FILE)?.api_keys ?? {};
-
   return models.map(provider => ({
     ...provider,
     api: apiKeys[provider.provider] ?? null,
   }));
 });
 
-/* Single key lookup — also sourced from User.json */
 ipcMain.handle('get-api-key', (_e, providerId) => {
   return readJSON(USER_FILE)?.api_keys?.[providerId] ?? null;
+});
+
+/* ══════════════════════════════════════════
+   IPC — CHAT STORAGE
+══════════════════════════════════════════ */
+ipcMain.handle('save-chat', (_e, chatData) => {
+  try {
+    if (!fs.existsSync(CHATS_DIR)) fs.mkdirSync(CHATS_DIR, { recursive: true });
+    const filename = chatData.id + '.json';
+    writeJSON(path.join(CHATS_DIR, filename), chatData);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('get-chats', () => {
+  try {
+    if (!fs.existsSync(CHATS_DIR)) return [];
+    return fs.readdirSync(CHATS_DIR)
+      .filter(f => f.endsWith('.json'))
+      .map(f => {
+        try { return readJSON(path.join(CHATS_DIR, f)); }
+        catch { return null; }
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  } catch (err) {
+    return [];
+  }
+});
+
+ipcMain.handle('load-chat', (_e, chatId) => {
+  return readJSON(path.join(CHATS_DIR, chatId + '.json'));
+});
+
+ipcMain.handle('delete-chat', (_e, chatId) => {
+  try {
+    fs.unlinkSync(path.join(CHATS_DIR, chatId + '.json'));
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 /* ══════════════════════════════════════════
@@ -148,4 +175,4 @@ ipcMain.handle('get-api-key', (_e, providerId) => {
 ══════════════════════════════════════════ */
 ipcMain.on('window-minimize', () => win?.minimize());
 ipcMain.on('window-maximize', () => win?.isMaximized() ? win.unmaximize() : win.maximize());
-ipcMain.on('window-close',    () => win?.close());
+ipcMain.on('window-close', () => win?.close());
