@@ -7,6 +7,8 @@ import {
     avatarPanelName,
     avatarSettingsBtn,
     themePanel,
+    libraryBackdrop,
+    syncModalOpenState,
     settingsModalBackdrop,
     settingsModalClose,
 } from './Root.js';
@@ -82,14 +84,16 @@ export function closeAvatarPanel() {
 export function openSettingsModal() {
     closeAvatarPanel();
     themePanel?.classList.remove('open');
+    libraryBackdrop?.classList.remove('open');
+    document.querySelector('[data-view="library"]')?.classList.remove('active');
     renderSettingsProviders();
     settingsModalBackdrop?.classList.add('open');
-    document.body.classList.add('modal-open');
+    syncModalOpenState();
 }
 
 export function closeSettingsModal() {
     settingsModalBackdrop?.classList.remove('open');
-    document.body.classList.remove('modal-open');
+    syncModalOpenState();
 }
 
 avatarBtn?.addEventListener('click', toggleAvatarPanel);

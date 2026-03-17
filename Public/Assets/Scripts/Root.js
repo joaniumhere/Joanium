@@ -5,7 +5,7 @@ export const state = {
     messages: [],
     composerAttachments: [],
     isTyping: false,
-    theme: localStorage.getItem('ow-theme') || 'light',
+    theme: localStorage.getItem('ow-theme') || 'dark',
     providers: [],
     selectedProvider: null,
     selectedModel: null,
@@ -35,6 +35,7 @@ export const modelDropdown = document.getElementById('model-dropdown');
 export const modelLabel = document.getElementById('model-label');
 
 // Library
+export const libraryBackdrop = document.getElementById('library-modal-backdrop');
 export const libraryPanel = document.getElementById('library-panel');
 export const libraryClose = document.getElementById('library-close');
 export const librarySearch = document.getElementById('library-search');
@@ -51,6 +52,13 @@ export const avatarSettingsBtn = document.getElementById('avatar-settings-btn');
 export const settingsModalBackdrop = document.getElementById('settings-modal-backdrop');
 export const settingsModal = document.getElementById('settings-modal');
 export const settingsModalClose = document.getElementById('settings-modal-close');
+export const syncModalOpenState = () => {
+    const hasOpenModal = Boolean(
+        document.querySelector('#settings-modal-backdrop.open, #library-modal-backdrop.open')
+    );
+
+    document.body.classList.toggle('modal-open', hasOpenModal);
+};
 
 /* ── Window controls ── */
 document.getElementById('btn-minimize')?.addEventListener('click', () => window.electronAPI?.minimize());

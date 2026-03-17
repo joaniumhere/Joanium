@@ -15,10 +15,11 @@ import {
   themePanel,
   modelSelectorBtn,
   modelDropdown,
-  libraryPanel,
+  libraryBackdrop,
   libraryClose,
   librarySearch,
   chatList,
+  syncModalOpenState,
 } from './Root.js';
 import {
   loadProviders,
@@ -145,6 +146,7 @@ function appendTextWithLineBreaks(container, text) {
 function buildImageFrame(attachment, className) {
   const frame = document.createElement('div');
   frame.className = className;
+  frame.title = attachment.name || 'Pasted image';
 
   const image = document.createElement('img');
   image.src = attachment.dataUrl;
@@ -164,27 +166,16 @@ function renderComposerAttachments() {
   state.composerAttachments.forEach((attachment) => {
     const chip = document.createElement('div');
     chip.className = 'composer-attachment';
+    chip.title = attachment.name || 'Pasted image';
 
     const preview = buildImageFrame(attachment, 'composer-attachment-preview');
-
-    const copy = document.createElement('div');
-    copy.className = 'composer-attachment-copy';
-
-    const name = document.createElement('span');
-    name.className = 'composer-attachment-name';
-    name.textContent = attachment.name || 'Pasted image';
-
-    const meta = document.createElement('span');
-    meta.className = 'composer-attachment-meta';
-    meta.textContent = 'Image';
-
-    copy.append(name, meta);
 
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'composer-attachment-remove';
     removeBtn.setAttribute('aria-label', `Remove ${attachment.name || 'image'}`);
-    removeBtn.textContent = 'Remove';
+    removeBtn.title = `Remove ${attachment.name || 'image'}`;
+    removeBtn.textContent = 'x';
     removeBtn.addEventListener('click', () => {
       state.composerAttachments = state.composerAttachments.filter(
         (item) => item.id !== attachment.id
@@ -195,7 +186,7 @@ function renderComposerAttachments() {
       textarea.focus();
     });
 
-    chip.append(preview, copy, removeBtn);
+    chip.append(preview, removeBtn);
     composerAttachmentsEl.appendChild(chip);
   });
 }
@@ -692,15 +683,19 @@ function startNewChat() {
 }
 
 async function openLibrary() {
-  libraryPanel?.classList.add('open');
+  closeAvatarPanel();
   document.querySelector('[data-view="library"]')?.classList.add('active');
   closeSettingsModal();
+  libraryBackdrop?.classList.add('open');
+  syncModalOpenState();
   await refreshChatList();
+  requestAnimationFrame(() => librarySearch?.focus());
 }
 
 function closeLibrary() {
-  libraryPanel?.classList.remove('open');
+  libraryBackdrop?.classList.remove('open');
   document.querySelector('[data-view="library"]')?.classList.remove('active');
+  syncModalOpenState();
 }
 
 async function refreshChatList() {
@@ -793,9 +788,17 @@ async function loadChat(chatId) {
 
 libraryClose?.addEventListener('click', closeLibrary);
 
+libraryBackdrop?.addEventListener('click', (event) => {
+  if (event.target === libraryBackdrop) closeLibrary();
+});
+
 librarySearch?.addEventListener('input', async () => {
   const chats = (await window.electronAPI?.getChats()) ?? [];
   renderChatList(chats, librarySearch.value);
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeLibrary();
 });
 
 document.addEventListener('click', (event) => {
@@ -819,7 +822,7 @@ sidebarBtns.forEach((button) => {
     }
 
     if (view === 'library') {
-      if (libraryPanel?.classList.contains('open')) {
+      if (libraryBackdrop?.classList.contains('open')) {
         closeLibrary();
       } else {
         sidebarBtns.forEach((item) => item.classList.remove('active'));
