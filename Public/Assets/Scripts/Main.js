@@ -30,6 +30,7 @@ import {
   modelSupportsInput,
 } from './ModelSelector.js';
 import { loadUser, closeAvatarPanel, closeSettingsModal } from './User.js';
+import './About.js';
 
 let composerHintTimer = null;
 
@@ -368,8 +369,8 @@ function normalizeMessage(message) {
     content: String(message?.content ?? ''),
     attachments: Array.isArray(message?.attachments)
       ? message.attachments.filter(
-          (attachment) => attachment?.type === 'image' && typeof attachment.dataUrl === 'string'
-        )
+        (attachment) => attachment?.type === 'image' && typeof attachment.dataUrl === 'string'
+      )
       : [],
   };
 }
@@ -717,9 +718,8 @@ function renderChatList(chats, filter = '') {
     : chats;
 
   if (filtered.length === 0) {
-    chatList.innerHTML = `<div class="lp-empty">${
-      query ? 'No matching chats' : 'No chats yet.<br>Start a conversation!'
-    }</div>`;
+    chatList.innerHTML = `<div class="lp-empty">${query ? 'No matching chats' : 'No chats yet.<br>Start a conversation!'
+      }</div>`;
     return;
   }
 
