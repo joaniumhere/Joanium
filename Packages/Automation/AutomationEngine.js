@@ -5,10 +5,10 @@
 //  schedules them, and executes actions.
 // ─────────────────────────────────────────────
 
-import { shell } from 'electron';
-import { exec }   from 'child_process';
-import fs          from 'fs';
-import path        from 'path';
+import { shell, clipboard, Notification } from 'electron';
+import { exec } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 /* ══════════════════════════════════════════
    ACTION IMPLEMENTATIONS
@@ -16,31 +16,111 @@ import path        from 'path';
 ══════════════════════════════════════════ */
 
 /**
+ * Shell-safe single-quote a string (POSIX).
+ * @param {string} str
+ * @returns {string}
+ */
+function sq(str) {
+  return `'${String(str ?? '').replace(/'/g, "'\\''")}'`;
+}
+
+/**
  * Open a URL in the OS default browser.
  * @param {string} url
  */
 export async function openSite(url) {
   if (!url) throw new Error('openSite: no URL provided');
-  const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+
+  let target = url.trim();
+
+  // Fix malformed schemes like "https:example.com"
+  if (/^https?:[^/]/i.test(target)) {
+    target = target.replace(/^https?:/i, 'https://');
+  }
+
+  // Add protocol if missing
+  if (!/^https?:\/\//i.test(target)) {
+    target = `https://${target}`;
+  }
+
   await shell.openExternal(target);
   console.log(`[AutomationEngine] openSite → ${target}`);
 }
 
 /**
- * Open a folder (or file) in the OS file manager.
+ * Open a folder in the OS file explorer (Finder / Explorer / Nautilus).
+ * Uses shell.openPath which opens the folder itself, not its parent.
  * @param {string} folderPath
  */
 export function openFolder(folderPath) {
   if (!folderPath) throw new Error('openFolder: no path provided');
-  shell.openPath(folderPath);
-  console.log(`[AutomationEngine] openFolder → ${folderPath}`);
+
+  return new Promise((resolve, reject) => {
+    if (process.platform === 'win32') {
+      const cmd = `start "" "${folderPath}"`;
+
+      exec(cmd, { shell: 'cmd.exe' }, (err) => {
+        if (err) {
+          console.error('[AutomationEngine] openFolder error:', err);
+          return reject(err);
+        }
+        console.log(`[AutomationEngine] openFolder → ${folderPath}`);
+        resolve();
+      });
+    } else {
+      shell.openPath(folderPath).then((result) => {
+        if (result) reject(new Error(result));
+        else resolve();
+      });
+    }
+  });
+}
+
+/**
+ * Open a terminal window with its working directory set to folderPath,
+ * then optionally run a command inside it.
+ * @param {string} folderPath
+ * @param {string} [command]
+ */
+export function openTerminalAtPath(folderPath, command = '') {
+  if (!folderPath) throw new Error('openTerminalAtPath: no path provided');
+
+  return new Promise((resolve, reject) => {
+    let launcher;
+    const cdAndRun = command
+      ? `cd ${sq(folderPath)} && ${command}`
+      : `cd ${sq(folderPath)}`;
+
+    if (process.platform === 'darwin') {
+      // Escape for AppleScript double-quoted string
+      const escaped = cdAndRun.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      launcher = `osascript -e 'tell application "Terminal" to do script "${escaped}"'`;
+    } else if (process.platform === 'win32') {
+      // Windows: strip surrounding quotes from path, rebuild with /d flag
+      const winPath = folderPath.replace(/"/g, '');
+      const winCmd = command
+        ? `start cmd.exe /k "cd /d "${winPath}" && ${command}"`
+        : `start cmd.exe /k "cd /d "${winPath}""`;
+      launcher = winCmd;
+    } else {
+      // Linux — try common emulators
+      launcher = `x-terminal-emulator -e bash -c "${cdAndRun}; exec bash" || gnome-terminal -- bash -c "${cdAndRun}; exec bash"`;
+    }
+
+    exec(launcher, (err) => {
+      if (err) {
+        console.error('[AutomationEngine] openTerminalAtPath error:', err);
+        reject(err);
+      } else {
+        console.log(`[AutomationEngine] openTerminalAtPath → ${folderPath}${command ? ` (cmd: ${command})` : ''}`);
+        resolve();
+      }
+    });
+  });
 }
 
 /**
  * Spawn a shell command in a new terminal window.
- * On macOS: opens Terminal.app running the command.
- * On Windows: opens cmd.exe.
- * On Linux: tries x-terminal-emulator / gnome-terminal.
  * @param {string} command
  */
 export function openTerminalAndRun(command) {
@@ -50,13 +130,11 @@ export function openTerminalAndRun(command) {
     let launcher;
 
     if (process.platform === 'darwin') {
-      // Escape for AppleScript string
       const escaped = command.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       launcher = `osascript -e 'tell application "Terminal" to do script "${escaped}"'`;
     } else if (process.platform === 'win32') {
       launcher = `start cmd.exe /k "${command}"`;
     } else {
-      // Linux — try common emulators
       launcher = `x-terminal-emulator -e bash -c "${command}; read" || gnome-terminal -- bash -c "${command}; read"`;
     }
 
@@ -73,21 +151,102 @@ export function openTerminalAndRun(command) {
 }
 
 /**
+ * Open an application by path or bundle name.
+ * On macOS: `open -a "AppName"` or `open "/path/to/App.app"`
+ * On Windows / Linux: shell.openPath works for executables.
+ * @param {string} appPath
+ */
+export async function openApp(appPath) {
+  if (!appPath) throw new Error('openApp: no app path provided');
+
+  if (process.platform === 'darwin') {
+    // shell.openPath handles .app bundles natively on macOS
+    const result = await shell.openPath(appPath);
+    if (result) throw new Error(`openApp (mac): ${result}`);
+  } else {
+    const result = await shell.openPath(appPath);
+    if (result) throw new Error(`openApp: ${result}`);
+  }
+
+  console.log(`[AutomationEngine] openApp → ${appPath}`);
+}
+
+/**
+ * Send a desktop notification via Electron's Notification API.
+ * @param {string} title
+ * @param {string} [body]
+ */
+export function sendNotification(title, body = '') {
+  if (!Notification.isSupported()) {
+    console.warn('[AutomationEngine] Notifications not supported on this platform');
+    return;
+  }
+  if (!title) throw new Error('sendNotification: no title provided');
+
+  const n = new Notification({ title, body });
+  n.show();
+  console.log(`[AutomationEngine] sendNotification → "${title}"`);
+}
+
+/**
+ * Write text to the system clipboard.
+ * @param {string} text
+ */
+export function copyToClipboard(text) {
+  if (text === undefined || text === null) throw new Error('copyToClipboard: no text provided');
+  clipboard.writeText(String(text));
+  console.log(`[AutomationEngine] copyToClipboard → ${String(text).slice(0, 40)}…`);
+}
+
+/**
+ * Write (or overwrite) a file at the given path.
+ * Parent directories are created automatically.
+ * @param {string} filePath
+ * @param {string} [content]
+ */
+export function writeFile(filePath, content = '') {
+  if (!filePath) throw new Error('writeFile: no file path provided');
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, String(content), 'utf-8');
+  console.log(`[AutomationEngine] writeFile → ${filePath}`);
+}
+
+/**
  * Dispatch a single action object.
- * @param {{ type: string, url?: string, path?: string, command?: string }} action
+ * @param {object} action
  */
 export async function runAction(action) {
   if (!action?.type) return;
 
   switch (action.type) {
+
     case 'open_site':
       return openSite(action.url);
 
     case 'open_folder':
-      return openFolder(action.path);
+      // 1. Open in file explorer
+      await openFolder(action.path);
+      // 2. Optional sub-event: open a terminal at that folder
+      if (action.openTerminal) {
+        await openTerminalAtPath(action.path, action.terminalCommand || '');
+      }
+      return;
 
     case 'run_command':
       return openTerminalAndRun(action.command);
+
+    case 'open_app':
+      return openApp(action.appPath);
+
+    case 'send_notification':
+      return sendNotification(action.title, action.body);
+
+    case 'copy_to_clipboard':
+      return copyToClipboard(action.text);
+
+    case 'write_file':
+      return writeFile(action.filePath, action.content);
 
     default:
       console.warn(`[AutomationEngine] Unknown action type: "${action.type}"`);
@@ -110,17 +269,16 @@ export function shouldRunNow(automation, now = new Date()) {
   const last = lastRun ? new Date(lastRun) : null;
 
   /* ── on_startup ──────────────────────── */
-  // Handled separately in runStartupAutomations()
   if (trigger.type === 'on_startup') return false;
 
   /* ── hourly ──────────────────────────── */
   if (trigger.type === 'hourly') {
     if (now.getMinutes() !== 0) return false;
     if (last &&
-        last.getFullYear() === now.getFullYear() &&
-        last.getMonth()    === now.getMonth()    &&
-        last.getDate()     === now.getDate()     &&
-        last.getHours()    === now.getHours()) return false;
+      last.getFullYear() === now.getFullYear() &&
+      last.getMonth() === now.getMonth() &&
+      last.getDate() === now.getDate() &&
+      last.getHours() === now.getHours()) return false;
     return true;
   }
 
@@ -135,13 +293,12 @@ export function shouldRunNow(automation, now = new Date()) {
 
   /* ── weekly ──────────────────────────── */
   if (trigger.type === 'weekly') {
-    const DAY_MAP = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const DAY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     if (!trigger.day || DAY_MAP.indexOf(trigger.day) !== now.getDay()) return false;
     if (!trigger.time) return false;
     const [h, m] = trigger.time.split(':').map(Number);
     if (now.getHours() !== h || now.getMinutes() !== m) return false;
     if (last) {
-      // Already ran this calendar week?
       const weekStart = new Date(now);
       weekStart.setDate(now.getDate() - now.getDay());
       weekStart.setHours(0, 0, 0, 0);
@@ -162,14 +319,13 @@ export class AutomationEngine {
    * @param {string} automationsFilePath  Absolute path to Data/Automations.json
    */
   constructor(automationsFilePath) {
-    this.filePath     = automationsFilePath;
-    this.automations  = [];
-    this._ticker      = null;   // setInterval handle
+    this.filePath = automationsFilePath;
+    this.automations = [];
+    this._ticker = null;
   }
 
   /* ── Lifecycle ─────────────────────── */
 
-  /** Load automations, run startup ones, start the 60-second ticker. */
   start() {
     this._load();
     this._runStartupAutomations();
@@ -177,7 +333,6 @@ export class AutomationEngine {
     console.log('[AutomationEngine] Started — monitoring', this.automations.length, 'automation(s)');
   }
 
-  /** Stop the ticker (call on app quit). */
   stop() {
     if (this._ticker) {
       clearInterval(this._ticker);
@@ -186,13 +341,12 @@ export class AutomationEngine {
     console.log('[AutomationEngine] Stopped');
   }
 
-  /** Re-read the JSON file (called after any CRUD from the UI). */
   reload() {
     this._load();
     console.log('[AutomationEngine] Reloaded —', this.automations.length, 'automation(s)');
   }
 
-  /* ── CRUD (called from IPC handlers) ── */
+  /* ── CRUD ── */
 
   getAll() {
     this._load();
@@ -231,7 +385,7 @@ export class AutomationEngine {
   _load() {
     try {
       if (fs.existsSync(this.filePath)) {
-        const raw  = fs.readFileSync(this.filePath, 'utf-8');
+        const raw = fs.readFileSync(this.filePath, 'utf-8');
         const data = JSON.parse(raw);
         this.automations = Array.isArray(data.automations) ? data.automations : [];
       } else {
@@ -279,7 +433,6 @@ export class AutomationEngine {
       for (const action of (automation.actions ?? [])) {
         await runAction(action);
       }
-      // Stamp lastRun and persist
       automation.lastRun = new Date().toISOString();
       this._persist();
     } catch (err) {

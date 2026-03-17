@@ -1,25 +1,37 @@
 {
   "automations": [
     {
-      "id": "auto_1773764771595_x6jc0",
-      "name": "Open Folder",
-      "description": "open a folder",
+      "id": "auto_1773766765097_hohan",
+      "name": "Hola",
+      "description": "Hola fdsjkfdsf\nfsdfsd\nfsd\nfds\nf\ndsf\nds\naf\nsd\nf\nsd\nf\nds\nf\nsdsdfsdf\nsd\nf\nfsd\na\nfasdfsdafdasf sfddsafdsa\nfadsf sad\n\ndsfsadfds fdssd sdfds",
       "enabled": true,
       "trigger": {
-        "type": "weekly",
-        "time": "09:00",
-        "day": "monday"
+        "type": "on_startup"
       },
       "actions": [
         {
-          "type": "run_command",
-          "command": "npm -version",
-          "value": "npm -version"
+          "type": "open_site",
+          "url": "https:joeljolly.vercel.app"
         },
         {
-          "type": "open_site",
-          "url": "https://joeljolly.vercel.app",
-          "value": "https://joeljolly.vercel.app"
+          "type": "open_folder",
+          "path": "D:\\Projects\\OpenWorld",
+          "openTerminal": true,
+          "terminalCommand": "git status"
+        },
+        {
+          "type": "write_file",
+          "filePath": "D:\\Projects\\OpenWorld\\output.txt",
+          "content": "Hola Babe!!!"
+        },
+        {
+          "type": "send_notification",
+          "title": "hey bro",
+          "body": "yo bro whats up??"
+        },
+        {
+          "type": "copy_to_clipboard",
+          "text": "Joel is a dev"
         }
       ],
       "lastRun": null

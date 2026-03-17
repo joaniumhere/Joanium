@@ -64,7 +64,6 @@ document.querySelectorAll('.sidebar-btn[data-view]').forEach(btn => {
     if (view === 'chat' || view === 'library') {
       window.electronAPI?.launchMain();
     }
-    // 'automations' = current page, do nothing
   });
 });
 
@@ -135,10 +134,14 @@ function formatActionsSummary(actions = []) {
   const label = actions.length === 1 ? '1 action' : `${actions.length} actions`;
   const types = [...new Set(actions.map(a => {
     switch (a.type) {
-      case 'open_site':    return 'open site';
-      case 'open_folder':  return 'open folder';
-      case 'run_command':  return 'run command';
-      default:             return a.type;
+      case 'open_site':          return 'open site';
+      case 'open_folder':        return 'open folder' + (a.openTerminal ? ' + terminal' : '');
+      case 'run_command':        return 'run command';
+      case 'open_app':           return 'open app';
+      case 'send_notification':  return 'notification';
+      case 'copy_to_clipboard':  return 'copy to clipboard';
+      case 'write_file':         return 'write file';
+      default:                   return a.type;
     }
   }))];
   return `${label}: ${types.join(', ')}`;
@@ -156,6 +159,244 @@ function formatLastRun(lastRun) {
   if (diff < hour) return `Last run: ${Math.floor(diff / min)}m ago`;
   if (diff < day)  return `Last run: ${Math.floor(diff / hour)}h ago`;
   return `Last run: ${d.toLocaleDateString()}`;
+}
+
+/* ══════════════════════════════════════════
+   ACTION ROW BUILDER
+   Supports: open_site, open_folder (+ terminal sub-event),
+             run_command, open_app, send_notification,
+             copy_to_clipboard, write_file
+══════════════════════════════════════════ */
+
+const ACTION_META = {
+  open_site:          { label: '🌐 Open website',       fields: ['url']                         },
+  open_folder:        { label: '📁 Open folder',         fields: ['path'],   hasSub: true        },
+  run_command:        { label: '⚡ Run command',          fields: ['command']                     },
+  open_app:           { label: '🚀 Open app',             fields: ['appPath']                     },
+  send_notification:  { label: '🔔 Send notification',   fields: ['title', 'body']               },
+  copy_to_clipboard:  { label: '📋 Copy to clipboard',   fields: ['text']                        },
+  write_file:         { label: '📝 Write to file',        fields: ['filePath', 'content']         },
+};
+
+const FIELD_META = {
+  url:             { placeholder: 'https://example.com',                    textarea: false },
+  path:            { placeholder: '/Users/you/Documents or C:\\Users\\you',  textarea: false },
+  command:         { placeholder: 'npm run build',                           textarea: false },
+  appPath:         { placeholder: '/Applications/VS Code.app or C:\\...\\Code.exe', textarea: false },
+  title:           { placeholder: 'Notification title',                     textarea: false },
+  body:            { placeholder: 'Notification body (optional)',            textarea: false },
+  text:            { placeholder: 'Text to copy to clipboard…',             textarea: false },
+  filePath:        { placeholder: '/Users/you/Desktop/output.txt',          textarea: false },
+  content:         { placeholder: 'File content…',                          textarea: true  },
+  terminalCommand: { placeholder: 'npm run dev  (leave empty to just open terminal)', textarea: false },
+};
+
+/** Build a text input or textarea for a given field key + initial value. */
+function makeField(fieldKey, value = '') {
+  const meta = FIELD_META[fieldKey] ?? { placeholder: '', textarea: false };
+  let el;
+  if (meta.textarea) {
+    el = document.createElement('textarea');
+    el.className = 'action-value-textarea';
+    el.rows = 3;
+  } else {
+    el = document.createElement('input');
+    el.type = 'text';
+    el.className = 'action-value-input';
+  }
+  el.placeholder = meta.placeholder;
+  el.value = value;
+  el.dataset.field = fieldKey;
+  return el;
+}
+
+/**
+ * Render the dynamic fields area for the chosen action type.
+ * @param {HTMLElement} fieldsEl  — the .action-fields container
+ * @param {string}      type
+ * @param {object}      data      — existing action data (for editing)
+ */
+function renderActionFields(fieldsEl, type, data = {}) {
+  fieldsEl.innerHTML = '';
+
+  const meta = ACTION_META[type];
+  if (!meta) return;
+
+  // Primary fields
+  for (const fieldKey of meta.fields) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'action-field-row';
+
+    if (meta.fields.length > 1) {
+      const lbl = document.createElement('label');
+      lbl.className = 'action-field-label';
+      lbl.textContent = {
+        url:      'URL',
+        path:     'Folder path',
+        command:  'Command',
+        appPath:  'App path',
+        title:    'Title',
+        body:     'Body',
+        text:     'Text',
+        filePath: 'File path',
+        content:  'Content',
+      }[fieldKey] ?? fieldKey;
+      wrapper.appendChild(lbl);
+    }
+
+    wrapper.appendChild(makeField(fieldKey, data[fieldKey] ?? ''));
+    fieldsEl.appendChild(wrapper);
+  }
+
+  // Sub-event: only for open_folder
+  if (type === 'open_folder') {
+    const sub = document.createElement('div');
+    sub.className = 'action-sub-event';
+
+    const toggleLabel = document.createElement('label');
+    toggleLabel.className = 'action-sub-toggle';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'action-sub-check';
+    if (data.openTerminal) checkbox.checked = true;
+
+    const toggleText = document.createElement('span');
+    toggleText.className = 'action-sub-toggle-text';
+    toggleText.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3" width="18" height="14" rx="2"/>
+        <path d="M7 8l3 3-3 3M12 14h5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Open terminal here`;
+
+    toggleLabel.append(checkbox, toggleText);
+
+    const cmdWrapper = document.createElement('div');
+    cmdWrapper.className = 'action-sub-cmd-wrap';
+    if (!data.openTerminal) cmdWrapper.classList.add('hidden');
+
+    const cmdLbl = document.createElement('label');
+    cmdLbl.className = 'action-field-label';
+    cmdLbl.textContent = 'Then run (optional)';
+    cmdWrapper.appendChild(cmdLbl);
+    cmdWrapper.appendChild(makeField('terminalCommand', data.terminalCommand ?? ''));
+
+    checkbox.addEventListener('change', () => {
+      cmdWrapper.classList.toggle('hidden', !checkbox.checked);
+    });
+
+    sub.append(toggleLabel, cmdWrapper);
+    fieldsEl.appendChild(sub);
+  }
+}
+
+/**
+ * Build a complete action row DOM element.
+ * @param {object} action  — existing action data or {}
+ */
+function createActionRow(action = { type: 'open_site' }) {
+  const row = document.createElement('div');
+  row.className = 'action-row';
+
+  /* ── Top bar: type selector + remove ── */
+  const topBar = document.createElement('div');
+  topBar.className = 'action-row-top';
+
+  const typeSelect = document.createElement('select');
+  typeSelect.className = 'action-type-select';
+  for (const [value, meta] of Object.entries(ACTION_META)) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = meta.label;
+    if (value === action.type) opt.selected = true;
+    typeSelect.appendChild(opt);
+  }
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'action-remove-btn';
+  removeBtn.title = 'Remove action';
+  removeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+  </svg>`;
+  removeBtn.addEventListener('click', () => row.remove());
+
+  topBar.append(typeSelect, removeBtn);
+
+  /* ── Fields area ── */
+  const fieldsArea = document.createElement('div');
+  fieldsArea.className = 'action-fields';
+  renderActionFields(fieldsArea, action.type, action);
+
+  typeSelect.addEventListener('change', () => {
+    renderActionFields(fieldsArea, typeSelect.value, {});
+  });
+
+  row.append(topBar, fieldsArea);
+  return row;
+}
+
+/**
+ * Extract a structured action object from a row element.
+ * Returns null if required fields are empty.
+ * @param {HTMLElement} row
+ * @returns {object|null}
+ */
+function collectActionFromRow(row) {
+  const type = row.querySelector('.action-type-select')?.value;
+  if (!type) return null;
+
+  const get = (field) => row.querySelector(`[data-field="${field}"]`)?.value?.trim() ?? '';
+
+  const action = { type };
+
+  switch (type) {
+    case 'open_site': {
+      action.url = get('url');
+      if (!action.url) return null;
+      break;
+    }
+    case 'open_folder': {
+      action.path = get('path');
+      if (!action.path) return null;
+      const checkbox = row.querySelector('.action-sub-check');
+      action.openTerminal    = checkbox?.checked ?? false;
+      action.terminalCommand = get('terminalCommand');
+      break;
+    }
+    case 'run_command': {
+      action.command = get('command');
+      if (!action.command) return null;
+      break;
+    }
+    case 'open_app': {
+      action.appPath = get('appPath');
+      if (!action.appPath) return null;
+      break;
+    }
+    case 'send_notification': {
+      action.title = get('title');
+      action.body  = get('body');
+      if (!action.title) return null;
+      break;
+    }
+    case 'copy_to_clipboard': {
+      action.text = get('text');
+      if (!action.text) return null;
+      break;
+    }
+    case 'write_file': {
+      action.filePath = get('filePath');
+      action.content  = row.querySelector('[data-field="content"]')?.value ?? '';
+      if (!action.filePath) return null;
+      break;
+    }
+    default:
+      return null;
+  }
+
+  return action;
 }
 
 /* ══════════════════════════════════════════
@@ -234,7 +475,6 @@ function renderAutomations() {
         </button>
       </div>`;
 
-    /* Toggle enabled */
     card.querySelector('.toggle-input').addEventListener('change', async e => {
       const enabled = e.target.checked;
       await window.electronAPI?.toggleAutomation?.(auto.id, enabled);
@@ -242,10 +482,7 @@ function renderAutomations() {
       card.classList.toggle('is-disabled', !enabled);
     });
 
-    /* Edit */
     card.querySelector('.edit-btn').addEventListener('click', () => openModal(auto));
-
-    /* Delete */
     card.querySelector('.delete-btn').addEventListener('click', () => openConfirm(auto.id, auto.name));
 
     grid.appendChild(card);
@@ -266,9 +503,9 @@ async function loadAutomations() {
 /* ══════════════════════════════════════════
    CONFIRM DELETE
 ══════════════════════════════════════════ */
-const confirmOverlay     = document.getElementById('confirm-overlay');
-const confirmCancelBtn   = document.getElementById('confirm-cancel');
-const confirmDeleteBtn   = document.getElementById('confirm-delete');
+const confirmOverlay        = document.getElementById('confirm-overlay');
+const confirmCancelBtn      = document.getElementById('confirm-cancel');
+const confirmDeleteBtn      = document.getElementById('confirm-delete');
 const confirmAutomationName = document.getElementById('confirm-automation-name');
 
 let pendingDeleteId = null;
@@ -310,14 +547,14 @@ const cancelBtn      = document.getElementById('auto-cancel-btn');
 const modalCloseBtn  = document.getElementById('auto-modal-close');
 
 /* Trigger option elements */
-const triggerOptions      = document.querySelectorAll('.trigger-option');
-const dailyTimeInput      = document.getElementById('daily-time');
-const weeklyTimeInput     = document.getElementById('weekly-time');
-const weeklyDaySelect     = document.getElementById('weekly-day');
-const dailySubInputs      = document.getElementById('daily-sub-inputs');
-const weeklySubInputs     = document.getElementById('weekly-sub-inputs');
+const triggerOptions  = document.querySelectorAll('.trigger-option');
+const dailyTimeInput  = document.getElementById('daily-time');
+const weeklyTimeInput = document.getElementById('weekly-time');
+const weeklyDaySelect = document.getElementById('weekly-day');
+const dailySubInputs  = document.getElementById('daily-sub-inputs');
+const weeklySubInputs = document.getElementById('weekly-sub-inputs');
 
-let editingId    = null;  // null = new, string = editing existing
+let editingId = null;
 
 /* ── Trigger radio logic ── */
 function getSelectedTriggerType() {
@@ -339,56 +576,13 @@ function updateSubInputVisibility() {
 }
 
 function setTriggerOption(type) {
-  triggerOptions.forEach(o => {
-    o.classList.toggle('selected', o.dataset.trigger === type);
-  });
+  triggerOptions.forEach(o => o.classList.toggle('selected', o.dataset.trigger === type));
   updateSubInputVisibility();
 }
 
-/* ── Actions ── */
-const ACTION_PLACEHOLDERS = {
-  open_site:   'https://example.com',
-  open_folder: '/Users/you/Documents',
-  run_command: 'npm run build',
-};
-
-function createActionRow(action = { type: 'open_site', value: '' }) {
-  const row = document.createElement('div');
-  row.className = 'action-row';
-
-  const typeSelect = document.createElement('select');
-  typeSelect.className = 'action-type-select';
-  typeSelect.innerHTML = `
-    <option value="open_site"   ${action.type === 'open_site'   ? 'selected' : ''}>🌐 Open a website</option>
-    <option value="open_folder" ${action.type === 'open_folder' ? 'selected' : ''}>📁 Open a folder</option>
-    <option value="run_command" ${action.type === 'run_command' ? 'selected' : ''}>⚡ Run a command</option>`;
-
-  const valueInput = document.createElement('input');
-  valueInput.type = 'text';
-  valueInput.className = 'action-value-input';
-  valueInput.placeholder = ACTION_PLACEHOLDERS[action.type] || '';
-  valueInput.value = action.value || action.url || action.path || action.command || '';
-
-  typeSelect.addEventListener('change', () => {
-    valueInput.placeholder = ACTION_PLACEHOLDERS[typeSelect.value] || '';
-    valueInput.value = '';
-  });
-
-  const removeBtn = document.createElement('button');
-  removeBtn.type = 'button';
-  removeBtn.className = 'action-remove-btn';
-  removeBtn.title = 'Remove action';
-  removeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
-  </svg>`;
-  removeBtn.addEventListener('click', () => row.remove());
-
-  row.append(typeSelect, valueInput, removeBtn);
-  return row;
-}
-
+/* ── Add action button ── */
 addActionBtn?.addEventListener('click', () => {
-  actionsList?.appendChild(createActionRow());
+  actionsList?.appendChild(createActionRow({ type: 'open_site' }));
 });
 
 /* ── Collect form data ── */
@@ -399,19 +593,15 @@ function collectFormData() {
   const type = getSelectedTriggerType();
   const trigger = { type };
   if (type === 'daily')  trigger.time = dailyTimeInput?.value  || '09:00';
-  if (type === 'weekly') { trigger.time = weeklyTimeInput?.value || '09:00'; trigger.day = weeklyDaySelect?.value || 'monday'; }
+  if (type === 'weekly') {
+    trigger.time = weeklyTimeInput?.value || '09:00';
+    trigger.day  = weeklyDaySelect?.value || 'monday';
+  }
 
   const actions = [];
   actionsList?.querySelectorAll('.action-row').forEach(row => {
-    const t = row.querySelector('.action-type-select')?.value;
-    const v = row.querySelector('.action-value-input')?.value?.trim();
-    if (!t || !v) return;
-    const a = { type: t };
-    if (t === 'open_site')   a.url     = v;
-    if (t === 'open_folder') a.path    = v;
-    if (t === 'run_command') a.command = v;
-    a.value = v; // convenience field for the UI
-    actions.push(a);
+    const a = collectActionFromRow(row);
+    if (a) actions.push(a);
   });
 
   return {
@@ -432,20 +622,17 @@ function openModal(automation = null) {
 
   if (modalTitle) modalTitle.textContent = automation ? 'Edit Automation' : 'New Automation';
 
-  /* Reset form */
   if (nameInput) nameInput.value = automation?.name || '';
   if (descInput) descInput.value = automation?.description || '';
 
-  /* Trigger */
   setTriggerOption(automation?.trigger?.type || 'on_startup');
   if (dailyTimeInput)  dailyTimeInput.value  = automation?.trigger?.time || '09:00';
   if (weeklyTimeInput) weeklyTimeInput.value = automation?.trigger?.time || '09:00';
   if (weeklyDaySelect) weeklyDaySelect.value = automation?.trigger?.day  || 'monday';
 
-  /* Actions */
   if (actionsList) {
     actionsList.innerHTML = '';
-    const acts = automation?.actions?.length ? automation.actions : [{ type: 'open_site', value: '' }];
+    const acts = automation?.actions?.length ? automation.actions : [{ type: 'open_site' }];
     acts.forEach(a => actionsList.appendChild(createActionRow(a)));
   }
 
@@ -465,7 +652,10 @@ saveBtn?.addEventListener('click', async () => {
   const data = collectFormData();
   if (!data) {
     nameInput?.focus();
-    nameInput?.animate([{ borderColor: '#f87171' }, { borderColor: 'var(--border)' }], { duration: 1000 });
+    nameInput?.animate(
+      [{ borderColor: '#f87171' }, { borderColor: 'var(--border)' }],
+      { duration: 1000 }
+    );
     return;
   }
 
@@ -504,15 +694,11 @@ document.addEventListener('keydown', e => {
 });
 
 /* ── Add automation buttons ── */
-document.getElementById('add-automation-header-btn')
-  ?.addEventListener('click', () => openModal());
-
-document.getElementById('add-automation-empty-btn')
-  ?.addEventListener('click', () => openModal());
+document.getElementById('add-automation-header-btn')?.addEventListener('click', () => openModal());
+document.getElementById('add-automation-empty-btn')?.addEventListener('click',  () => openModal());
 
 /* ── Avatar settings → go to main page settings ── */
-document.getElementById('avatar-settings-btn')
-  ?.addEventListener('click', () => window.electronAPI?.launchMain?.());
+document.getElementById('avatar-settings-btn')?.addEventListener('click', () => window.electronAPI?.launchMain?.());
 
 /* ══════════════════════════════════════════
    INIT

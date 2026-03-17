@@ -65,10 +65,7 @@
   box-shadow: 0 4px 18px var(--accent-glow);
 }
 
-.add-automation-btn svg {
-  width: 15px;
-  height: 15px;
-}
+.add-automation-btn svg { width: 15px; height: 15px; }
 
 .add-automation-btn:hover {
   transform: translateY(-2px);
@@ -76,9 +73,7 @@
   filter: brightness(1.06);
 }
 
-.add-automation-btn:active {
-  transform: translateY(0) scale(0.97);
-}
+.add-automation-btn:active { transform: translateY(0) scale(0.97); }
 
 /* ── Empty state ── */
 .auto-empty {
@@ -176,11 +171,8 @@
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
 }
 
-.auto-card.is-disabled {
-  opacity: 0.55;
-}
+.auto-card.is-disabled { opacity: 0.55; }
 
-/* Card top row */
 .auto-card-head {
   display: flex;
   align-items: flex-start;
@@ -202,10 +194,7 @@
 
 .auto-card-icon svg { width: 18px; height: 18px; }
 
-.auto-card-info {
-  flex: 1;
-  min-width: 0;
-}
+.auto-card-info { flex: 1; min-width: 0; }
 
 .auto-card-name {
   font-size: 14px;
@@ -227,7 +216,7 @@
   overflow: hidden;
 }
 
-/* Toggle switch */
+/* Toggle */
 .auto-toggle {
   flex-shrink: 0;
   position: relative;
@@ -235,12 +224,7 @@
   height: 22px;
 }
 
-.auto-toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
+.auto-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
 
 .auto-toggle-track {
   position: absolute;
@@ -275,12 +259,7 @@
   background: #fff;
 }
 
-/* Card body: trigger + actions summary */
-.auto-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.auto-card-meta { display: flex; flex-direction: column; gap: 8px; }
 
 .auto-card-tag {
   display: inline-flex;
@@ -309,13 +288,8 @@
   gap: 6px;
 }
 
-.auto-card-actions-summary svg {
-  width: 13px;
-  height: 13px;
-  flex-shrink: 0;
-}
+.auto-card-actions-summary svg { width: 13px; height: 13px; flex-shrink: 0; }
 
-/* Last run */
 .auto-card-lastrun {
   font-size: 11px;
   color: var(--text-muted);
@@ -323,7 +297,6 @@
   margin-top: -6px;
 }
 
-/* Card footer buttons */
 .auto-card-footer {
   display: flex;
   gap: 8px;
@@ -476,10 +449,7 @@
   gap: 6px;
 }
 
-.field-required {
-  color: var(--accent);
-}
-
+.field-required { color: var(--accent); }
 .field-optional {
   font-size: 10.5px;
   font-weight: 400;
@@ -502,9 +472,7 @@
 }
 
 .auto-input::placeholder,
-.auto-textarea::placeholder {
-  color: var(--text-muted);
-}
+.auto-textarea::placeholder { color: var(--text-muted); }
 
 .auto-input:focus,
 .auto-textarea:focus {
@@ -520,11 +488,7 @@
 }
 
 /* ── Section divider ── */
-.auto-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.auto-section { display: flex; flex-direction: column; gap: 12px; }
 
 .auto-section-label {
   font-size: 11.5px;
@@ -545,11 +509,7 @@
 }
 
 /* ── Trigger options ── */
-.trigger-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.trigger-options { display: flex; flex-direction: column; gap: 8px; }
 
 .trigger-option {
   display: flex;
@@ -588,9 +548,7 @@
   transition: border-color 0.2s;
 }
 
-.trigger-option.selected .trigger-radio {
-  border-color: var(--accent);
-}
+.trigger-option.selected .trigger-radio { border-color: var(--accent); }
 
 .trigger-option.selected .trigger-radio::after {
   content: '';
@@ -614,7 +572,6 @@
   font-weight: 400;
 }
 
-/* Trigger sub-inputs (shown when option selected) */
 .trigger-sub-inputs {
   display: flex;
   align-items: center;
@@ -638,78 +595,203 @@
 }
 
 .trigger-time-input:focus,
-.trigger-day-select:focus {
-  border-color: var(--accent);
-}
+.trigger-day-select:focus { border-color: var(--accent); }
 
-.trigger-day-select option {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
+.trigger-day-select option { background: var(--bg-secondary); color: var(--text-primary); }
 
-.trigger-sub-label {
-  font-size: 12px;
-  color: var(--text-muted);
-}
+.trigger-sub-label { font-size: 12px; color: var(--text-muted); }
 
-/* ── Actions list ── */
+/* ══════════════════════════════════════════
+   ACTIONS LIST + ROWS
+   Each row is column-based: type selector up
+   top, then dynamic fields below.
+══════════════════════════════════════════ */
 .actions-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
+/* The outer card for one action */
 .action-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: 16px;
   animation: messageIn 0.25s var(--ease-out-expo) both;
-  transition: border-color var(--transition-fast), transform var(--transition-fast);
+  transition: border-color var(--transition-fast);
 }
 
 .action-row:hover {
   border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
 }
 
+/* Top bar: type dropdown + remove button */
+.action-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .action-type-select {
+  flex: 1;
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 7px 10px;
+  padding: 8px 12px;
   font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-primary);
   outline: none;
   cursor: pointer;
-  flex-shrink: 0;
   transition: border-color var(--transition-fast);
 }
 
 .action-type-select:focus { border-color: var(--accent); }
 .action-type-select option { background: var(--bg-secondary); }
 
-.action-value-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
+/* Fields area — stacked below the top bar */
+.action-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* A row inside .action-fields for a label + input pair */
+.action-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.action-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Shared input / textarea inside action fields */
+.action-value-input,
+.action-value-textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
   font-family: var(--font-ui);
   font-size: 13px;
   color: var(--text-primary);
-  min-width: 0;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.action-value-input::placeholder { color: var(--text-muted); }
+.action-value-input::placeholder,
+.action-value-textarea::placeholder { color: var(--text-muted); }
 
+.action-value-input:focus,
+.action-value-textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.action-value-textarea {
+  resize: vertical;
+  min-height: 72px;
+  max-height: 150px;
+  line-height: 1.55;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* ── Sub-event block (folder → terminal) ── */
+.action-sub-event {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px dashed color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 12px;
+  animation: fadeIn 0.2s var(--ease-out-expo) both;
+}
+
+/* Toggle label row */
+.action-sub-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.action-sub-toggle input[type="checkbox"] {
+  /* custom checkbox */
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-input);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.action-sub-toggle input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.action-sub-toggle input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 12 12' fill='none' stroke='white' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l3 3 5-5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+.action-sub-toggle-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.action-sub-toggle:hover .action-sub-toggle-text { color: var(--text-primary); }
+
+.action-sub-toggle-text svg {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Command input shown when checkbox checked */
+.action-sub-cmd-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  animation: messageIn 0.2s var(--ease-out-expo) both;
+}
+
+.action-sub-cmd-wrap.hidden { display: none; }
+
+/* ── Remove button ── */
 .action-remove-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
@@ -730,8 +812,9 @@
   transform: scale(1.08);
 }
 
-.action-remove-btn svg { width: 12px; height: 12px; }
+.action-remove-btn svg { width: 13px; height: 13px; }
 
+/* ── Add action button ── */
 .add-action-btn {
   display: inline-flex;
   align-items: center;
@@ -915,11 +998,9 @@
   transform: translateY(-1px);
 }
 
-/* ── Shared keyframes (also in Main.css, safe to repeat) ── */
+/* ── Shared keyframes ── */
 @keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
 @keyframes messageIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
 
 #auto-empty[hidden],
-#auto-grid[hidden] {
-  display: none !important;
-}
+#auto-grid[hidden] { display: none !important; }
