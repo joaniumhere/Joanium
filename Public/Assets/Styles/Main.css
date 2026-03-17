@@ -1897,6 +1897,7 @@ body.modal-open {
 
 .settings-field textarea {
   min-height: 260px;
+  max-height: 290px;
   resize: vertical;
   line-height: 1.6;
 }
