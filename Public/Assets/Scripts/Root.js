@@ -3,6 +3,7 @@
 ══════════════════════════════════════════ */
 export const state = {
     messages: [],
+    composerAttachments: [],
     isTyping: false,
     theme: localStorage.getItem('ow-theme') || 'light',
     providers: [],
@@ -21,6 +22,9 @@ export const sendBtn = document.getElementById('send-btn');
 export const welcome = document.getElementById('welcome');
 export const chatView = document.getElementById('chat-view');
 export const chatMessages = document.getElementById('chat-messages');
+export const attachmentBtn = document.getElementById('attachment-btn');
+export const composerAttachments = document.getElementById('composer-attachments');
+export const composerHint = document.getElementById('composer-hint');
 export const chips = document.querySelectorAll('.chip');
 export const sidebarBtns = document.querySelectorAll('.sidebar-btn[data-view]');
 export const themeBtn = document.getElementById('theme-toggle-btn');

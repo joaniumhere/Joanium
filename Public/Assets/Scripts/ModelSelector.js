@@ -3,6 +3,38 @@
 ══════════════════════════════════════════ */
 import { state, modelLabel, modelDropdown, modelSelectorBtn } from './Root.js';
 
+function normalizeInputs(inputs = {}) {
+    return {
+        text: inputs.text !== false,
+        image: Boolean(inputs.image),
+        pdf: Boolean(inputs.pdf),
+        docx: Boolean(inputs.docx),
+    };
+}
+
+export function getSelectedModelInfo() {
+    return state.selectedProvider?.models?.[state.selectedModel] ?? null;
+}
+
+export function getModelInputs(provider = state.selectedProvider, modelId = state.selectedModel) {
+    return normalizeInputs(provider?.models?.[modelId]?.inputs);
+}
+
+export function modelSupportsInput(kind, provider = state.selectedProvider, modelId = state.selectedModel) {
+    return Boolean(getModelInputs(provider, modelId)[kind]);
+}
+
+export function notifyModelSelectionChanged() {
+    window.dispatchEvent(new CustomEvent('ow:model-selection-changed', {
+        detail: {
+            provider: state.selectedProvider,
+            modelId: state.selectedModel,
+            model: getSelectedModelInfo(),
+            inputs: getModelInputs(),
+        },
+    }));
+}
+
 export async function loadProviders() {
     try {
         const all = await window.electronAPI?.getModels() ?? [];
@@ -10,6 +42,7 @@ export async function loadProviders() {
 
         if (state.providers.length === 0) {
             if (modelLabel) modelLabel.textContent = 'No API keys set';
+            notifyModelSelectionChanged();
             return;
         }
 
@@ -19,9 +52,11 @@ export async function loadProviders() {
         state.selectedModel = firstModelId;
         updateModelLabel();
         buildModelDropdown();
+        notifyModelSelectionChanged();
     } catch (err) {
         console.warn('[openworld] Could not load models:', err);
         if (modelLabel) modelLabel.textContent = 'openworld 1.0';
+        notifyModelSelectionChanged();
     }
 }
 
@@ -60,6 +95,7 @@ export function buildModelDropdown() {
                 updateModelLabel();
                 buildModelDropdown();
                 modelDropdown.classList.remove('open');
+                notifyModelSelectionChanged();
             });
 
             section.appendChild(item);

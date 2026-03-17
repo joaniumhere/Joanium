@@ -10,6 +10,12 @@
         "description": "Most capable model for complex tasks",
         "context_window": 200000,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 15,
           "output": 75
@@ -20,6 +26,12 @@
         "description": "Balanced performance and speed",
         "context_window": 200000,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 3,
           "output": 15
@@ -30,6 +42,12 @@
         "description": "Fast and compact for everyday tasks",
         "context_window": 200000,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.25,
           "output": 1.25
@@ -40,6 +58,12 @@
         "description": "Latest flagship model",
         "context_window": 200000,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 15,
           "output": 75
@@ -50,6 +74,12 @@
         "description": "Latest balanced model",
         "context_window": 200000,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 3,
           "output": 15
@@ -69,6 +99,12 @@
         "description": "Most capable multimodal model",
         "context_window": 128000,
         "max_output": 16384,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 2.5,
           "output": 10
@@ -79,6 +115,12 @@
         "description": "Fast and affordable for focused tasks",
         "context_window": 128000,
         "max_output": 16384,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.15,
           "output": 0.6
@@ -89,6 +131,12 @@
         "description": "High intelligence at lower cost",
         "context_window": 128000,
         "max_output": 4096,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 10,
           "output": 30
@@ -99,6 +147,12 @@
         "description": "Advanced reasoning for complex problems",
         "context_window": 200000,
         "max_output": 100000,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 15,
           "output": 60
@@ -109,6 +163,12 @@
         "description": "Faster reasoning model",
         "context_window": 200000,
         "max_output": 100000,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 1.1,
           "output": 4.4
@@ -127,6 +187,12 @@
         "description": "Fast multimodal model with long context",
         "context_window": 1048576,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.1,
           "output": 0.4
@@ -137,6 +203,12 @@
         "description": "Lightest and most cost-efficient",
         "context_window": 1048576,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.075,
           "output": 0.3
@@ -147,6 +219,12 @@
         "description": "Complex reasoning across long context",
         "context_window": 2097152,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 1.25,
           "output": 5
@@ -157,6 +235,12 @@
         "description": "Fast and versatile performance",
         "context_window": 1048576,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": true,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.075,
           "output": 0.3
@@ -176,6 +260,12 @@
         "description": "Meta's latest open-weight powerhouse",
         "context_window": 131072,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.2,
           "output": 0.2
@@ -186,6 +276,12 @@
         "description": "State-of-the-art reasoning model",
         "context_window": 64000,
         "max_output": 8000,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.55,
           "output": 2.19
@@ -196,6 +292,12 @@
         "description": "Top-tier reasoning and code generation",
         "context_window": 131072,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 2,
           "output": 6
@@ -206,6 +308,12 @@
         "description": "Google's open model via OpenRouter",
         "context_window": 131072,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.1,
           "output": 0.2
@@ -216,6 +324,12 @@
         "description": "Alibaba's flagship instruction model",
         "context_window": 131072,
         "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
         "pricing": {
           "input": 0.35,
           "output": 0.4
