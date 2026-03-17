@@ -16,6 +16,7 @@ import { loadProviders } from './ModelSelector.js';
 const settingsTabs = Array.from(document.querySelectorAll('[data-settings-tab]'));
 const settingsPanels = Array.from(document.querySelectorAll('[data-settings-panel]'));
 const settingsUserNameInput = document.getElementById('settings-user-name');
+const settingsMemoryInput = document.getElementById('settings-memory');
 const settingsCustomInstructionsInput = document.getElementById('settings-custom-instructions');
 const settingsProvidersList = document.getElementById('settings-providers-list');
 const settingsSaveBtn = document.getElementById('settings-save');
@@ -143,7 +144,7 @@ function updateSaveButtonState() {
   if (!settingsSaveBtn) return;
 
   if (settingsState.activeTab === 'user') {
-    settingsSaveBtn.textContent = 'Save name and instructions';
+    settingsSaveBtn.textContent = 'Save changes';
     settingsSaveBtn.disabled = false;
     return;
   }
@@ -258,9 +259,10 @@ function renderSettingsProviders() {
 async function hydrateSettingsModal() {
   setFeedback(settingsSaveFeedback);
 
-  const [user, customInstructions, providers] = await Promise.all([
+  const [user, customInstructions, memory, providers] = await Promise.all([
     window.electronAPI?.getUser?.(),
     window.electronAPI?.getCustomInstructions?.(),
+    window.electronAPI?.getMemory?.(),
     window.electronAPI?.getModels?.(),
   ]);
 
@@ -269,6 +271,7 @@ async function hydrateSettingsModal() {
   settingsState.pendingProviderKeys = {};
 
   if (settingsUserNameInput) settingsUserNameInput.value = user?.name ?? '';
+  if (settingsMemoryInput) settingsMemoryInput.value = memory ?? '';
   if (settingsCustomInstructionsInput) settingsCustomInstructionsInput.value = customInstructions ?? '';
 
   renderSettingsProviders();
@@ -277,6 +280,7 @@ async function hydrateSettingsModal() {
 
 async function saveUserSettings() {
   const nextName = settingsUserNameInput?.value.trim() ?? '';
+  const nextMemory = settingsMemoryInput?.value ?? '';
   const nextInstructions = settingsCustomInstructionsInput?.value ?? '';
 
   if (nextName.length < 2) {
@@ -286,12 +290,13 @@ async function saveUserSettings() {
   }
 
   settingsSaveBtn.disabled = true;
-  setFeedback(settingsSaveFeedback, 'Saving your profile...', 'info');
+  setFeedback(settingsSaveFeedback, 'Saving…', 'info');
 
   try {
-    const [profileResult, instructionsResult] = await Promise.all([
+    const [profileResult, instructionsResult, memoryResult] = await Promise.all([
       window.electronAPI?.saveUserProfile?.({ name: nextName }),
       window.electronAPI?.saveCustomInstructions?.(nextInstructions),
+      window.electronAPI?.saveMemory?.(nextMemory),
     ]);
 
     if (!profileResult?.ok) {
@@ -302,8 +307,12 @@ async function saveUserSettings() {
       throw new Error(instructionsResult?.error ?? 'Could not save custom instructions.');
     }
 
+    if (!memoryResult?.ok) {
+      throw new Error(memoryResult?.error ?? 'Could not save memory.');
+    }
+
     applyUserProfile(profileResult.user ?? { name: nextName });
-    setFeedback(settingsSaveFeedback, 'User settings saved.', 'success');
+    setFeedback(settingsSaveFeedback, 'Changes saved.', 'success');
   } catch (error) {
     console.error('[openworld] Could not save user settings:', error);
     setFeedback(settingsSaveFeedback, error.message || 'Could not save user settings.', 'error');

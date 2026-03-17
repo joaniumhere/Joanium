@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAPIKey: (providerId) => ipcRenderer.invoke('get-api-key', providerId),
   getCustomInstructions: () => ipcRenderer.invoke('get-custom-instructions'),
   saveCustomInstructions: (content) => ipcRenderer.invoke('save-custom-instructions', content),
+  getMemory: () => ipcRenderer.invoke('get-memory'),
+  saveMemory: (content) => ipcRenderer.invoke('save-memory', content),
 
   /* ── Chat storage ── */
   saveChat: (chatData) => ipcRenderer.invoke('save-chat', chatData),

@@ -16,6 +16,7 @@ const DATA_DIR = path.join(__dirname, 'Data');
 const USER_FILE = path.join(DATA_DIR, 'User.json');
 const MODELS_FILE = path.join(DATA_DIR, 'Models.json');
 const CUSTOM_INSTRUCTIONS_FILE = path.join(DATA_DIR, 'CustomInstructions.md');
+const MEMORY_FILE = path.join(DATA_DIR, 'Memory.md');
 const CHATS_DIR = path.join(DATA_DIR, 'Chats');
 const PRELOAD = path.join(__dirname, 'Packages', 'Electron', 'Preload.js');
 const SETUP_PAGE = path.join(__dirname, 'Public', 'Setup.html');
@@ -86,6 +87,14 @@ function writeUserData(updates = {}) {
 function readCustomInstructions() {
   try {
     return readText(CUSTOM_INSTRUCTIONS_FILE);
+  } catch {
+    return '';
+  }
+}
+
+function readMemory() {
+  try {
+    return readText(MEMORY_FILE);
   } catch {
     return '';
   }
@@ -203,6 +212,19 @@ ipcMain.handle('get-custom-instructions', () => {
 ipcMain.handle('save-custom-instructions', (_e, content) => {
   try {
     writeText(CUSTOM_INSTRUCTIONS_FILE, String(content ?? '').replace(/\r\n/g, '\n'));
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('get-memory', () => {
+  return readMemory();
+});
+
+ipcMain.handle('save-memory', (_e, content) => {
+  try {
+    writeText(MEMORY_FILE, String(content ?? '').replace(/\r\n/g, '\n'));
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err.message };
