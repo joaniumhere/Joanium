@@ -1,13 +1,6 @@
 // ─────────────────────────────────────────────
 //  openworld — Public/Assets/Scripts/Features/Chat/Chat.js
-//  Core chat logic with NATIVE tool calling (agentic loop).
-//
-//  How it works:
-//    1. Send messages + tool definitions to AI
-//    2. If AI returns tool_call → execute it → feed result back → loop
-//    3. If AI returns text → show it, done
-//
-//  The AI decides what to call. We just execute and loop.
+//  Core chat logic with NATIVE tool calling (agentic loop) and robust message actions.
 // ─────────────────────────────────────────────
 
 import { state } from '../../Shared/State.js';
@@ -17,6 +10,55 @@ import { fetchWithTools } from '../AI/AIProvider.js';
 import { reset as resetComposer } from '../Composer/Composer.js';
 import { TOOLS } from './Tools.js';
 import { executeTool } from './ToolExecutor.js';
+
+/* ══════════════════════════════════════════
+   ICONS & EVENT LISTENERS (MESSAGE ACTIONS)
+══════════════════════════════════════════ */
+function copyIcon() {
+  return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+}
+
+function checkIcon() {
+  return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+}
+
+// Global delegate for code-block copying (injected via Markdown.js)
+chatMessages.addEventListener('click', async (e) => {
+  const copyCodeBtn = e.target.closest('.copy-code-btn');
+  if (copyCodeBtn) {
+    const wrapper = copyCodeBtn.closest('.code-wrapper');
+    const codeEl = wrapper.querySelector('code');
+    try {
+      await navigator.clipboard.writeText(codeEl.textContent);
+      const originalHtml = copyCodeBtn.innerHTML;
+      copyCodeBtn.innerHTML = `${checkIcon()} Copied`;
+      copyCodeBtn.style.color = 'var(--accent)';
+      setTimeout(() => { 
+        copyCodeBtn.innerHTML = originalHtml; 
+        copyCodeBtn.style.color = '';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
+  }
+});
+
+function attachCopyEvent(btn, textToCopy) {
+  if (!btn) return;
+  btn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      btn.innerHTML = checkIcon();
+      btn.style.color = 'var(--accent)';
+      setTimeout(() => { 
+        btn.innerHTML = copyIcon(); 
+        btn.style.color = '';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy message:', err);
+    }
+  };
+}
 
 /* ══════════════════════════════════════════
    HELPERS
@@ -65,8 +107,6 @@ export function setSendBtnUpdater(fn) { _updateSendBtn = fn; }
 
 /* ══════════════════════════════════════════
    LIVE ASSISTANT BUBBLE
-   Creates one row that gets updated in-place
-   as the agent works through tool calls.
 ══════════════════════════════════════════ */
 function assistantIcon() {
   return `<div class="assistant-icon">
@@ -79,39 +119,51 @@ function assistantIcon() {
 function createLiveRow() {
   const row = document.createElement('div');
   row.className = 'message-row assistant';
-  row.innerHTML = `${assistantIcon()}<div class="content"><div class="agent-log"></div><div class="agent-reply"></div></div>`;
+  row.innerHTML = `
+    ${assistantIcon()}
+    <div class="content-wrapper" style="flex:1; min-width:0;">
+      <div class="content">
+        <div class="agent-log"></div>
+        <div class="agent-reply"></div>
+      </div>
+      <div class="message-actions assistant-actions" style="display:none;">
+        <button class="action-btn copy-msg-btn" title="Copy Message">${copyIcon()}</button>
+      </div>
+    </div>`;
+    
   chatMessages.appendChild(row);
   smoothScrollToBottom();
 
   const logEl = row.querySelector('.agent-log');
   const replyEl = row.querySelector('.agent-reply');
+  const actionsEl = row.querySelector('.message-actions');
 
   return {
     row,
     push(line) {
       const item = document.createElement('div');
       item.className = 'agent-log-item';
-      // strip markdown for log lines — keep them plain and small
       item.textContent = line.replace(/[*_`]/g, '').replace(/^[🔧📤📬📥📖🔍📦🌲🐛🔀🔔❌✅]\s*/, '');
-      // grab the emoji separately for the icon
       const emojiMatch = line.match(/^([🔧📤📬📥📖🔍📦🌲🐛🔀🔔❌✅])/);
       item.innerHTML = `
         <span class="agent-log-dot"></span>
         <span class="agent-log-text">${emojiMatch ? emojiMatch[1] + ' ' : ''}${item.textContent}</span>
       `;
       logEl.appendChild(item);
-      // animate in
       requestAnimationFrame(() => item.classList.add('agent-log-item--in'));
       smoothScrollToBottom();
     },
     set(markdown) {
-      // fade out log then show reply
       logEl.style.opacity = '0';
       logEl.style.transition = 'opacity 0.2s ease';
       setTimeout(() => {
         logEl.innerHTML = '';
         logEl.style.display = 'none';
         replyEl.innerHTML = renderMarkdown(markdown);
+        
+        actionsEl.style.display = 'flex';
+        attachCopyEvent(actionsEl.querySelector('.copy-msg-btn'), markdown);
+        
         smoothScrollToBottom();
       }, 200);
     },
@@ -129,6 +181,12 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
   row.className = `message-row ${msg.role}`;
 
   if (msg.role === 'user') {
+    const actions = document.createElement('div');
+    actions.className = 'message-actions user-actions';
+    actions.innerHTML = `<button class="action-btn copy-msg-btn" title="Copy Message">${copyIcon()}</button>`;
+    attachCopyEvent(actions.querySelector('.copy-msg-btn'), msg.content);
+    row.appendChild(actions);
+
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     if (msg.attachments.length > 0) {
@@ -146,8 +204,17 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
     }
     row.appendChild(bubble);
   } else {
-    row.innerHTML = `${assistantIcon()}<div class="content"></div>`;
+    row.innerHTML = `
+      ${assistantIcon()}
+      <div class="content-wrapper" style="flex:1; min-width:0;">
+        <div class="content"></div>
+        <div class="message-actions assistant-actions">
+          <button class="action-btn copy-msg-btn" title="Copy Message">${copyIcon()}</button>
+        </div>
+      </div>
+    `;
     row.querySelector('.content').innerHTML = renderMarkdown(msg.content);
+    attachCopyEvent(row.querySelector('.copy-msg-btn'), msg.content);
   }
 
   chatMessages.appendChild(row);
@@ -159,8 +226,14 @@ export function replaceLastAssistant(markdown) {
   const rows = chatMessages.querySelectorAll('.message-row.assistant');
   const last = rows[rows.length - 1];
   if (last) {
-    const content = last.querySelector('.content');
-    if (content) content.innerHTML = renderMarkdown(markdown);
+    const replyEl = last.querySelector('.agent-reply');
+    if (replyEl) {
+      replyEl.innerHTML = renderMarkdown(markdown);
+    } else {
+      const content = last.querySelector('.content');
+      if (content) content.innerHTML = renderMarkdown(markdown);
+    }
+    attachCopyEvent(last.querySelector('.copy-msg-btn'), markdown);
   } else {
     appendMessage('assistant', markdown, false, true);
   }
@@ -190,7 +263,7 @@ export function restoreWelcome() {
 }
 
 /* ══════════════════════════════════════════
-   LEGACY HELPERS (used by library, settings etc.)
+   LEGACY HELPERS
 ══════════════════════════════════════════ */
 export async function callAI() {
   state.isTyping = true;
@@ -256,9 +329,7 @@ export async function callAIWithContext(contextPrompt) {
 }
 
 /* ══════════════════════════════════════════
-   THE AGENTIC LOOP  ← the whole point
-   AI sees tools → decides to call one → we execute
-   → feed result back → AI responds → done.
+   THE AGENTIC LOOP 
 ══════════════════════════════════════════ */
 async function agentLoop(messages, live) {
   const loopMessages = [...messages];
@@ -266,9 +337,6 @@ async function agentLoop(messages, live) {
   let toolsUsed = false;
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    // After a tool has run, pass NO tools — force the model to write
-    // a plain natural language response instead of calling another tool
-    // or echoing back JSON/pseudo-code like "$mail_sent = True"
     const toolsThisTurn = toolsUsed ? [] : TOOLS;
 
     const result = await fetchWithTools(
@@ -280,7 +348,6 @@ async function agentLoop(messages, live) {
     );
 
     if (result.type === 'text') {
-      // Replace all staging lines with the final clean answer
       live.set(result.text);
       return result.text;
     }
@@ -288,8 +355,6 @@ async function agentLoop(messages, live) {
     if (result.type === 'tool_call') {
       const { name, params } = result;
       toolsUsed = true;
-
-      // Show a friendly activity indicator
       live.push(`🔧 _${name.replace(/_/g, ' ')}…_`);
 
       let toolResult;
@@ -300,7 +365,6 @@ async function agentLoop(messages, live) {
         live.push(`❌ ${err.message}`);
       }
 
-      // Tell the model what happened — explicitly ask for natural language
       loopMessages.push({
         role: 'assistant',
         content: `I used the ${name} tool.`,
