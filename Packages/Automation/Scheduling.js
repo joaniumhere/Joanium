@@ -6,6 +6,13 @@ export function shouldRunNow(automation, now = new Date()) {
 
   if (trigger.type === 'on_startup') return false;
 
+  // Every N minutes
+  if (trigger.type === 'interval') {
+    const minutes = Math.max(1, parseInt(trigger.minutes, 10) || 30);
+    if (!last) return true;
+    return (now - last) >= minutes * 60_000;
+  }
+
   if (trigger.type === 'hourly') {
     if (now.getMinutes() !== 0) return false;
     if (last &&

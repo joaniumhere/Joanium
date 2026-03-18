@@ -7,7 +7,6 @@ import { initSettingsModal } from '../../Shared/Modals/SettingsModal.js';
 const about    = initAboutModal();
 const settings = initSettingsModal();
 
-// Library on Automations page: selecting a chat launches the main window
 const library = initLibraryModal({
   onChatSelect: (chatId) => {
     if (chatId) localStorage.setItem('ow-pending-chat', chatId);
@@ -15,7 +14,6 @@ const library = initLibraryModal({
   },
 });
 
-// Shared sidebar
 const sidebar = initSidebar({
   activePage:    'automations',
   onNewChat:     () => window.electronAPI?.launchMain(),
@@ -25,20 +23,18 @@ const sidebar = initSidebar({
   onAbout:       () => about.open(),
 });
 
-// Keep sidebar avatar in sync if user saves name from this page
-window.addEventListener('ow:user-profile-updated', e => {
-  sidebar.setUser(e.detail?.name ?? '');
-});
-
-// Hydrate sidebar avatar on load
+window.addEventListener('ow:user-profile-updated', e => sidebar.setUser(e.detail?.name ?? ''));
 settings.loadUser().then(user => sidebar.setUser(user?.name ?? ''));
 
-// Window controls
 document.getElementById('btn-minimize')?.addEventListener('click', () => window.electronAPI?.minimize());
 document.getElementById('btn-maximize')?.addEventListener('click', () => window.electronAPI?.maximize());
 document.getElementById('btn-close')?.addEventListener('click',    () => window.electronAPI?.close());
 
-// Helpers
+
+// ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+
 function escapeHtml(v) {
   return String(v ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -49,176 +45,466 @@ function generateId() {
   return `auto_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+
+
+// ─────────────────────────────────────────────
+//  DISPLAY FORMATTERS
+// ─────────────────────────────────────────────
+
 function formatTrigger(trigger) {
   if (!trigger) return 'Unknown trigger';
   switch (trigger.type) {
     case 'on_startup': return '⚡ On app startup';
+    case 'interval':   return `⏱️ Every ${trigger.minutes || 30} min`;
     case 'hourly':     return '⏰ Every hour';
-    case 'daily':      return `🌅 Every day at ${trigger.time || '09:00'}`;
-    case 'weekly':     return `📅 Every ${capitalize(trigger.day || 'monday')} at ${trigger.time || '09:00'}`;
+    case 'daily':      return `🌅 Daily at ${trigger.time || '09:00'}`;
+    case 'weekly':     return `📅 ${capitalize(trigger.day || 'monday')}s at ${trigger.time || '09:00'}`;
     default:           return trigger.type;
   }
 }
 
-function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
-
 function formatActionsSummary(actions = []) {
   if (!actions.length) return 'No actions configured';
   const label = actions.length === 1 ? '1 action' : `${actions.length} actions`;
+  const LABELS = {
+    open_site:            'open site',
+    open_multiple_sites:  'open sites',
+    open_folder:          'open folder',
+    run_command:          'run command',
+    run_script:           'run script',
+    open_app:             'open app',
+    send_notification:    'notification',
+    copy_to_clipboard:    'copy to clipboard',
+    write_file:           'write file',
+    move_file:            'move file',
+    copy_file:            'copy file',
+    delete_file:          'delete file',
+    create_folder:        'create folder',
+    lock_screen:          'lock screen',
+    http_request:         'HTTP request',
+    gmail_send_email:     '📧 send email',
+    gmail_get_brief:      '📧 email brief',
+    gmail_get_unread_count: '📧 unread count',
+    gmail_search_notify:  '📧 search & notify',
+    github_open_repo:     '🐙 open repo',
+    github_check_prs:     '🐙 check PRs',
+    github_check_issues:  '🐙 check issues',
+    github_check_commits: '🐙 check commits',
+    github_check_notifs:  '🐙 notifications',
+    github_create_issue:  '🐙 create issue',
+    github_check_releases:'🐙 check releases',
+  };
   const types = [...new Set(actions.map(a => {
-    switch (a.type) {
-      case 'open_site':            return 'open site';
-      case 'open_folder':          return 'open folder' + (a.openTerminal ? ' + terminal' : '');
-      case 'run_command':          return 'run command';
-      case 'open_app':             return 'open app';
-      case 'send_notification':    return 'notification';
-      case 'copy_to_clipboard':    return 'copy to clipboard';
-      case 'write_file':           return 'write file';
-      case 'gmail_send_email':     return '📧 send email';
-      case 'gmail_get_brief':      return '📧 email brief';
-      case 'github_open_repo':     return '🐙 open repo';
-      case 'github_check_prs':     return '🐙 check PRs';
-      case 'github_check_issues':  return '🐙 check issues';
-      case 'github_check_notifs':  return '🐙 notifications';
-      default:                     return a.type;
-    }
+    const base = LABELS[a.type] || a.type;
+    if (a.type === 'open_folder') return base + (a.openTerminal ? ' + terminal' : '');
+    if (a.type === 'run_command') return base + (a.silent ? ' (silent)' : '');
+    return base;
   }))];
   return `${label}: ${types.join(', ')}`;
 }
 
 function formatLastRun(lastRun) {
   if (!lastRun) return '';
-  const d    = new Date(lastRun);
-  const now  = new Date();
-  const diff = now - d;
-  const min  = 60_000, hour = 3_600_000, day = 86_400_000;
+  const d = new Date(lastRun), now = new Date(), diff = now - d;
+  const min = 60_000, hour = 3_600_000, day = 86_400_000;
   if (diff < min)  return 'Last run: just now';
   if (diff < hour) return `Last run: ${Math.floor(diff / min)}m ago`;
   if (diff < day)  return `Last run: ${Math.floor(diff / hour)}h ago`;
   return `Last run: ${d.toLocaleDateString()}`;
 }
 
-// Action meta
+
+// ─────────────────────────────────────────────
+//  ACTION META  (all available actions)
+// ─────────────────────────────────────────────
+
 const ACTION_META = {
-  open_site:           { label: '🌐 Open website',             fields: ['url'],                  group: 'System' },
-  open_folder:         { label: '📁 Open folder',               fields: ['path'],  hasSub: true,  group: 'System' },
-  run_command:         { label: '⚡ Run command',                fields: ['command'],              group: 'System' },
-  open_app:            { label: '🚀 Open app',                   fields: ['appPath'],              group: 'System' },
-  send_notification:   { label: '🔔 Send notification',         fields: ['title', 'body'],        group: 'System' },
-  copy_to_clipboard:   { label: '📋 Copy to clipboard',         fields: ['text'],                 group: 'System' },
-  write_file:          { label: '📝 Write to file',              fields: ['filePath', 'content'], group: 'System' },
-  gmail_send_email:    { label: '📧 Gmail — Send email',        fields: ['to', 'subject', 'gmailBody'], group: 'Gmail' },
-  gmail_get_brief:     { label: '📧 Gmail — Email brief notif', fields: ['maxResults'],           group: 'Gmail' },
-  github_open_repo:    { label: '🐙 GitHub — Open repo',        fields: ['owner', 'repo'],        group: 'GitHub' },
-  github_check_prs:    { label: '🐙 GitHub — Check PRs',        fields: ['owner', 'repo'],        group: 'GitHub' },
-  github_check_issues: { label: '🐙 GitHub — Check issues',     fields: ['owner', 'repo'],        group: 'GitHub' },
-  github_check_notifs: { label: '🐙 GitHub — Notifications',    fields: [],                       group: 'GitHub' },
+  // ── System ──────────────────────────────────
+  open_site:            { label: '🌐 Open website',            fields: ['url'],                              group: 'System'  },
+  open_multiple_sites:  { label: '🌐 Open multiple websites',  fields: ['urls'],                             group: 'System'  },
+  open_folder:          { label: '📁 Open folder',              fields: ['path'],                             group: 'System'  },
+  run_command:          { label: '⚡ Run command',               fields: ['command'],                          group: 'System'  },
+  run_script:           { label: '📜 Run script file',          fields: ['scriptPath', 'args'],               group: 'System'  },
+  open_app:             { label: '🚀 Open app',                  fields: ['appPath'],                          group: 'System'  },
+  send_notification:    { label: '🔔 Send notification',        fields: ['notifTitle', 'notifBody'],          group: 'System'  },
+  copy_to_clipboard:    { label: '📋 Copy to clipboard',        fields: ['text'],                             group: 'System'  },
+  write_file:           { label: '📝 Write to file',             fields: ['filePath', 'content'],             group: 'System'  },
+  move_file:            { label: '📦 Move / rename file',        fields: ['sourcePath', 'destPath'],           group: 'System'  },
+  copy_file:            { label: '🗂️ Copy file',                fields: ['sourcePath', 'destPath'],           group: 'System'  },
+  delete_file:          { label: '🗑️ Delete file',              fields: ['filePath'],                         group: 'System'  },
+  create_folder:        { label: '📂 Create folder',             fields: ['path'],                             group: 'System'  },
+  lock_screen:          { label: '🔒 Lock screen',               fields: [],                                   group: 'System'  },
+  http_request:         { label: '🌍 HTTP request / webhook',   fields: ['url', 'httpMethod'],                group: 'System'  },
+
+  // ── Gmail ────────────────────────────────────
+  gmail_send_email:       { label: '📧 Send email',             fields: ['to', 'subject', 'gmailBody'],      group: 'Gmail'   },
+  gmail_get_brief:        { label: '📧 Email brief (notif)',    fields: ['maxResults'],                       group: 'Gmail'   },
+  gmail_get_unread_count: { label: '📧 Unread count notif',    fields: [],                                   group: 'Gmail'   },
+  gmail_search_notify:    { label: '📧 Search & notify',        fields: ['query', 'maxResults'],              group: 'Gmail'   },
+
+  // ── GitHub ───────────────────────────────────
+  github_open_repo:       { label: '🐙 Open repo in browser',  fields: ['owner', 'repo'],                   group: 'GitHub'  },
+  github_check_prs:       { label: '🐙 Check pull requests',   fields: ['owner', 'repo'],                   group: 'GitHub'  },
+  github_check_issues:    { label: '🐙 Check issues',          fields: ['owner', 'repo'],                   group: 'GitHub'  },
+  github_check_commits:   { label: '🐙 Check recent commits',  fields: ['owner', 'repo', 'maxResults'],     group: 'GitHub'  },
+  github_check_releases:  { label: '🐙 Check latest release',  fields: ['owner', 'repo'],                   group: 'GitHub'  },
+  github_check_notifs:    { label: '🐙 GitHub notifications',  fields: [],                                   group: 'GitHub'  },
+  github_create_issue:    { label: '🐙 Create issue',          fields: ['owner', 'repo', 'issueTitle', 'issueBody', 'labels'], group: 'GitHub' },
 };
 
+// ─────────────────────────────────────────────
+//  FIELD META
+// ─────────────────────────────────────────────
+
 const FIELD_META = {
-  url:             { placeholder: 'https://example.com',                                    textarea: false },
-  path:            { placeholder: '/Users/you/Documents or C:\\Users\\you',                  textarea: false },
-  command:         { placeholder: 'npm run build',                                           textarea: false },
-  appPath:         { placeholder: '/Applications/VS Code.app',                               textarea: false },
-  title:           { placeholder: 'Notification title',                                      textarea: false },
-  body:            { placeholder: 'Notification body (optional)',                            textarea: false },
-  text:            { placeholder: 'Text to copy to clipboard…',                             textarea: false },
-  filePath:        { placeholder: '/Users/you/Desktop/output.txt',                          textarea: false },
-  content:         { placeholder: 'File content…',                                          textarea: true  },
-  terminalCommand: { placeholder: 'npm run dev  (leave empty to just open terminal)',       textarea: false },
-  to:              { placeholder: 'recipient@gmail.com',                                     textarea: false },
-  subject:         { placeholder: 'Email subject',                                           textarea: false },
-  gmailBody:       { placeholder: 'Email body…',                                            textarea: true  },
-  maxResults:      { placeholder: '10',                                                      textarea: false },
-  owner:           { placeholder: 'github-username or org',                                 textarea: false },
-  repo:            { placeholder: 'repository-name',                                        textarea: false },
+  url:          { placeholder: 'https://example.com',                                      textarea: false },
+  urls:         { placeholder: 'https://example.com\nhttps://github.com\none per line…',  textarea: true  },
+  path:         { placeholder: '/Users/you/Documents or C:\\Users\\you',                   textarea: false },
+  command:      { placeholder: 'npm run build',                                             textarea: false },
+  scriptPath:   { placeholder: '/Users/you/scripts/backup.sh  or  script.py',             textarea: false },
+  args:         { placeholder: '--verbose --output /tmp (optional)',                        textarea: false },
+  appPath:      { placeholder: '/Applications/VS Code.app  or  C:\\...\\code.exe',        textarea: false },
+  notifTitle:   { placeholder: 'Notification title',                                        textarea: false },
+  notifBody:    { placeholder: 'Notification body (optional)',                             textarea: false },
+  text:         { placeholder: 'Text to copy to clipboard…',                              textarea: false },
+  filePath:     { placeholder: '/Users/you/Desktop/output.txt',                           textarea: false },
+  content:      { placeholder: 'File content…',                                            textarea: true  },
+  sourcePath:   { placeholder: '/Users/you/file.txt',                                      textarea: false },
+  destPath:     { placeholder: '/Users/you/moved/file.txt',                                textarea: false },
+  httpMethod:   { type: 'select', options: ['GET','POST','PUT','PATCH','DELETE','HEAD'],    textarea: false },
+  httpHeaders:  { placeholder: 'Content-Type: application/json\nAuthorization: Bearer …', textarea: true  },
+  httpBody:     { placeholder: '{"key": "value"}  or  form=data&key=val',                 textarea: true  },
+  clickUrl:     { placeholder: 'https://open-this.com on notification click (optional)',   textarea: false },
+  to:           { placeholder: 'recipient@example.com',                                    textarea: false },
+  cc:           { placeholder: 'cc@example.com, cc2@example.com (optional)',               textarea: false },
+  bcc:          { placeholder: 'bcc@example.com (optional)',                               textarea: false },
+  subject:      { placeholder: 'Email subject',                                             textarea: false },
+  gmailBody:    { placeholder: 'Email body…',                                              textarea: true  },
+  maxResults:   { placeholder: '10',                                                        textarea: false },
+  query:        { placeholder: 'from:boss OR subject:urgent',                              textarea: false },
+  owner:        { placeholder: 'github-username or org',                                   textarea: false },
+  repo:         { placeholder: 'repository-name',                                           textarea: false },
+  issueTitle:   { placeholder: 'Bug: something broke in v2.1',                            textarea: false },
+  issueBody:    { placeholder: 'Steps to reproduce…',                                     textarea: true  },
+  labels:       { placeholder: 'bug, enhancement (comma-separated, optional)',            textarea: false },
+  terminalCommand: { placeholder: 'npm run dev  (leave blank to just open terminal)',     textarea: false },
 };
 
 const FIELD_LABELS = {
-  url: 'URL', path: 'Folder path', command: 'Command', appPath: 'App path',
-  title: 'Title', body: 'Body', text: 'Text', filePath: 'File path', content: 'Content',
-  to: 'To (email)', subject: 'Subject', gmailBody: 'Body', maxResults: 'Max results',
+  url: 'URL', urls: 'URLs (one per line)', path: 'Folder path',
+  command: 'Command', scriptPath: 'Script path', args: 'Arguments',
+  appPath: 'App path', notifTitle: 'Title', notifBody: 'Body',
+  text: 'Text', filePath: 'File path', content: 'Content',
+  sourcePath: 'Source path', destPath: 'Destination path',
+  httpMethod: 'Method', httpHeaders: 'Headers', httpBody: 'Request body',
+  clickUrl: 'Open URL on click',
+  to: 'To', cc: 'CC', bcc: 'BCC', subject: 'Subject', gmailBody: 'Body',
+  maxResults: 'Max results', query: 'Search query',
   owner: 'Owner / org', repo: 'Repository',
+  issueTitle: 'Issue title', issueBody: 'Issue body', labels: 'Labels',
+  terminalCommand: 'Then run (optional)',
 };
+
+
+// ─────────────────────────────────────────────
+//  FIELD BUILDERS
+// ─────────────────────────────────────────────
 
 function makeField(fieldKey, value = '') {
   const meta = FIELD_META[fieldKey] ?? { placeholder: '', textarea: false };
   let el;
-  if (meta.textarea) {
+
+  if (meta.type === 'select') {
+    el = document.createElement('select');
+    el.className = 'action-type-select';
+    (meta.options || []).forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt; o.textContent = opt;
+      if (opt === (value || meta.options[0])) o.selected = true;
+      el.appendChild(o);
+    });
+  } else if (meta.textarea) {
     el = document.createElement('textarea');
     el.className = 'action-value-textarea';
     el.rows = 3;
+    el.placeholder = meta.placeholder ?? '';
+    el.value = value;
   } else {
     el = document.createElement('input');
     el.type = 'text';
     el.className = 'action-value-input';
+    el.placeholder = meta.placeholder ?? '';
+    el.value = value;
   }
-  el.placeholder = meta.placeholder;
-  el.value = value;
   el.dataset.field = fieldKey;
   return el;
 }
+
+/** Wrap a field in a labelled row. */
+function makeFieldRow(fieldKey, value = '', hideLabel = false) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'action-field-row';
+  if (!hideLabel) {
+    const lbl = document.createElement('label');
+    lbl.className = 'action-field-label';
+    lbl.textContent = FIELD_LABELS[fieldKey] ?? fieldKey;
+    wrapper.appendChild(lbl);
+  }
+  wrapper.appendChild(makeField(fieldKey, value));
+  return wrapper;
+}
+
+/**
+ * Build a toggle row that optionally reveals a sub-section when checked.
+ * @param {object} opts
+ * @param {string}          opts.checkClass   CSS class for the checkbox (used to collect later)
+ * @param {boolean}         opts.checked      Initial state
+ * @param {string}          opts.icon         Emoji icon
+ * @param {string}          opts.labelText    Label text
+ * @param {HTMLElement|null} opts.subEl       Element to show/hide (null = no expansion)
+ */
+function makeToggleRow({ checkClass, checked = false, icon = '', labelText, subEl = null }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'action-sub-event';
+
+  const label = document.createElement('label');
+  label.className = 'action-sub-toggle';
+
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.className = `action-sub-check ${checkClass}`;
+  if (checked) cb.checked = true;
+
+  const span = document.createElement('span');
+  span.className = 'action-sub-toggle-text';
+  span.innerHTML = icon ? `${icon} ${escapeHtml(labelText)}` : escapeHtml(labelText);
+
+  label.append(cb, span);
+  wrap.appendChild(label);
+
+  if (subEl) {
+    if (!checked) subEl.classList.add('hidden');
+    cb.addEventListener('change', () => subEl.classList.toggle('hidden', !cb.checked));
+    wrap.appendChild(subEl);
+  }
+
+  return wrap;
+}
+
+/** Connector warning banner. */
+function makeConnectorNote(group) {
+  const warn = document.createElement('div');
+  warn.className = 'action-connector-note';
+  warn.textContent = group === 'Gmail'
+    ? '⚠ Requires Gmail connected in Settings → Connectors'
+    : '⚠ Requires GitHub connected in Settings → Connectors';
+  return warn;
+}
+
+// ─────────────────────────────────────────────
+//  SUB-EVENT RENDERERS  (one per action type)
+// ─────────────────────────────────────────────
+
+function appendFolderSubs(fieldsEl, data) {
+  const cmdWrap = document.createElement('div');
+  cmdWrap.className = 'action-sub-cmd-wrap';
+  cmdWrap.appendChild(makeFieldRow('terminalCommand', data.terminalCommand ?? ''));
+
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-open-terminal',
+    checked:    data.openTerminal ?? false,
+    icon: '💻',
+    labelText: 'Open terminal here',
+    subEl: cmdWrap,
+  }));
+}
+
+function appendRunCommandSubs(fieldsEl, data) {
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-silent',
+    checked: data.silent ?? false,
+    icon: '🔇',
+    labelText: 'Run silently (background, no terminal window)',
+  }));
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-notify-finish',
+    checked: data.notifyOnFinish ?? false,
+    icon: '🔔',
+    labelText: 'Send notification when done',
+  }));
+}
+
+function appendRunScriptSubs(fieldsEl, data) {
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-silent',
+    checked: data.silent ?? false,
+    icon: '🔇',
+    labelText: 'Run silently (background, no terminal window)',
+  }));
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-notify-finish',
+    checked: data.notifyOnFinish ?? false,
+    icon: '🔔',
+    labelText: 'Send notification when done',
+  }));
+}
+
+function appendWriteFileSubs(fieldsEl, data) {
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-append',
+    checked: data.append ?? false,
+    icon: '➕',
+    labelText: 'Append to file (instead of overwrite)',
+  }));
+}
+
+function appendNotifSubs(fieldsEl, data) {
+  const urlWrap = document.createElement('div');
+  urlWrap.className = 'action-sub-cmd-wrap';
+  urlWrap.appendChild(makeFieldRow('clickUrl', data.clickUrl ?? ''));
+
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-click-url',
+    checked: !!(data.clickUrl),
+    icon: '🔗',
+    labelText: 'Open URL when notification is clicked',
+    subEl: urlWrap,
+  }));
+}
+
+function appendHttpSubs(fieldsEl, data) {
+  // Headers sub-section
+  const headersWrap = document.createElement('div');
+  headersWrap.className = 'action-sub-cmd-wrap';
+  headersWrap.appendChild(makeFieldRow('httpHeaders', data.headers ?? ''));
+
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-http-headers',
+    checked: !!(data.headers),
+    icon: '📋',
+    labelText: 'Custom headers',
+    subEl: headersWrap,
+  }));
+
+  // Body sub-section
+  const bodyWrap = document.createElement('div');
+  bodyWrap.className = 'action-sub-cmd-wrap';
+  bodyWrap.appendChild(makeFieldRow('httpBody', data.body ?? ''));
+
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-http-body',
+    checked: !!(data.body),
+    icon: '📄',
+    labelText: 'Request body',
+    subEl: bodyWrap,
+  }));
+
+  // Notify on response
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-http-notify',
+    checked: data.notify ?? false,
+    icon: '🔔',
+    labelText: 'Send notification with response status',
+  }));
+}
+
+function appendGmailSendSubs(fieldsEl, data) {
+  const ccWrap = document.createElement('div');
+  ccWrap.className = 'action-sub-cmd-wrap';
+  ccWrap.appendChild(makeFieldRow('cc',  data.cc  ?? ''));
+  ccWrap.appendChild(makeFieldRow('bcc', data.bcc ?? ''));
+
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-email-extra',
+    checked: !!(data.cc || data.bcc),
+    icon: '👥',
+    labelText: 'Add CC / BCC',
+    subEl: ccWrap,
+  }));
+}
+
+function appendGithubCheckSubs(fieldsEl, type, data) {
+  // State filter for PRs and issues
+  const stateWrap = document.createElement('div');
+  stateWrap.className = 'action-sub-cmd-wrap';
+
+  const stateSelect = document.createElement('select');
+  stateSelect.className = 'action-type-select';
+  stateSelect.dataset.field = 'state';
+  ['open','closed','all'].forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = capitalize(s);
+    if (s === (data.state || 'open')) o.selected = true;
+    stateSelect.appendChild(o);
+  });
+  const stateRow = document.createElement('div');
+  stateRow.className = 'action-field-row';
+  const lbl = document.createElement('label');
+  lbl.className = 'action-field-label'; lbl.textContent = 'Filter by state';
+  stateRow.append(lbl, stateSelect);
+  stateWrap.appendChild(stateRow);
+
+  fieldsEl.appendChild(makeToggleRow({
+    checkClass: 'sub-filter-state',
+    checked: !!(data.state && data.state !== 'open'),
+    icon: '🔍',
+    labelText: 'Filter by state (default: open)',
+    subEl: stateWrap,
+  }));
+}
+
+function appendDeleteWarning(fieldsEl) {
+  const warn = document.createElement('div');
+  warn.className = 'action-connector-note';
+  warn.style.borderColor = '#f87171';
+  warn.textContent = '⚠ This permanently deletes the file. There is no undo.';
+  fieldsEl.appendChild(warn);
+}
+
+
+// ─────────────────────────────────────────────
+//  MAIN FIELD RENDERER
+// ─────────────────────────────────────────────
 
 function renderActionFields(fieldsEl, type, data = {}) {
   fieldsEl.innerHTML = '';
   const meta = ACTION_META[type];
   if (!meta) return;
 
-  if (meta.group === 'Gmail' || meta.group === 'GitHub') {
-    const warn     = document.createElement('div');
-    warn.className = 'action-connector-note';
-    warn.textContent =
-      meta.group === 'Gmail'
-        ? '⚠ Requires Gmail connected in Settings → Connectors'
-        : '⚠ Requires GitHub connected in Settings → Connectors';
-    fieldsEl.appendChild(warn);
-  }
+  // Connector warning
+  if (meta.group === 'Gmail' || meta.group === 'GitHub')
+    fieldsEl.appendChild(makeConnectorNote(meta.group));
 
+  // Main fields (show label only if action has multiple fields)
+  const showLabel = meta.fields.length > 1 || meta.group !== 'System';
   for (const fieldKey of meta.fields) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'action-field-row';
-    if (meta.fields.length > 1 || meta.group !== 'System') {
-      const lbl       = document.createElement('label');
-      lbl.className   = 'action-field-label';
-      lbl.textContent = FIELD_LABELS[fieldKey] ?? fieldKey;
-      wrapper.appendChild(lbl);
-    }
-    wrapper.appendChild(makeField(fieldKey, data[fieldKey] ?? ''));
-    fieldsEl.appendChild(wrapper);
+    fieldsEl.appendChild(makeFieldRow(fieldKey, data[fieldKey] ?? '', !showLabel));
   }
 
-  if (type === 'open_folder') {
-    const sub = document.createElement('div');
-    sub.className = 'action-sub-event';
-    const toggleLabel = document.createElement('label');
-    toggleLabel.className = 'action-sub-toggle';
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'action-sub-check';
-    if (data.openTerminal) checkbox.checked = true;
-    const toggleText = document.createElement('span');
-    toggleText.className = 'action-sub-toggle-text';
-    toggleText.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-      <rect x="3" y="3" width="18" height="14" rx="2"/>
-      <path d="M7 8l3 3-3 3M12 14h5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>Open terminal here`;
-    toggleLabel.append(checkbox, toggleText);
-    const cmdWrapper = document.createElement('div');
-    cmdWrapper.className = 'action-sub-cmd-wrap';
-    if (!data.openTerminal) cmdWrapper.classList.add('hidden');
-    const cmdLbl = document.createElement('label');
-    cmdLbl.className = 'action-field-label';
-    cmdLbl.textContent = 'Then run (optional)';
-    cmdWrapper.appendChild(cmdLbl);
-    cmdWrapper.appendChild(makeField('terminalCommand', data.terminalCommand ?? ''));
-    checkbox.addEventListener('change', () => cmdWrapper.classList.toggle('hidden', !checkbox.checked));
-    sub.append(toggleLabel, cmdWrapper);
-    fieldsEl.appendChild(sub);
+  // Sub-events per action type
+  switch (type) {
+    case 'open_folder':        appendFolderSubs(fieldsEl, data);                       break;
+    case 'run_command':        appendRunCommandSubs(fieldsEl, data);                   break;
+    case 'run_script':         appendRunScriptSubs(fieldsEl, data);                    break;
+    case 'write_file':         appendWriteFileSubs(fieldsEl, data);                    break;
+    case 'send_notification':  appendNotifSubs(fieldsEl, data);                        break;
+    case 'http_request':       appendHttpSubs(fieldsEl, data);                         break;
+    case 'gmail_send_email':   appendGmailSendSubs(fieldsEl, data);                    break;
+    case 'github_check_prs':
+    case 'github_check_issues':appendGithubCheckSubs(fieldsEl, type, data);           break;
+    case 'delete_file':        appendDeleteWarning(fieldsEl);                          break;
+    default: break;
   }
 }
 
+
+// ─────────────────────────────────────────────
+//  ACTION ROW
+// ─────────────────────────────────────────────
+
 function createActionRow(action = { type: 'open_site' }) {
-  const row     = document.createElement('div');
+  const row = document.createElement('div');
   row.className = 'action-row';
 
   const topBar = document.createElement('div');
@@ -227,21 +513,22 @@ function createActionRow(action = { type: 'open_site' }) {
   const typeSelect = document.createElement('select');
   typeSelect.className = 'action-type-select';
 
+  // Build grouped option list
   const groups = {};
   for (const [value, meta] of Object.entries(ACTION_META)) {
     if (!groups[meta.group]) groups[meta.group] = [];
     groups[meta.group].push({ value, label: meta.label });
   }
   for (const [groupName, items] of Object.entries(groups)) {
-    const optgroup = document.createElement('optgroup');
-    optgroup.label = groupName;
+    const og = document.createElement('optgroup');
+    og.label = groupName;
     for (const { value, label } of items) {
       const opt = document.createElement('option');
       opt.value = value; opt.textContent = label;
       if (value === action.type) opt.selected = true;
-      optgroup.appendChild(opt);
+      og.appendChild(opt);
     }
-    typeSelect.appendChild(optgroup);
+    typeSelect.appendChild(og);
   }
 
   const removeBtn = document.createElement('button');
@@ -262,37 +549,194 @@ function createActionRow(action = { type: 'open_site' }) {
   return row;
 }
 
+
+// ─────────────────────────────────────────────
+//  ACTION COLLECTOR
+// ─────────────────────────────────────────────
+
 function collectActionFromRow(row) {
   const type = row.querySelector('.action-type-select')?.value;
   if (!type) return null;
+
   const get    = (field) => row.querySelector(`[data-field="${field}"]`)?.value?.trim() ?? '';
+  const getVal = (field) => row.querySelector(`[data-field="${field}"]`)?.value ?? '';
+  const getCb  = (cls)   => row.querySelector(`.${cls}`)?.checked ?? false;
+
   const action = { type };
+
   switch (type) {
-    case 'open_site':           action.url     = get('url');     if (!action.url)     return null; break;
-    case 'open_folder': {
-      action.path = get('path'); if (!action.path) return null;
-      const cb = row.querySelector('.action-sub-check');
-      action.openTerminal    = cb?.checked ?? false;
+
+    // ── System ─────────────────────────────────
+
+    case 'open_site':
+      action.url = get('url');
+      if (!action.url) return null;
+      break;
+
+    case 'open_multiple_sites':
+      action.urls = getVal('urls');
+      if (!action.urls.trim()) return null;
+      break;
+
+    case 'open_folder':
+      action.path = get('path');
+      if (!action.path) return null;
+      action.openTerminal    = getCb('sub-open-terminal');
       action.terminalCommand = get('terminalCommand');
       break;
-    }
-    case 'run_command':         action.command  = get('command');  if (!action.command)  return null; break;
-    case 'open_app':            action.appPath  = get('appPath');  if (!action.appPath)  return null; break;
-    case 'send_notification':   action.title    = get('title');    if (!action.title)    return null; action.body = get('body'); break;
-    case 'copy_to_clipboard':   action.text     = get('text');     if (!action.text)     return null; break;
-    case 'write_file':          action.filePath = get('filePath'); if (!action.filePath) return null; action.content = row.querySelector('[data-field="content"]')?.value ?? ''; break;
-    case 'gmail_send_email':    action.to = get('to'); action.subject = get('subject'); action.body = row.querySelector('[data-field="gmailBody"]')?.value ?? ''; if (!action.to || !action.subject) return null; break;
-    case 'gmail_get_brief':     action.maxResults = parseInt(get('maxResults'), 10) || 10; break;
-    case 'github_open_repo':    action.owner = get('owner'); action.repo = get('repo'); if (!action.owner || !action.repo) return null; break;
-    case 'github_check_prs':    action.owner = get('owner'); action.repo = get('repo'); if (!action.owner || !action.repo) return null; break;
-    case 'github_check_issues': action.owner = get('owner'); action.repo = get('repo'); if (!action.owner || !action.repo) return null; break;
-    case 'github_check_notifs': break;
-    default: return null;
+
+    case 'run_command':
+      action.command = get('command');
+      if (!action.command) return null;
+      action.silent         = getCb('sub-silent');
+      action.notifyOnFinish = getCb('sub-notify-finish');
+      break;
+
+    case 'run_script':
+      action.scriptPath = get('scriptPath');
+      if (!action.scriptPath) return null;
+      action.args           = get('args');
+      action.silent         = getCb('sub-silent');
+      action.notifyOnFinish = getCb('sub-notify-finish');
+      break;
+
+    case 'open_app':
+      action.appPath = get('appPath');
+      if (!action.appPath) return null;
+      break;
+
+    case 'send_notification':
+      action.title = get('notifTitle');
+      if (!action.title) return null;
+      action.body = get('notifBody');
+      if (getCb('sub-click-url')) action.clickUrl = get('clickUrl');
+      break;
+
+    case 'copy_to_clipboard':
+      action.text = get('text');
+      if (!action.text) return null;
+      break;
+
+    case 'write_file':
+      action.filePath = get('filePath');
+      if (!action.filePath) return null;
+      action.content = getVal('content');
+      action.append  = getCb('sub-append');
+      break;
+
+    case 'move_file':
+    case 'copy_file':
+      action.sourcePath = get('sourcePath');
+      action.destPath   = get('destPath');
+      if (!action.sourcePath || !action.destPath) return null;
+      break;
+
+    case 'delete_file':
+      action.filePath = get('filePath');
+      if (!action.filePath) return null;
+      break;
+
+    case 'create_folder':
+      action.path = get('path');
+      if (!action.path) return null;
+      break;
+
+    case 'lock_screen':
+      // no fields needed
+      break;
+
+    case 'http_request':
+      action.url    = get('url');
+      if (!action.url) return null;
+      action.method = get('httpMethod') || 'GET';
+      if (getCb('sub-http-headers')) action.headers = getVal('httpHeaders');
+      if (getCb('sub-http-body'))    action.body    = getVal('httpBody');
+      action.notify = getCb('sub-http-notify');
+      break;
+
+    // ── Gmail ──────────────────────────────────
+
+    case 'gmail_send_email':
+      action.to      = get('to');
+      action.subject = get('subject');
+      action.body    = getVal('gmailBody');
+      if (!action.to || !action.subject) return null;
+      if (getCb('sub-email-extra')) {
+        action.cc  = get('cc');
+        action.bcc = get('bcc');
+      }
+      break;
+
+    case 'gmail_get_brief':
+      action.maxResults = parseInt(get('maxResults'), 10) || 10;
+      break;
+
+    case 'gmail_get_unread_count':
+      // no required fields
+      break;
+
+    case 'gmail_search_notify':
+      action.query      = get('query');
+      if (!action.query) return null;
+      action.maxResults = parseInt(get('maxResults'), 10) || 5;
+      break;
+
+    // ── GitHub ─────────────────────────────────
+
+    case 'github_open_repo':
+      action.owner = get('owner');
+      action.repo  = get('repo');
+      if (!action.owner || !action.repo) return null;
+      break;
+
+    case 'github_check_prs':
+    case 'github_check_issues':
+      action.owner = get('owner');
+      action.repo  = get('repo');
+      if (!action.owner || !action.repo) return null;
+      action.state = getCb('sub-filter-state')
+        ? (row.querySelector('[data-field="state"]')?.value || 'open')
+        : 'open';
+      break;
+
+    case 'github_check_commits':
+      action.owner      = get('owner');
+      action.repo       = get('repo');
+      if (!action.owner || !action.repo) return null;
+      action.maxResults = parseInt(get('maxResults'), 10) || 5;
+      break;
+
+    case 'github_check_releases':
+      action.owner = get('owner');
+      action.repo  = get('repo');
+      if (!action.owner || !action.repo) return null;
+      break;
+
+    case 'github_check_notifs':
+      // no required fields
+      break;
+
+    case 'github_create_issue':
+      action.owner      = get('owner');
+      action.repo       = get('repo');
+      action.issueTitle = get('issueTitle');
+      if (!action.owner || !action.repo || !action.issueTitle) return null;
+      action.issueBody  = getVal('issueBody');
+      action.labels     = get('labels');
+      break;
+
+    default:
+      return null;
   }
+
   return action;
 }
 
-// Automations state + render
+
+// ─────────────────────────────────────────────
+//  AUTOMATIONS STATE + RENDER
+// ─────────────────────────────────────────────
+
 let automations = [];
 
 const grid      = document.getElementById('auto-grid');
@@ -313,16 +757,14 @@ function renderAutomations() {
       <div class="auto-card-head">
         <div class="auto-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z"
-                  stroke-linejoin="round" stroke-width="1.6"/>
+            <path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z" stroke-linejoin="round" stroke-width="1.6"/>
           </svg>
         </div>
         <div class="auto-card-info">
           <div class="auto-card-name">${escapeHtml(auto.name)}</div>
           ${auto.description ? `<div class="auto-card-desc">${escapeHtml(auto.description)}</div>` : ''}
         </div>
-        <label class="auto-toggle"
-               title="${auto.enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'}">
+        <label class="auto-toggle" title="${auto.enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'}">
           <input type="checkbox" class="toggle-input" ${auto.enabled ? 'checked' : ''}>
           <div class="auto-toggle-track"></div>
         </label>
@@ -351,11 +793,9 @@ function renderAutomations() {
           </svg>
           Edit
         </button>
-        <button class="auto-card-btn danger delete-btn"
-                data-id="${escapeHtml(auto.id)}" data-name="${escapeHtml(auto.name)}">
+        <button class="auto-card-btn danger delete-btn" data-id="${escapeHtml(auto.id)}" data-name="${escapeHtml(auto.name)}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-                  stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Delete
         </button>
@@ -382,7 +822,11 @@ async function loadAutomations() {
   renderAutomations();
 }
 
-// Confirm delete
+
+// ─────────────────────────────────────────────
+//  CONFIRM DELETE
+// ─────────────────────────────────────────────
+
 const confirmOverlay        = document.getElementById('confirm-overlay');
 const confirmCancelBtn      = document.getElementById('confirm-cancel');
 const confirmDeleteBtn      = document.getElementById('confirm-delete');
@@ -409,7 +853,11 @@ confirmDeleteBtn?.addEventListener('click', async () => {
 });
 confirmOverlay?.addEventListener('click', e => { if (e.target === confirmOverlay) closeConfirm(); });
 
-// Modal — add / edit
+
+// ─────────────────────────────────────────────
+//  ADD / EDIT MODAL
+// ─────────────────────────────────────────────
+
 const modalBackdrop   = document.getElementById('automation-modal-backdrop');
 const modalTitle      = document.getElementById('auto-modal-title-text');
 const nameInput       = document.getElementById('auto-name');
@@ -419,12 +867,16 @@ const addActionBtn    = document.getElementById('add-action-btn');
 const saveBtn         = document.getElementById('auto-save-btn');
 const cancelBtn       = document.getElementById('auto-cancel-btn');
 const modalCloseBtn   = document.getElementById('auto-modal-close');
-const triggerOptions  = document.querySelectorAll('.trigger-option');
-const dailyTimeInput  = document.getElementById('daily-time');
-const weeklyTimeInput = document.getElementById('weekly-time');
-const weeklyDaySelect = document.getElementById('weekly-day');
-const dailySubInputs  = document.getElementById('daily-sub-inputs');
-const weeklySubInputs = document.getElementById('weekly-sub-inputs');
+
+// Trigger elements
+const triggerOptions     = document.querySelectorAll('.trigger-option');
+const dailyTimeInput     = document.getElementById('daily-time');
+const weeklyTimeInput    = document.getElementById('weekly-time');
+const weeklyDaySelect    = document.getElementById('weekly-day');
+const dailySubInputs     = document.getElementById('daily-sub-inputs');
+const weeklySubInputs    = document.getElementById('weekly-sub-inputs');
+const intervalSubInputs  = document.getElementById('interval-sub-inputs');
+const intervalMinInput   = document.getElementById('interval-minutes');
 
 let editingId = null;
 
@@ -442,8 +894,9 @@ triggerOptions.forEach(opt => {
 
 function updateSubInputVisibility() {
   const type = getSelectedTriggerType();
-  dailySubInputs?.classList.toggle('hidden',  type !== 'daily');
-  weeklySubInputs?.classList.toggle('hidden', type !== 'weekly');
+  dailySubInputs?.classList.toggle('hidden',    type !== 'daily');
+  weeklySubInputs?.classList.toggle('hidden',   type !== 'weekly');
+  intervalSubInputs?.classList.toggle('hidden', type !== 'interval');
 }
 
 function setTriggerOption(type) {
@@ -458,13 +911,28 @@ addActionBtn?.addEventListener('click', () => {
 function collectFormData() {
   const name = nameInput?.value?.trim();
   if (!name) return null;
+
   const type    = getSelectedTriggerType();
   const trigger = { type };
-  if (type === 'daily')  trigger.time = dailyTimeInput?.value  || '09:00';
-  if (type === 'weekly') { trigger.time = weeklyTimeInput?.value || '09:00'; trigger.day = weeklyDaySelect?.value || 'monday'; }
+  if (type === 'interval') trigger.minutes = parseInt(intervalMinInput?.value, 10) || 30;
+  if (type === 'daily')    trigger.time    = dailyTimeInput?.value  || '09:00';
+  if (type === 'weekly')   { trigger.time = weeklyTimeInput?.value || '09:00'; trigger.day = weeklyDaySelect?.value || 'monday'; }
+
   const actions = [];
-  actionsList?.querySelectorAll('.action-row').forEach(row => { const a = collectActionFromRow(row); if (a) actions.push(a); });
-  return { id: editingId ?? generateId(), name, description: descInput?.value?.trim() || '', enabled: true, trigger, actions, lastRun: null };
+  actionsList?.querySelectorAll('.action-row').forEach(row => {
+    const a = collectActionFromRow(row);
+    if (a) actions.push(a);
+  });
+
+  return {
+    id:          editingId ?? generateId(),
+    name,
+    description: descInput?.value?.trim() || '',
+    enabled:     true,
+    trigger,
+    actions,
+    lastRun:     null,
+  };
 }
 
 function openModal(automation = null) {
@@ -472,15 +940,19 @@ function openModal(automation = null) {
   if (modalTitle) modalTitle.textContent = automation ? 'Edit Automation' : 'New Automation';
   if (nameInput)  nameInput.value  = automation?.name        || '';
   if (descInput)  descInput.value  = automation?.description || '';
+
   setTriggerOption(automation?.trigger?.type || 'on_startup');
-  if (dailyTimeInput)  dailyTimeInput.value  = automation?.trigger?.time || '09:00';
-  if (weeklyTimeInput) weeklyTimeInput.value = automation?.trigger?.time || '09:00';
-  if (weeklyDaySelect) weeklyDaySelect.value = automation?.trigger?.day  || 'monday';
+  if (dailyTimeInput)   dailyTimeInput.value   = automation?.trigger?.time    || '09:00';
+  if (weeklyTimeInput)  weeklyTimeInput.value  = automation?.trigger?.time    || '09:00';
+  if (weeklyDaySelect)  weeklyDaySelect.value  = automation?.trigger?.day     || 'monday';
+  if (intervalMinInput) intervalMinInput.value = automation?.trigger?.minutes || 30;
+
   if (actionsList) {
     actionsList.innerHTML = '';
     const acts = automation?.actions?.length ? automation.actions : [{ type: 'open_site' }];
     acts.forEach(a => actionsList.appendChild(createActionRow(a)));
   }
+
   modalBackdrop?.classList.add('open');
   document.body.classList.add('modal-open');
   setTimeout(() => nameInput?.focus(), 60);
@@ -498,7 +970,7 @@ saveBtn?.addEventListener('click', async () => {
     nameInput?.focus();
     nameInput?.animate(
       [{ borderColor: '#f87171' }, { borderColor: 'var(--border)' }],
-      { duration: 1000 }
+      { duration: 1000 },
     );
     return;
   }
