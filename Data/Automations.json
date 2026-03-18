@@ -1,0 +1,28 @@
+{
+  "automations": [
+    {
+      "id": "auto_1773813739800_nkrrl",
+      "name": "Open sites",
+      "description": "Open sites",
+      "enabled": false,
+      "trigger": {
+        "type": "on_startup"
+      },
+      "actions": [
+        {
+          "type": "open_site",
+          "url": "joeljolly.vercel.app"
+        },
+        {
+          "type": "open_site",
+          "url": "fb.com"
+        },
+        {
+          "type": "open_site",
+          "url": "instagram.com"
+        }
+      ],
+      "lastRun": "2026-03-18T06:03:00.764Z"
+    }
+  ]
+}
