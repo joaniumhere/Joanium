@@ -23,6 +23,8 @@ const sidebar = initSidebar({
   onNewChat:     () => window.electronAPI?.launchMain(),
   onLibrary:     () => library.isOpen() ? library.close() : library.open(),
   onAutomations: () => { /* already here */ },
+  onSkills:      () => window.electronAPI?.launchSkills?.(),
+  onAgents:      () => window.electronAPI?.launchAgents?.(),
   onSettings:    () => settings.open(),
   onAbout:       () => about.open(),
 });
