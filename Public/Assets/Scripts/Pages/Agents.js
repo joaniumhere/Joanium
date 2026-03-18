@@ -1,7 +1,7 @@
-// ─────────────────────────────────────────────
-//  openworld — Public/Assets/Scripts/Pages/Agents.js
-// ─────────────────────────────────────────────
+// Window controls
+import '../Shared/WindowControls.js';
 
+// Modals
 import { initSidebar }       from '../Shared/Sidebar.js';
 import { initAboutModal }    from '../Shared/Modals/AboutModal.js';
 import { initLibraryModal }  from '../Shared/Modals/LibraryModal.js';

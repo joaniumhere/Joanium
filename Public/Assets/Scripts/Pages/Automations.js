@@ -1,7 +1,11 @@
-import { initSidebar }       from '../../Shared/Sidebar.js';
-import { initAboutModal }    from '../../Shared/Modals/AboutModal.js';
-import { initLibraryModal }  from '../../Shared/Modals/LibraryModal.js';
-import { initSettingsModal } from '../../Shared/Modals/SettingsModal.js';
+// Window controls
+import '../Shared/WindowControls.js';
+
+// Modals
+import { initSidebar }       from '../Shared/Sidebar.js';
+import { initAboutModal }    from '../Shared/Modals/AboutModal.js';
+import { initLibraryModal }  from '../Shared/Modals/LibraryModal.js';
+import { initSettingsModal } from '../Shared/Modals/SettingsModal.js';
 
 // Shared modals
 const about    = initAboutModal();
@@ -25,11 +29,6 @@ const sidebar = initSidebar({
 
 window.addEventListener('ow:user-profile-updated', e => sidebar.setUser(e.detail?.name ?? ''));
 settings.loadUser().then(user => sidebar.setUser(user?.name ?? ''));
-
-document.getElementById('btn-minimize')?.addEventListener('click', () => window.electronAPI?.minimize());
-document.getElementById('btn-maximize')?.addEventListener('click', () => window.electronAPI?.maximize());
-document.getElementById('btn-close')?.addEventListener('click',    () => window.electronAPI?.close());
-
 
 // ─────────────────────────────────────────────
 //  HELPERS

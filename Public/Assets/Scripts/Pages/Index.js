@@ -5,10 +5,13 @@ import {
   modelDropdown, modelSelectorBtn,
 } from '../Shared/DOM.js';
 
-// Shared UI modules
-import { initSidebar } from '../Shared/Sidebar.js';
-import { initAboutModal } from '../Shared/Modals/AboutModal.js';
-import { initLibraryModal } from '../Shared/Modals/LibraryModal.js';
+// Window controls
+import '../Shared/WindowControls.js';
+
+// Modals
+import { initSidebar }       from '../Shared/Sidebar.js';
+import { initAboutModal }    from '../Shared/Modals/AboutModal.js';
+import { initLibraryModal }  from '../Shared/Modals/LibraryModal.js';
 import { initSettingsModal } from '../Shared/Modals/SettingsModal.js';
 
 // Features
