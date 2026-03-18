@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────
-   theme-panel.css
+   theme-panel.css  — redesigned
    Floating theme picker panel + swatch colours
 ───────────────────────────────────────────── */
 
@@ -8,21 +8,23 @@
   left: calc(var(--sidebar-w) + 8px);
   bottom: 80px;
   background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  border: 0.5px solid rgba(255, 255, 255, 0.13);
   border-radius: var(--radius-md);
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  padding: 6px;
+  width: 200px;
   z-index: 200;
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.55),
+    0 4px  12px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   opacity: 0;
-  transform: translateX(-8px) scale(0.95);
+  transform: translateX(-6px) scale(0.97);
   pointer-events: none;
   transform-origin: left center;
   transition:
-    opacity   0.22s var(--ease-smooth),
-    transform 0.22s var(--ease-spring);
+    opacity   0.2s var(--ease-smooth),
+    transform 0.2s var(--ease-spring);
 }
 
 #theme-panel.open {
@@ -31,40 +33,81 @@
   pointer-events: all;
 }
 
+/* ── Panel header label ── */
+.theme-panel-header {
+  padding: 7px 10px 5px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.theme-panel-divider {
+  height: 0.5px;
+  background: var(--border);
+  margin: 4px 4px 6px;
+}
+
 /* ── Option rows ── */
 .theme-option {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   border: none;
+  width: 100%;
+  text-align: left;
   background: transparent;
   color: var(--text-secondary);
   font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-size: 13px;
+  font-weight: 400;
   white-space: nowrap;
   transition:
     background var(--transition-fast),
-    color      var(--transition-fast),
-    transform  var(--transition-fast);
+    color      var(--transition-fast);
 }
 
-.theme-option:hover       { background: var(--bg-hover); color: var(--text-primary); transform: translateX(2px); }
-.theme-option.active      { color: var(--accent); background: var(--accent-dim); }
+.theme-option:hover  { background: var(--bg-hover); color: var(--text-primary); }
+.theme-option.active { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ── Check icon (auto-hidden, shown when active) ── */
+.theme-option-check {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity var(--transition-fast);
+}
+.theme-option.active .theme-option-check { opacity: 0.55; }
 
 /* ── Color swatches ── */
 .theme-swatch {
-  width: 14px;
-  height: 14px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.swatch-dark     { background: linear-gradient(135deg, #1a1a1a   50%, #cc785c 50%); }
-.swatch-light    { background: linear-gradient(135deg, #f5f4f1   50%, #b85c3a 50%); }
-.swatch-midnight { background: linear-gradient(135deg, #0d1117   50%, #4da6ff 50%); }
-.swatch-forest   { background: linear-gradient(135deg, #111a14   50%, #5dba6e 50%); }
-.swatch-pinky    { background: linear-gradient(135deg, #1a0f14   50%, #ff6eb4 50%); }
+.theme-option:hover  .theme-swatch { transform: scale(1.1); }
+.theme-option.active .theme-swatch {
+  transform: scale(1.1);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.3),
+    0 0 0 2.5px rgba(255, 255, 255, 0.12);
+}
+
+/* conic-gradient gives a clean hard diagonal split vs linear */
+.swatch-dark     { background: conic-gradient(#1a1a1a   180deg, #cc785c 180deg); }
+.swatch-light    { background: conic-gradient(#f5f4f1   180deg, #b85c3a 180deg); }
+.swatch-midnight { background: conic-gradient(#0d1117   180deg, #4da6ff 180deg); }
+.swatch-forest   { background: conic-gradient(#111a14   180deg, #5dba6e 180deg); }
+.swatch-pinky    { background: conic-gradient(#1a0f14   180deg, #ff6eb4 180deg); }

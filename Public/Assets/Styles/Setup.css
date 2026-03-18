@@ -194,7 +194,7 @@ body {
 /* ── Provider grid ── */
 #provider-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     gap: 14px;
     width: 100%;
