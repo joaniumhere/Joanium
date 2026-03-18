@@ -1,0 +1,70 @@
+/* ─────────────────────────────────────────────
+   theme-panel.css
+   Floating theme picker panel + swatch colours
+───────────────────────────────────────────── */
+
+#theme-panel {
+  position: fixed;
+  left: calc(var(--sidebar-w) + 8px);
+  bottom: 80px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 200;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateX(-8px) scale(0.95);
+  pointer-events: none;
+  transform-origin: left center;
+  transition:
+    opacity   0.22s var(--ease-smooth),
+    transform 0.22s var(--ease-spring);
+}
+
+#theme-panel.open {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: all;
+}
+
+/* ── Option rows ── */
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  white-space: nowrap;
+  transition:
+    background var(--transition-fast),
+    color      var(--transition-fast),
+    transform  var(--transition-fast);
+}
+
+.theme-option:hover       { background: var(--bg-hover); color: var(--text-primary); transform: translateX(2px); }
+.theme-option.active      { color: var(--accent); background: var(--accent-dim); }
+
+/* ── Color swatches ── */
+.theme-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.swatch-dark     { background: linear-gradient(135deg, #1a1a1a   50%, #cc785c 50%); }
+.swatch-light    { background: linear-gradient(135deg, #f5f4f1   50%, #b85c3a 50%); }
+.swatch-midnight { background: linear-gradient(135deg, #0d1117   50%, #4da6ff 50%); }
+.swatch-forest   { background: linear-gradient(135deg, #111a14   50%, #5dba6e 50%); }
+.swatch-pinky    { background: linear-gradient(135deg, #1a0f14   50%, #ff6eb4 50%); }

@@ -1,0 +1,39 @@
+/* ─────────────────────────────────────────────
+   welcome.css
+   Welcome / home screen shown before first chat
+───────────────────────────────────────────── */
+
+#welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0 24px 120px;
+}
+
+.welcome-greeting {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 32px;
+  animation: greetingReveal 0.7s var(--ease-out-expo) 0.25s both;
+}
+
+.welcome-icon {
+  width: 36px;
+  height: 36px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+  animation:
+    orbitSpin  10s  linear      infinite,
+    glowPulse   4s  ease-in-out infinite;
+}
+
+.welcome-title {
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}

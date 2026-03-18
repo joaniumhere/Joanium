@@ -1,0 +1,105 @@
+/* ─────────────────────────────────────────────
+   animations.css
+   All @keyframes + global motion tokens
+───────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════
+   GLOBAL MOTION TOKENS
+══════════════════════════════════════════ */
+:root {
+  --motion-smooth:     cubic-bezier(0.2, 0, 0, 1);
+  --motion-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+  --motion-decelerate: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ══════════════════════════════════════════
+   UTILITY KEYFRAMES
+══════════════════════════════════════════ */
+@keyframes fadeScaleIn {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+@keyframes fadeScaleOut {
+  from { opacity: 1; transform: scale(1)    translateY(0);   }
+  to   { opacity: 0; transform: scale(0.96) translateY(6px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes chipIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+
+/* ══════════════════════════════════════════
+   LAYOUT ENTRANCE KEYFRAMES
+══════════════════════════════════════════ */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@keyframes riseUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ══════════════════════════════════════════
+   WELCOME / GREETING KEYFRAMES
+══════════════════════════════════════════ */
+@keyframes greetingReveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes orbitSpin {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { filter: drop-shadow(0 0  6px var(--accent-glow)); }
+  50%       { filter: drop-shadow(0 0 16px var(--accent-glow)); }
+}
+
+/* ══════════════════════════════════════════
+   SIDEBAR LOGO KEYFRAME
+══════════════════════════════════════════ */
+@keyframes logoPulse {
+  0%, 100% { transform: rotate(0deg)   scale(1);    opacity: 0.9;  }
+  33%       { transform: rotate(120deg) scale(1.1);  opacity: 1;    }
+  66%       { transform: rotate(240deg) scale(0.95); opacity: 0.85; }
+}
+
+/* ══════════════════════════════════════════
+   CHAT / MESSAGE KEYFRAMES
+══════════════════════════════════════════ */
+@keyframes messageIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes iconPop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0)   scale(0.85); opacity: 0.5; }
+  30%            { transform: translateY(-6px) scale(1.1);  opacity: 1;   }
+}
+
+/* ══════════════════════════════════════════
+   FOOTER KEYFRAME
+══════════════════════════════════════════ */
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1);    }
+  14%       { transform: scale(1.25); }
+  28%       { transform: scale(1);    }
+  42%       { transform: scale(1.18); }
+  56%       { transform: scale(1);    }
+}
