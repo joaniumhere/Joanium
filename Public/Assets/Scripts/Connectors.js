@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 //  openworld — Public/Assets/Scripts/Connectors.js
-//  Renderer-side connector management UI.
-//  Handles Gmail and GitHub connect / disconnect flows.
+//  Gmail: one-click OAuth via Google Cloud credentials.
+//  GitHub: Personal Access Token (unchanged).
 // ─────────────────────────────────────────────
 
 /* ══════════════════════════════════════════
@@ -9,12 +9,13 @@
 ══════════════════════════════════════════ */
 const CONNECTORS = [
   {
-    id:           'gmail',
-    name:         'Gmail',
-    icon:         '📧',
-    description:  'Read emails, get AI summaries in chat, and send emails via automations.',
-    helpUrl:      'https://developers.google.com/oauthplayground',
-    helpText:     'Get token from OAuth Playground →',
+    id:          'gmail',
+    name:        'Gmail',
+    icon:        '📧',
+    description: 'Read emails, get AI summaries in chat, and send emails via automations.',
+    helpUrl:     'https://console.cloud.google.com/apis/credentials',
+    helpText:    'Create OAuth credentials in Google Cloud →',
+    oauthFlow:   true,   // ← triggers the one-click sign-in window
     capabilities: [
       'Ask "read my unread emails" in chat',
       'AI-powered email summaries',
@@ -23,38 +24,39 @@ const CONNECTORS = [
     ],
     fields: [
       {
-        key:         'accessToken',
-        label:       'OAuth2 Access Token',
-        placeholder: 'ya29.a0A…',
-        type:        'password',
-        hint:        'From Google OAuth Playground — select Gmail API (gmail.readonly + gmail.send scopes)',
+        key:         'clientId',
+        label:       'Google Client ID',
+        placeholder: 'xxxxxxxxxxxx.apps.googleusercontent.com',
+        type:        'text',
+        hint:        'Google Cloud Console → APIs & Services → Credentials → Create OAuth 2.0 Client ID (Desktop app type)',
       },
       {
-        key:         'email',
-        label:       'Your Gmail Address',
-        placeholder: 'you@gmail.com',
-        type:        'email',
-        hint:        'The Gmail account this token belongs to',
+        key:         'clientSecret',
+        label:       'Google Client Secret',
+        placeholder: 'GOCSPX-…',
+        type:        'password',
+        hint:        'Found next to your Client ID. Keep it private.',
       },
     ],
     automations: [
-      { name: 'Daily Email Brief',       description: 'Every morning — get a summary of unread emails' },
-      { name: 'New Email Notification',  description: 'Every hour — notify if there are unread messages' },
-      { name: 'Send a Scheduled Email',  description: 'On startup or daily — auto-send a preset email' },
+      { name: 'Daily Email Brief',      description: 'Every morning — get a summary of unread emails' },
+      { name: 'New Email Notification', description: 'Every hour — notify if there are unread messages' },
+      { name: 'Send a Scheduled Email', description: 'On startup or daily — auto-send a preset email' },
     ],
   },
   {
-    id:           'github',
-    name:         'GitHub',
-    icon:         '🐙',
-    description:  'Browse repos, load code into chat, track issues & PRs, and monitor notifications.',
-    helpUrl:      'https://github.com/settings/tokens/new?scopes=repo,read:user,notifications',
-    helpText:     'Create a Personal Access Token →',
+    id:          'github',
+    name:        'GitHub',
+    icon:        '🐙',
+    description: 'Browse repos, load code into chat, track issues & PRs, and monitor notifications.',
+    helpUrl:     'https://github.com/settings/tokens/new?scopes=repo,read:user,notifications',
+    helpText:    'Create a Personal Access Token →',
+    oauthFlow:   false,
     capabilities: [
       'Ask "load file X from owner/repo" in chat',
       'List your repos or issues in chat',
+      'AI knows your repos by default (via system prompt)',
       'Track PRs & issues via automations',
-      'Monitor GitHub notifications',
     ],
     fields: [
       {
@@ -66,10 +68,10 @@ const CONNECTORS = [
       },
     ],
     automations: [
-      { name: 'Daily PR Summary',        description: 'Every morning — notify about open pull requests' },
-      { name: 'Issue Tracker',           description: 'Daily — notify about open issues in a repo' },
-      { name: 'GitHub Notifications',    description: 'Hourly — notify if there are unread notifications' },
-      { name: 'Open Repo on Startup',    description: 'On startup — open a GitHub repo in the browser' },
+      { name: 'Daily PR Summary',     description: 'Every morning — notify about open pull requests' },
+      { name: 'Issue Tracker',        description: 'Daily — notify about open issues in a repo' },
+      { name: 'GitHub Notifications', description: 'Hourly — notify if there are unread notifications' },
+      { name: 'Open Repo on Startup', description: 'On startup — open a GitHub repo in the browser' },
     ],
   },
 ];
@@ -78,9 +80,9 @@ const CONNECTORS = [
    STATE
 ══════════════════════════════════════════ */
 const cxState = {
-  loaded:     false,
-  statuses:   {},     // { gmail: { enabled, connectedAt, accountInfo } }
-  pending:    {},     // { connectorId: { fieldKey: value } }
+  loaded:   false,
+  statuses: {},   // { gmail: { enabled, connectedAt, accountInfo } }
+  pending:  {},   // { connectorId: { fieldKey: value } }
 };
 
 /* ══════════════════════════════════════════
@@ -208,7 +210,7 @@ function buildCard(def) {
   });
   card.appendChild(fieldsWrap);
 
-  /* ── Action row ── */
+  /* ── Actions row ── */
   const actions     = document.createElement('div');
   actions.className = 'cx-actions';
 
@@ -232,7 +234,7 @@ function buildCard(def) {
   if (isConnected) {
     const updateBtn       = document.createElement('button');
     updateBtn.className   = 'cx-secondary-btn';
-    updateBtn.textContent = 'Update token';
+    updateBtn.textContent = 'Update credentials';
     updateBtn.addEventListener('click', () => {
       fieldsWrap.style.display = '';
       updateBtn.style.display  = 'none';
@@ -248,7 +250,9 @@ function buildCard(def) {
     const connectBtn       = document.createElement('button');
     connectBtn.id          = `cx-connect-btn-${def.id}`;
     connectBtn.className   = 'cx-connect-btn';
-    connectBtn.textContent = `Connect ${def.name}`;
+    connectBtn.textContent = def.oauthFlow
+      ? `Sign in with Google`
+      : `Connect ${def.name}`;
     connectBtn.addEventListener('click', () => handleConnect(def.id, def));
     btnGroup.appendChild(connectBtn);
   }
@@ -271,6 +275,50 @@ export function renderConnectorsPanel() {
 ══════════════════════════════════════════ */
 
 async function handleConnect(id, def) {
+  if (def.oauthFlow) {
+    await handleOAuthConnect(id, def);
+  } else {
+    await handleTokenConnect(id, def);
+  }
+}
+
+/* ── Gmail: one-click OAuth window ── */
+async function handleOAuthConnect(id, def) {
+  const credentials = cxState.pending[id] ?? {};
+  const missing     = def.fields.filter(f => !credentials[f.key]?.trim());
+
+  if (missing.length) {
+    setStatus(id, `Please fill in: ${missing.map(f => f.label).join(', ')}`, 'error');
+    return;
+  }
+
+  setConnectBtnState(id, true, 'Opening Google sign-in…');
+  setStatus(id, 'A sign-in window will open — grant access and come back.', '');
+
+  try {
+    const result = await window.electronAPI?.gmailOAuthStart?.(
+      credentials.clientId,
+      credentials.clientSecret,
+    );
+
+    if (!result?.ok) throw new Error(result?.error ?? 'OAuth failed');
+
+    cxState.statuses[id] = {
+      enabled:     true,
+      connectedAt: new Date().toISOString(),
+      accountInfo: { email: result.email },
+    };
+    cxState.pending[id] = {};
+    setStatus(id, `Connected as ${result.email} ✓`, 'success');
+    setTimeout(() => renderConnectorsPanel(), 1000);
+  } catch (err) {
+    setStatus(id, `Failed: ${err.message}`, 'error');
+    setConnectBtnState(id, false, `Sign in with Google`);
+  }
+}
+
+/* ── GitHub (and future token-based connectors) ── */
+async function handleTokenConnect(id, def) {
   const credentials = cxState.pending[id] ?? {};
   const missing     = def.fields.filter(f => !credentials[f.key]?.trim());
 
@@ -283,14 +331,11 @@ async function handleConnect(id, def) {
   setStatus(id, '', '');
 
   try {
-    // 1. Persist credentials
     await window.electronAPI?.saveConnector?.(id, credentials);
 
-    // 2. Validate against the live API
     const validation = await window.electronAPI?.validateConnector?.(id);
     if (!validation?.ok) throw new Error(validation?.error ?? 'Connection failed');
 
-    // 3. Update local state
     cxState.statuses[id] = {
       enabled:     true,
       connectedAt: new Date().toISOString(),
@@ -300,11 +345,9 @@ async function handleConnect(id, def) {
       },
     };
     cxState.pending[id] = {};
-
     setStatus(id, 'Connected successfully!', 'success');
     setTimeout(() => renderConnectorsPanel(), 900);
   } catch (err) {
-    // Roll back if validation failed
     await window.electronAPI?.removeConnector?.(id).catch(() => {});
     cxState.statuses[id] = { enabled: false };
     setStatus(id, `Failed: ${err.message}`, 'error');
@@ -326,7 +369,6 @@ async function handleDisconnect(id) {
 /* ══════════════════════════════════════════
    LOAD PANEL DATA
 ══════════════════════════════════════════ */
-
 export async function loadConnectorsPanel() {
   const list = document.getElementById('connector-list');
   if (!list) return;
@@ -343,7 +385,7 @@ export async function loadConnectorsPanel() {
       cxState.statuses[name] = { ...s, accountInfo: null };
     }
 
-    // Fetch account info for connected connectors
+    /* Fetch account info for connected connectors */
     await Promise.all(
       Object.entries(cxState.statuses)
         .filter(([, s]) => s.enabled)
@@ -367,10 +409,7 @@ export async function loadConnectorsPanel() {
 
 /* ══════════════════════════════════════════
    INIT
-   Call once after DOM is ready.
-   Sets up tab-click lazy loading.
 ══════════════════════════════════════════ */
-
 export function initConnectors() {
   document.querySelectorAll('[data-settings-tab="connectors"]').forEach(tab => {
     tab.addEventListener('click', () => {

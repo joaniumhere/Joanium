@@ -32,6 +32,25 @@ import {
 import { loadUser, closeAvatarPanel, closeSettingsModal } from './User.js';
 import './About.js';
 
+/* ══════════════════════════════════════════
+   SYSTEM PROMPT
+   Loaded from main process (includes OS, GitHub repos, memory, etc.)
+   Cached here; refreshed after settings save via custom event.
+══════════════════════════════════════════ */
+async function refreshSystemPrompt() {
+  try {
+    state.systemPrompt = await window.electronAPI?.getSystemPrompt?.() ?? '';
+  } catch {
+    state.systemPrompt = '';
+  }
+}
+
+// Re-fetch whenever settings are saved (User.js dispatches this event)
+window.addEventListener('ow:settings-saved', refreshSystemPrompt);
+
+/* ══════════════════════════════════════════
+   COMPOSER
+══════════════════════════════════════════ */
 let composerHintTimer = null;
 
 function autoResize() {
@@ -247,21 +266,11 @@ function restoreWelcome() {
 
 /* ══════════════════════════════════════════
    CONNECTOR-AWARE COMMAND HANDLING
-   Intercepts user messages before sending
-   to AI when they match connector patterns.
 ══════════════════════════════════════════ */
-
-/**
- * Try to handle message as a local connector command.
- * Returns true if handled (so Main.js skips the AI call),
- * false if it should fall through to the AI.
- */
 async function tryConnectorCommand(text) {
   const lower = text.toLowerCase().trim();
 
-  /* ── GMAIL ────────────────────────────────── */
-
-  // "read my unread emails" / "email brief" / "check my inbox"
+  /* ── GMAIL ── */
   if (/unread email|email brief|check.*inbox|read.*email/i.test(lower)) {
     appendMessage('assistant', '📬 Fetching your unread emails…', false, true);
     try {
@@ -270,7 +279,6 @@ async function tryConnectorCommand(text) {
       const briefText = res.count === 0
         ? 'Your inbox is clear — no unread emails 🎉'
         : `You have **${res.count} unread email${res.count !== 1 ? 's' : ''}**:\n\n${res.text}`;
-      // Send the brief through the AI so it gets a polished summary
       state.messages.push({ role: 'user', content: text, attachments: [] });
       const aiPrompt = `The user asked to read their unread emails. Here are the raw unread emails fetched from Gmail:\n\n${res.text}\n\nWrite a concise, friendly summary of these emails for the user. Highlight anything that looks urgent or important. Keep it clear and scannable.`;
       await callAIWithContext(aiPrompt);
@@ -282,7 +290,6 @@ async function tryConnectorCommand(text) {
     }
   }
 
-  // "search emails <query>"
   const searchMatch = lower.match(/search (?:emails?|inbox|mail)\s+(.+)/);
   if (searchMatch) {
     const query = searchMatch[1];
@@ -301,9 +308,33 @@ async function tryConnectorCommand(text) {
     }
   }
 
-  /* ── GITHUB ───────────────────────────────── */
+  /* ── GMAIL: SEND EMAIL ── */
+const sendMatch = lower.match(/send (?:an )?email to ([^\s]+)(?: saying (.+))?/i);
 
-  // "list my repos" / "show my github repos"
+if (sendMatch) {
+  const to = sendMatch[1];
+  const message = sendMatch[2] || 'Hello from openworld';
+
+  appendMessage('assistant', `📤 Sending email to ${to}...`, false, true);
+
+  try {
+    const res = await window.electronAPI.gmailSend(
+      to,
+      'Message from openworld',
+      message
+    );
+
+    if (!res?.ok) throw new Error(res?.error);
+
+    replaceLastAssistantMessage(`✅ Email sent to ${to}`);
+  } catch (err) {
+    replaceLastAssistantMessage(`❌ Failed to send email: ${err.message}`);
+  }
+
+  return true;
+}
+
+  /* ── GITHUB ── */
   if (/list.*repos?|show.*repos?|my github repos?/i.test(lower)) {
     appendMessage('assistant', '🐙 Fetching your GitHub repositories…', false, true);
     try {
@@ -320,7 +351,6 @@ async function tryConnectorCommand(text) {
     }
   }
 
-  // "load file <path> from <owner>/<repo>"
   const loadFileMatch = text.match(/load (?:file\s+)?(.+?)\s+from\s+([\w.-]+)\/([\w.-]+)/i);
   if (loadFileMatch) {
     const [, filePath, owner, repo] = loadFileMatch;
@@ -331,7 +361,6 @@ async function tryConnectorCommand(text) {
       const ext     = filePath.split('.').pop() || '';
       const preview = res.content.length > 4000 ? res.content.slice(0, 4000) + '\n\n…(truncated)' : res.content;
       replaceLastAssistantMessage(`Here is \`${res.path}\` from **${owner}/${repo}**:\n\n\`\`\`${ext}\n${preview}\n\`\`\``);
-      // Also inject into next AI call as context
       state.messages.push({
         role:        'assistant',
         content:     `File \`${res.path}\` loaded from GitHub (${res.size} bytes). The user can now ask questions about it.`,
@@ -344,7 +373,6 @@ async function tryConnectorCommand(text) {
     }
   }
 
-  // "show file tree of <owner>/<repo>"
   const treeMatch = text.match(/(?:file\s+)?tree\s+(?:of\s+)?([\w.-]+)\/([\w.-]+)/i);
   if (treeMatch) {
     const [, owner, repo] = treeMatch;
@@ -365,7 +393,6 @@ async function tryConnectorCommand(text) {
     }
   }
 
-  // "check issues <owner>/<repo>"
   const issueMatch = text.match(/(?:check|show|list)\s+issues?\s+(?:for\s+|in\s+)?([\w.-]+)\/([\w.-]+)/i);
   if (issueMatch) {
     const [, owner, repo] = issueMatch;
@@ -384,7 +411,6 @@ async function tryConnectorCommand(text) {
     }
   }
 
-  // "check PRs <owner>/<repo>"
   const prMatch = text.match(/(?:check|show|list)\s+(?:pr|pull request)s?\s+(?:for\s+|in\s+)?([\w.-]+)\/([\w.-]+)/i);
   if (prMatch) {
     const [, owner, repo] = prMatch;
@@ -403,7 +429,6 @@ async function tryConnectorCommand(text) {
     }
   }
 
-  // "github notifications"
   if (/github\s+notification|my\s+notification/i.test(lower)) {
     appendMessage('assistant', '🔔 Fetching GitHub notifications…', false, true);
     try {
@@ -421,10 +446,9 @@ async function tryConnectorCommand(text) {
     }
   }
 
-  return false;  // Not a connector command — let the AI handle it
+  return false;
 }
 
-/** Replace the last assistant message bubble's content. */
 function replaceLastAssistantMessage(markdown) {
   const rows = chatMessages.querySelectorAll('.message-row.assistant');
   const last = rows[rows.length - 1];
@@ -439,7 +463,6 @@ function replaceLastAssistantMessage(markdown) {
 /* ══════════════════════════════════════════
    SEND MESSAGE
 ══════════════════════════════════════════ */
-
 function sendMessage() {
   const text        = textarea.value.trim();
   const attachments = state.composerAttachments.map(a => ({ ...a }));
@@ -460,7 +483,6 @@ function sendMessage() {
     { duration: 350, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' },
   );
 
-  // Try connector commands first, then fall through to AI
   tryConnectorCommand(text).then(handled => {
     if (!handled) callAI();
   });
@@ -535,7 +557,6 @@ function smoothScrollToBottom() {
 /* ══════════════════════════════════════════
    AI CALL — standard chat flow
 ══════════════════════════════════════════ */
-
 async function callAI() {
   state.isTyping = true;
   updateSendBtn();
@@ -572,7 +593,12 @@ async function callAI() {
   }
 
   try {
-    const reply = await fetchFromProvider(state.selectedProvider, state.selectedModel, state.messages);
+    const reply = await fetchFromProvider(
+      state.selectedProvider,
+      state.selectedModel,
+      state.messages,
+      state.systemPrompt,
+    );
     removeTyping(() => {
       if (state.currentChatId !== chatIdAtRequest) return;
       appendMessage('assistant', reply);
@@ -585,9 +611,6 @@ async function callAI() {
   }
 }
 
-/**
- * Send a custom system-built prompt to the AI (used for connector-enriched responses).
- */
 async function callAIWithContext(systemPrompt) {
   state.isTyping = true;
   updateSendBtn();
@@ -597,14 +620,18 @@ async function callAIWithContext(systemPrompt) {
     state.isTyping = false; updateSendBtn(); return;
   }
 
-  // Build a one-shot message array with the enriched context
   const contextMessages = [
     ...state.messages.slice(-10),
     { role: 'user', content: systemPrompt, attachments: [] },
   ];
 
   try {
-    const reply = await fetchFromProvider(state.selectedProvider, state.selectedModel, contextMessages);
+    const reply = await fetchFromProvider(
+      state.selectedProvider,
+      state.selectedModel,
+      contextMessages,
+      state.systemPrompt,
+    );
     replaceLastAssistantMessage(reply);
     state.messages.push({ role: 'assistant', content: reply, attachments: [] });
     saveCurrentChat();
@@ -618,8 +645,8 @@ async function callAIWithContext(systemPrompt) {
 
 /* ══════════════════════════════════════════
    PROVIDER FETCH ADAPTERS
+   sysPrompt is injected into every call.
 ══════════════════════════════════════════ */
-
 function extractBase64Payload(dataUrl) {
   return String(dataUrl ?? '').split(',', 2)[1] ?? '';
 }
@@ -647,30 +674,53 @@ function buildOpenAIContent(message) {
   return parts;
 }
 
-async function fetchFromProvider(provider, modelId, messages) {
+async function fetchFromProvider(provider, modelId, messages, sysPrompt = '') {
   const { provider: providerId, endpoint, api, auth_header, auth_prefix = '' } = provider;
   const history = messages.slice(-20).map(normalizeMessage);
 
+  /* ── Anthropic ── */
   if (providerId === 'anthropic') {
+    const body = {
+      model:      modelId,
+      max_tokens: 2048,
+      messages:   history.map(m => ({ role: m.role, content: buildAnthropicContent(m) })),
+    };
+    if (sysPrompt) body.system = sysPrompt;
+
     const res = await fetch(endpoint, {
       method:  'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': api, 'anthropic-version': '2023-06-01' },
-      body:    JSON.stringify({ model: modelId, max_tokens: 2048, messages: history.map(m => ({ role: m.role, content: buildAnthropicContent(m) })) }),
+      body:    JSON.stringify(body),
     });
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
     return (await res.json()).content?.[0]?.text ?? '(empty response)';
   }
 
+  /* ── Google ── */
   if (providerId === 'google') {
-    const url = endpoint.replace('{model}', modelId) + `?key=${api}`;
+    const url  = endpoint.replace('{model}', modelId) + `?key=${api}`;
+    const body = {
+      contents: history.map(m => ({
+        role:  m.role === 'assistant' ? 'model' : 'user',
+        parts: buildGoogleParts(m),
+      })),
+    };
+    if (sysPrompt) body.systemInstruction = { parts: [{ text: sysPrompt }] };
+
     const res = await fetch(url, {
       method:  'POST',
       headers: { 'content-type': 'application/json' },
-      body:    JSON.stringify({ contents: history.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: buildGoogleParts(m) })) }),
+      body:    JSON.stringify(body),
     });
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
     return (await res.json()).candidates?.[0]?.content?.parts?.[0]?.text ?? '(empty response)';
   }
+
+  /* ── OpenAI / OpenRouter (chat completions) ── */
+  const openAIMessages = [
+    ...(sysPrompt ? [{ role: 'system', content: sysPrompt }] : []),
+    ...history.map(m => ({ role: m.role, content: buildOpenAIContent(m) })),
+  ];
 
   const res = await fetch(endpoint, {
     method:  'POST',
@@ -679,7 +729,7 @@ async function fetchFromProvider(provider, modelId, messages) {
       [auth_header]:   `${auth_prefix}${api}`,
       ...(providerId === 'openrouter' ? { 'HTTP-Referer': 'https://openworld.app', 'X-Title': 'openworld' } : {}),
     },
-    body: JSON.stringify({ model: modelId, messages: history.map(m => ({ role: m.role, content: buildOpenAIContent(m) })) }),
+    body: JSON.stringify({ model: modelId, messages: openAIMessages }),
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
   return (await res.json()).choices?.[0]?.message?.content ?? '(empty response)';
@@ -688,7 +738,6 @@ async function fetchFromProvider(provider, modelId, messages) {
 /* ══════════════════════════════════════════
    CHAT STORAGE
 ══════════════════════════════════════════ */
-
 function generateChatId() {
   const now = new Date();
   const p   = v => String(v).padStart(2, '0');
@@ -721,7 +770,6 @@ function startNewChat() {
 /* ══════════════════════════════════════════
    LIBRARY
 ══════════════════════════════════════════ */
-
 async function openLibrary() {
   closeAvatarPanel();
   document.querySelector('[data-view="library"]')?.classList.add('active');
@@ -820,7 +868,6 @@ sidebarBtns.forEach(button => {
 /* ══════════════════════════════════════════
    MARKDOWN + UTILS
 ══════════════════════════════════════════ */
-
 function renderMarkdown(text) {
   let html = escapeHtml(text);
   html = html.replace(/```(?:[^\n]*)?\n([\s\S]*?)```/g, (_, code) => `<pre><code>${code}</code></pre>`);
@@ -841,10 +888,16 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
 document.title = APP_NAME;
-loadProviders().then(() => {
+
+loadProviders().then(async () => {
   syncComposerCapabilities();
   loadUser();
+  await refreshSystemPrompt();   // load full context-aware system prompt
 });
+
 autoResize();
 console.log(`[${APP_NAME}] UI loaded`);

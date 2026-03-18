@@ -2334,3 +2334,66 @@ body.modal-open {
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* ══════════════════════════════════════════
+   LIBRARY — DELETE BUTTON  (append to Main.css)
+══════════════════════════════════════════ */
+
+/* Make each chat row a flex row so the delete btn sits on the right */
+.lp-item {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+/* Info block takes all remaining space */
+.lp-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Trash icon button — hidden until the row is hovered */
+.lp-delete-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    background var(--transition-fast),
+    color var(--transition-fast);
+  margin-left: 8px;
+}
+
+.lp-item:hover .lp-delete-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.lp-delete-btn:hover {
+  background: rgba(220, 60, 60, 0.12);
+  color: #f87171;
+}
+
+.lp-delete-btn:active {
+  transform: scale(0.92);
+}
+
+.lp-delete-btn svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}

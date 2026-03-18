@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMemory:              ()         => ipcRenderer.invoke('get-memory'),
   saveMemory:             (content)  => ipcRenderer.invoke('save-memory', content),
 
+  /* ── System prompt (context-aware, cached) ── */
+  getSystemPrompt:        ()         => ipcRenderer.invoke('get-system-prompt'),
+
   /* ── Chat storage ── */
   saveChat:   (chatData) => ipcRenderer.invoke('save-chat', chatData),
   getChats:   ()         => ipcRenderer.invoke('get-chats'),
@@ -36,16 +39,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleAutomation:   (id, enabled)        => ipcRenderer.invoke('toggle-automation', id, enabled),
 
   /* ── Connectors (credential management) ── */
-  getConnectors:          ()                       => ipcRenderer.invoke('get-connectors'),
-  saveConnector:          (name, credentials)      => ipcRenderer.invoke('save-connector', name, credentials),
-  removeConnector:        (name)                   => ipcRenderer.invoke('remove-connector', name),
-  validateConnector:      (name)                   => ipcRenderer.invoke('validate-connector', name),
+  getConnectors:     ()                       => ipcRenderer.invoke('get-connectors'),
+  saveConnector:     (name, credentials)      => ipcRenderer.invoke('save-connector', name, credentials),
+  removeConnector:   (name)                   => ipcRenderer.invoke('remove-connector', name),
+  validateConnector: (name)                   => ipcRenderer.invoke('validate-connector', name),
 
   /* ── Gmail ── */
-  gmailGetBrief:          (maxResults)             => ipcRenderer.invoke('gmail-get-brief', maxResults),
-  gmailGetUnread:         (maxResults)             => ipcRenderer.invoke('gmail-get-unread', maxResults),
-  gmailSend:              (to, subject, body)      => ipcRenderer.invoke('gmail-send', to, subject, body),
-  gmailSearch:            (query, maxResults)      => ipcRenderer.invoke('gmail-search', query, maxResults),
+  gmailOAuthStart:  (clientId, clientSecret)  => ipcRenderer.invoke('gmail-oauth-start', clientId, clientSecret),
+  gmailGetBrief:    (maxResults)              => ipcRenderer.invoke('gmail-get-brief', maxResults),
+  gmailGetUnread:   (maxResults)              => ipcRenderer.invoke('gmail-get-unread', maxResults),
+  gmailSend:        (to, subject, body)       => ipcRenderer.invoke('gmail-send', to, subject, body),
+  gmailSearch:      (query, maxResults)       => ipcRenderer.invoke('gmail-search', query, maxResults),
 
   /* ── GitHub ── */
   githubGetRepos:         ()                       => ipcRenderer.invoke('github-get-repos'),

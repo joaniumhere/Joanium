@@ -1,230 +1,243 @@
-// ─────────────────────────────────────────────
-//  openworld — Packages/Automation/Gmail.js
-//  Gmail REST API integration (main-process safe)
-//  Pure functions: accept a credentials object, return data or throw.
-// ─────────────────────────────────────────────
-
-const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
-const TOKEN_URL  = 'https://oauth2.googleapis.com/token';
+import http from 'http';
+import { shell } from 'electron';
 
 /* ══════════════════════════════════════════
-   INTERNAL HELPERS
+   CONFIG
 ══════════════════════════════════════════ */
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
-async function gmailFetch(endpoint, accessToken, options = {}) {
-  const res = await fetch(`${GMAIL_BASE}${endpoint}`, {
-    ...options,
+const CALLBACK_PORT = 42813;
+const REDIRECT_URI = `http://localhost:${CALLBACK_PORT}/oauth/callback`;
+
+const SCOPES = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/userinfo.email',
+].join(' ');
+
+/* ══════════════════════════════════════════
+   OAUTH FLOW
+══════════════════════════════════════════ */
+export function startGmailOAuthFlow(clientId, clientSecret) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+
+    function settle(fn) {
+      if (settled) return;
+      settled = true;
+      fn();
+    }
+
+    const server = http.createServer(async (req, res) => {
+      try {
+        const url = new URL(req.url, `http://localhost:${CALLBACK_PORT}`);
+        if (url.pathname !== '/oauth/callback') return res.end();
+
+        const code = url.searchParams.get('code');
+        const error = url.searchParams.get('error');
+
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(`<h2>${error ? '❌ Failed' : '✅ Connected'}</h2>`);
+
+        server.close();
+
+        if (error || !code) {
+          return settle(() => reject(new Error(error || 'No code')));
+        }
+
+        const tokens = await exchangeCode(code, clientId, clientSecret);
+        settle(() => resolve(tokens));
+      } catch (err) {
+        server.close();
+        settle(() => reject(err));
+      }
+    });
+
+    server.listen(CALLBACK_PORT, 'localhost', () => {
+      const authUrl = new URL(GOOGLE_AUTH_URL);
+      authUrl.searchParams.set('client_id', clientId);
+      authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', SCOPES);
+      authUrl.searchParams.set('access_type', 'offline');
+      authUrl.searchParams.set('prompt', 'consent');
+
+      shell.openExternal(authUrl.toString());
+    });
+  });
+}
+
+async function exchangeCode(code, clientId, clientSecret) {
+  const res = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: REDIRECT_URI,
+      grant_type: 'authorization_code',
+    }),
+  });
+
+  const data = await res.json();
+
+  const profileRes = await fetch(USERINFO_URL, {
+    headers: { Authorization: `Bearer ${data.access_token}` },
+  });
+
+  const profile = await profileRes.json();
+
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    tokenExpiry: Date.now() + data.expires_in * 1000,
+    email: profile.email,
+    clientId,
+    clientSecret,
+  };
+}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+async function gmailFetch(creds, url) {
+  const res = await fetch(url, {
     headers: {
-      Authorization:  `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {}),
+      Authorization: `Bearer ${creds.accessToken}`,
     },
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message ?? `Gmail API ${res.status}`);
+    throw new Error(`Gmail API error (${res.status})`);
   }
+
   return res.json();
 }
 
-function parseHeaders(headers = []) {
-  const get = (name) =>
-    headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value ?? '';
-  return { from: get('From'), subject: get('Subject'), date: get('Date') };
-}
-
-function decodeBase64(data = '') {
-  return Buffer.from(data.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');
-}
-
-function extractBody(payload) {
-  if (!payload) return '';
-  if (payload.mimeType === 'text/plain' && payload.body?.data)
-    return decodeBase64(payload.body.data);
-  if (payload.parts) {
-    for (const part of payload.parts) {
-      const text = extractBody(part);
-      if (text) return text;
-    }
-  }
-  return '';
+/* ══════════════════════════════════════════
+   VALIDATE
+══════════════════════════════════════════ */
+export async function validateCredentials(creds) {
+  const data = await gmailFetch(creds,
+    'https://gmail.googleapis.com/gmail/v1/users/me/profile'
+  );
+  return data.emailAddress;
 }
 
 /* ══════════════════════════════════════════
-   TOKEN REFRESH
+   GET UNREAD EMAILS
 ══════════════════════════════════════════ */
+export async function getUnreadEmails(creds, maxResults = 10) {
+  const list = await gmailFetch(
+    creds,
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=is:unread&maxResults=${maxResults}`
+  );
 
-/**
- * Attempt to refresh the access token using a stored refresh token.
- * Returns updated credentials object. Throws if refresh fails.
- */
-export async function refreshAccessToken(credentials) {
-  const { refreshToken, clientId, clientSecret } = credentials;
-  if (!refreshToken || !clientId || !clientSecret) return credentials;
+  const messages = list.messages || [];
+  const emails = [];
 
-  const res = await fetch(TOKEN_URL, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    new URLSearchParams({
-      grant_type:    'refresh_token',
-      refresh_token: refreshToken,
-      client_id:     clientId,
-      client_secret: clientSecret,
-    }),
-  });
+  for (const msg of messages) {
+    const detail = await gmailFetch(
+      creds,
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`
+    );
+
+    const headers = detail.payload.headers;
+
+    const subject = headers.find(h => h.name === 'Subject')?.value || '(No subject)';
+    const from = headers.find(h => h.name === 'From')?.value || '(Unknown)';
+    
+    emails.push({
+      id: msg.id,
+      subject,
+      from,
+      snippet: detail.snippet,
+    });
+  }
+
+  return emails;
+}
+
+/* ══════════════════════════════════════════
+   EMAIL BRIEF
+══════════════════════════════════════════ */
+export async function getEmailBrief(creds, maxResults = 10) {
+  const emails = await getUnreadEmails(creds, maxResults);
+
+  if (!emails.length) {
+    return { count: 0, text: '' };
+  }
+
+  const text = emails.map((e, i) =>
+    `${i + 1}. ${e.subject} — ${e.from}\n${e.snippet}`
+  ).join('\n\n');
+
+  return {
+    count: emails.length,
+    text,
+  };
+}
+
+/* ══════════════════════════════════════════
+   SEARCH EMAILS
+══════════════════════════════════════════ */
+export async function searchEmails(creds, query, maxResults = 10) {
+  const list = await gmailFetch(
+    creds,
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=${maxResults}`
+  );
+
+  const messages = list.messages || [];
+  const emails = [];
+
+  for (const msg of messages) {
+    const detail = await gmailFetch(
+      creds,
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`
+    );
+
+    const headers = detail.payload.headers;
+
+    const subject = headers.find(h => h.name === 'Subject')?.value || '(No subject)';
+    const from = headers.find(h => h.name === 'From')?.value || '(Unknown)';
+
+    emails.push({
+      id: msg.id,
+      subject,
+      from,
+      snippet: detail.snippet,
+    });
+  }
+
+  return emails;
+}
+
+/* ══════════════════════════════════════════
+   SEND EMAIL
+══════════════════════════════════════════ */
+export async function sendEmail(creds, to, subject, body) {
+  const raw = Buffer.from(
+    `To: ${to}\r\nSubject: ${subject}\r\n\r\n${body}`
+  ).toString('base64');
+
+  const res = await fetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${creds.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw }),
+    }
+  );
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error_description ?? 'Could not refresh Gmail token');
+    throw new Error('Failed to send email');
   }
 
-  const data = await res.json();
-  return {
-    ...credentials,
-    accessToken: data.access_token,
-    tokenExpiry: new Date(Date.now() + data.expires_in * 1000).toISOString(),
-  };
-}
-
-/* ══════════════════════════════════════════
-   PUBLIC API
-══════════════════════════════════════════ */
-
-/**
- * Validate credentials by fetching the Gmail profile.
- * Returns the authenticated email address or throws.
- */
-export async function validateCredentials(credentials) {
-  const profile = await gmailFetch('/profile', credentials.accessToken);
-  return profile.emailAddress;
-}
-
-/**
- * Fetch lightweight metadata for unread inbox messages.
- */
-export async function getUnreadEmails(credentials, maxResults = 20) {
-  const { accessToken } = credentials;
-  if (!accessToken) throw new Error('Gmail not connected');
-
-  const list = await gmailFetch(
-    `/messages?q=is:unread+in:inbox&maxResults=${maxResults}`,
-    accessToken,
-  );
-  if (!list.messages?.length) return [];
-
-  const emails = await Promise.all(
-    list.messages.map(msg =>
-      gmailFetch(
-        `/messages/${msg.id}?format=metadata` +
-        `&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
-        accessToken,
-      ),
-    ),
-  );
-
-  return emails.map(email => ({
-    id:      email.id,
-    snippet: email.snippet ?? '',
-    ...parseHeaders(email.payload?.headers),
-  }));
-}
-
-/**
- * Fetch the full content of a single email by ID.
- */
-export async function getEmailById(credentials, messageId) {
-  const email = await gmailFetch(
-    `/messages/${messageId}?format=full`,
-    credentials.accessToken,
-  );
-  return {
-    id:      email.id,
-    snippet: email.snippet ?? '',
-    body:    extractBody(email.payload),
-    ...parseHeaders(email.payload?.headers),
-  };
-}
-
-/**
- * Return a structured brief of unread emails (count + formatted text).
- */
-export async function getEmailBrief(credentials, maxResults = 15) {
-  const emails = await getUnreadEmails(credentials, maxResults);
-  return {
-    count:  emails.length,
-    emails,
-    text:   emails.length === 0
-      ? 'No unread emails.'
-      : emails
-          .map((e, i) =>
-            `${i + 1}. From: ${e.from}\n   Subject: ${e.subject}\n   Preview: ${e.snippet}`,
-          )
-          .join('\n\n'),
-  };
-}
-
-/**
- * Send a plain-text email via Gmail.
- */
-export async function sendEmail(credentials, to, subject, body) {
-  const { accessToken, email: fromEmail } = credentials;
-  const raw = Buffer.from(
-    `From: ${fromEmail ?? 'me'}\r\nTo: ${to}\r\n` +
-    `Subject: ${subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`,
-  )
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
-  return gmailFetch('/messages/send', accessToken, {
-    method: 'POST',
-    body:   JSON.stringify({ raw }),
-  });
-}
-
-/**
- * Search emails using Gmail search syntax (e.g. "from:boss@co.com is:unread").
- */
-export async function searchEmails(credentials, query, maxResults = 10) {
-  const { accessToken } = credentials;
-  const list = await gmailFetch(
-    `/messages?q=${encodeURIComponent(query)}&maxResults=${maxResults}`,
-    accessToken,
-  );
-  if (!list.messages?.length) return [];
-
-  return Promise.all(
-    list.messages.map(msg =>
-      gmailFetch(
-        `/messages/${msg.id}?format=metadata` +
-        `&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
-        accessToken,
-      ).then(email => ({
-        id:      email.id,
-        snippet: email.snippet ?? '',
-        ...parseHeaders(email.payload?.headers),
-      })),
-    ),
-  );
-}
-
-/**
- * Mark a message as read (removes UNREAD label).
- */
-export async function markAsRead(credentials, messageId) {
-  return gmailFetch(`/messages/${messageId}/modify`, credentials.accessToken, {
-    method: 'POST',
-    body:   JSON.stringify({ removeLabelIds: ['UNREAD'] }),
-  });
-}
-
-/**
- * Move a message to Trash.
- */
-export async function trashEmail(credentials, messageId) {
-  return gmailFetch(`/messages/${messageId}/trash`, credentials.accessToken, {
-    method: 'POST',
-  });
+  return true;
 }

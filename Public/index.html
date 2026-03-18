@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="Assets/Styles/Themes.css" />
   <link rel="stylesheet" href="Assets/Styles/Root.css" />
   <link rel="stylesheet" href="Assets/Styles/Main.css" />
+  <link rel="stylesheet" href="Assets/Styles/Connectors.css" />
+  <link rel="stylesheet" href="Assets/Styles/Memory.css" />
 </head>
 
 <body>
@@ -25,71 +27,48 @@
       </div>
       <div id="titlebar-controls">
         <button id="btn-minimize" title="Minimize">
-          <svg viewBox="0 0 12 12">
-            <rect y="5.5" width="12" height="1" fill="currentColor" />
-          </svg>
+          <svg viewBox="0 0 12 12"><rect y="5.5" width="12" height="1" fill="currentColor" /></svg>
         </button>
         <button id="btn-maximize" title="Maximize / Restore">
-          <svg viewBox="0 0 12 12">
-            <rect x="1" y="1" width="10" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.2" />
-          </svg>
+          <svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.2" /></svg>
         </button>
         <button id="btn-close" title="Close">
-          <svg viewBox="0 0 12 12">
-            <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-          </svg>
+          <svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" /></svg>
         </button>
       </div>
     </div>
 
-    <!-- Body wrap (sidebar + library + main) -->
+    <!-- Body wrap -->
     <div id="body-wrap">
 
       <!-- Sidebar -->
       <aside id="sidebar">
-
         <div class="sidebar-logo" title="openworld">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.5" />
           </svg>
         </div>
-
         <div class="sidebar-divider"></div>
-
         <button class="sidebar-btn" data-view="chat" data-tip="New chat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 5v14M5 12h14" stroke-linecap="round" />
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round" /></svg>
         </button>
-
         <button class="sidebar-btn" data-view="library" data-tip="Library">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 4h4v16H4zM10 4h10v7H10zM10 15h10v5H10z" stroke-linejoin="round" />
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h4v16H4zM10 4h10v7H10zM10 15h10v5H10z" stroke-linejoin="round" /></svg>
         </button>
-
         <button class="sidebar-btn" data-view="automations" data-tip="Automations">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z" stroke-linejoin="round" />
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z" stroke-linejoin="round" /></svg>
         </button>
-
         <div class="sidebar-spacer"></div>
-
         <button class="sidebar-btn theme-toggle" id="theme-toggle-btn" data-tip="Switch theme">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="4" />
-            <path
-              d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
-              stroke-linecap="round" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke-linecap="round" />
           </svg>
         </button>
-
-        <!-- Dynamic avatar - initials set by JS from User.json -->
         <button class="sidebar-avatar" id="sidebar-avatar-btn" data-tip="Account" title="Account">OW</button>
-
       </aside>
 
+      <!-- Library Modal -->
       <div id="library-modal-backdrop">
         <div id="library-panel" role="dialog" aria-modal="true" aria-labelledby="library-modal-title">
           <div class="settings-modal-header">
@@ -102,19 +81,15 @@
               </svg>
             </button>
           </div>
-
           <div class="settings-modal-body library-modal-body">
             <div class="library-search-shell">
               <div class="lp-search-wrap">
                 <svg class="lp-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="M16.5 16.5L21 21" stroke-linecap="round" />
+                  <circle cx="11" cy="11" r="7" /><path d="M16.5 16.5L21 21" stroke-linecap="round" />
                 </svg>
-                <input type="text" id="library-search" placeholder="Search chats..." autocomplete="off"
-                  spellcheck="false" />
+                <input type="text" id="library-search" placeholder="Search chats..." autocomplete="off" spellcheck="false" />
               </div>
             </div>
-
             <div class="library-list-shell">
               <div id="chat-list" class="lp-list"></div>
             </div>
@@ -124,24 +99,14 @@
 
       <!-- Theme Panel -->
       <div id="theme-panel">
-        <button class="theme-option active" data-theme="dark">
-          <span class="theme-swatch swatch-dark"></span>Dark
-        </button>
-        <button class="theme-option" data-theme="light">
-          <span class="theme-swatch swatch-light"></span>Light
-        </button>
-        <button class="theme-option" data-theme="midnight">
-          <span class="theme-swatch swatch-midnight"></span>Midnight
-        </button>
-        <button class="theme-option" data-theme="forest">
-          <span class="theme-swatch swatch-forest"></span>Forest
-        </button>
-        <button class="theme-option" data-theme="pinky">
-          <span class="theme-swatch swatch-pinky"></span>Pinky
-        </button>
+        <button class="theme-option active" data-theme="dark"><span class="theme-swatch swatch-dark"></span>Dark</button>
+        <button class="theme-option" data-theme="light"><span class="theme-swatch swatch-light"></span>Light</button>
+        <button class="theme-option" data-theme="midnight"><span class="theme-swatch swatch-midnight"></span>Midnight</button>
+        <button class="theme-option" data-theme="forest"><span class="theme-swatch swatch-forest"></span>Forest</button>
+        <button class="theme-option" data-theme="pinky"><span class="theme-swatch swatch-pinky"></span>Pinky</button>
       </div>
 
-      <!-- Avatar / Settings Panel -->
+      <!-- Avatar Panel -->
       <div id="avatar-panel">
         <div class="ap-header">
           <div class="ap-badge" id="avatar-panel-badge">OW</div>
@@ -150,9 +115,7 @@
             <span class="ap-subtitle">openworld account</span>
           </div>
         </div>
-
         <div class="ap-divider"></div>
-
         <button id="avatar-settings-btn" class="ap-settings-btn" type="button">
           <span class="ap-settings-copy">
             <span class="ap-settings-title">Settings</span>
@@ -162,7 +125,6 @@
             <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
           </svg>
         </button>
-
         <button id="avatar-about-btn" class="ap-settings-btn" type="button" style="margin-top: 8px;">
           <span class="ap-settings-copy">
             <span class="ap-settings-title">About</span>
@@ -182,35 +144,30 @@
               <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
             </svg>
           </button>
-
           <div class="about-modal-body">
             <div class="about-logo-wrap">
               <svg class="about-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.4" />
               </svg>
             </div>
-
             <div class="about-app-name">openworld</div>
             <div class="about-version" id="about-version">v0.1.0</div>
             <p class="about-description">An Electron app that connects and controls your world.</p>
-
             <div class="about-divider"></div>
-
             <a id="about-sponsor-btn" class="about-sponsor-btn" href="#" role="button">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 21.593c-.534.542-1.076 1.05-1.524 1.483a.75.75 0 01-1.032-.011L2.29 16.01C.454 14.174 0 12.023 0 10.14 0 6.262 3.004 3 6.75 3c1.922 0 3.724.841 4.95 2.174A6.75 6.75 0 0117.25 3C21 3 24 6.263 24 10.14c0 1.883-.454 4.034-2.292 5.87l-7.154 7.065a.75.75 0 01-1.032.011c-.448-.433-.99-.94-1.522-1.482z"/>
               </svg>
               Sponsor on GitHub
             </a>
-
             <p class="footer-credit">
-            Made with ❤️ by <a href="https://joeljolly.vercel.app"
-              target="_blank" rel="noopener noreferrer" class="credit-name">Joel Jolly</a>
-          </p>
+              Made with ❤️ by <a href="https://joeljolly.vercel.app" target="_blank" rel="noopener noreferrer" class="credit-name">Joel Jolly</a>
+            </p>
           </div>
         </div>
       </div>
 
+      <!-- Settings Modal -->
       <div id="settings-modal-backdrop">
         <div id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
           <div class="settings-modal-header">
@@ -233,72 +190,74 @@
               </nav>
 
               <div class="settings-content">
+
+                <!-- User tab -->
                 <section class="settings-panel active" data-settings-panel="user">
                   <div class="settings-panel-header">
                     <h3>User</h3>
-                    <p>Update your display name, memory, and custom instructions.</p>
+                    <p>Update your display name, memory, and custom instructions. These are injected into every AI conversation automatically.</p>
                   </div>
-
                   <div class="settings-form">
                     <label class="settings-field">
                       <span class="settings-field-label">Name</span>
-                      <input id="settings-user-name" type="text" maxlength="80" placeholder="Your name"
-                        autocomplete="name" />
+                      <input id="settings-user-name" type="text" maxlength="80" placeholder="Your name" autocomplete="name" />
                     </label>
-
                     <label class="settings-field">
-                      <span class="settings-field-label">
+                      <span class="settings-field-label settings-field-label--with-badge">
                         Memory
+                        <span class="memory-badge">
+                          <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2" stroke-linecap="round"/></svg>
+                          Auto-injected
+                        </span>
                       </span>
-                      <textarea id="settings-memory"
-                        placeholder="Things you want the AI to always remember — facts about you, your preferences, ongoing projects…"></textarea>
+                      <textarea id="settings-memory" placeholder="Facts about you, ongoing projects, preferences the AI should always remember…"></textarea>
+                      <span class="settings-field-hint">Saved here and included in every AI call as context.</span>
                     </label>
-
                     <label class="settings-field">
-                      <span class="settings-field-label">Custom instructions</span>
-                      <textarea id="settings-custom-instructions"
-                        placeholder="Write your custom instructions."></textarea>
+                      <span class="settings-field-label">Custom Instructions</span>
+                      <textarea id="settings-custom-instructions" placeholder="Tone, style, or behaviour instructions for the AI…"></textarea>
                     </label>
                   </div>
                 </section>
 
+                <!-- Providers tab -->
                 <section class="settings-panel" data-settings-panel="providers" hidden>
                   <div class="settings-panel-header">
                     <h3>Connected Providers</h3>
                     <p>Update provider API keys.</p>
                   </div>
-
                   <div id="settings-providers-list" class="providers-stack">
-                    <div class="ap-empty-hint">Loading...</div>
+                    <div class="ap-empty-hint">Loading…</div>
                   </div>
                 </section>
 
+                <!-- Connectors tab — connector-list is populated by Connectors.js -->
                 <section class="settings-panel" data-settings-panel="connectors" hidden>
                   <div class="settings-panel-header">
                     <h3>Connectors</h3>
-                    <p>Connector management is ready for future storage, but there are no connectors configured yet.</p>
+                    <p>Link Gmail and GitHub so the AI knows about your emails and repos, and automations can take action.</p>
                   </div>
-
-                  <div class="settings-empty-card">No connectors added yet</div>
+                  <div id="connector-list" class="connector-list">
+                    <div class="cx-loading">Loading connectors…</div>
+                  </div>
                 </section>
+
               </div>
             </div>
           </div>
 
           <div class="settings-modal-footer">
             <div id="settings-save-feedback" class="settings-feedback" aria-live="polite"></div>
-            <button id="settings-save" class="settings-save-btn" type="button">Save name and instructions</button>
+            <button id="settings-save" class="settings-save-btn" type="button">Save changes</button>
           </div>
         </div>
       </div>
 
-      <!-- Main -->
+      <!-- Main content -->
       <main id="main">
-
         <section id="welcome">
           <div class="welcome-greeting">
-            <svg class="welcome-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              xmlns="http://www.w3.org/2000/svg">
+            <svg class="welcome-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.4" />
             </svg>
             <h1 class="welcome-title">Welcome</h1>
@@ -310,54 +269,44 @@
         </section>
 
         <div id="input-area">
-
           <div class="input-box">
             <textarea id="chat-input" placeholder="How can I help you today?" rows="1" autofocus></textarea>
             <div id="composer-attachments" class="composer-attachments" hidden></div>
             <div id="composer-hint" class="composer-hint" aria-live="polite"></div>
             <div class="input-footer">
-
-              <!-- Dynamic model selector -->
               <div class="model-selector-wrap">
                 <button class="model-selector" id="model-selector-btn">
                   <span id="model-label">Loading...</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </button>
                 <div id="model-dropdown"></div>
               </div>
-
               <div class="input-actions">
                 <button class="icon-btn" id="attachment-btn" title="Paste an image from clipboard">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round"
-                      stroke-linejoin="round" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </button>
                 <button class="icon-btn" title="Voice input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <rect x="9" y="2" width="6" height="11" rx="3" />
                     <path d="M5 10a7 7 0 0014 0M12 19v3M8 22h8" stroke-linecap="round" />
                   </svg>
                 </button>
                 <button class="send-btn" id="send-btn" title="Send">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
                   </svg>
                 </button>
               </div>
-
             </div>
           </div>
-
           <p class="footer-credit">
-            Made with ❤️ by <a href="https://joeljolly.vercel.app"
-              target="_blank" rel="noopener noreferrer" class="credit-name">Joel Jolly</a>
+            Made with ❤️ by <a href="https://joeljolly.vercel.app" target="_blank" rel="noopener noreferrer" class="credit-name">Joel Jolly</a>
           </p>
-
         </div>
-
       </main>
 
     </div><!-- /body-wrap -->

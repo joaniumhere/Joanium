@@ -14,25 +14,25 @@ import {
 import { loadProviders } from './ModelSelector.js';
 import { initConnectors, loadConnectorsPanel } from './Connectors.js';
 
-const settingsTabs                  = Array.from(document.querySelectorAll('[data-settings-tab]'));
-const settingsPanels                = Array.from(document.querySelectorAll('[data-settings-panel]'));
-const settingsUserNameInput         = document.getElementById('settings-user-name');
-const settingsMemoryInput           = document.getElementById('settings-memory');
+const settingsTabs                    = Array.from(document.querySelectorAll('[data-settings-tab]'));
+const settingsPanels                  = Array.from(document.querySelectorAll('[data-settings-panel]'));
+const settingsUserNameInput           = document.getElementById('settings-user-name');
+const settingsMemoryInput             = document.getElementById('settings-memory');
 const settingsCustomInstructionsInput = document.getElementById('settings-custom-instructions');
-const settingsProvidersList         = document.getElementById('settings-providers-list');
-const settingsSaveBtn               = document.getElementById('settings-save');
-const settingsSaveFeedback          = document.getElementById('settings-save-feedback');
+const settingsProvidersList           = document.getElementById('settings-providers-list');
+const settingsSaveBtn                 = document.getElementById('settings-save');
+const settingsSaveFeedback            = document.getElementById('settings-save-feedback');
 
 const PROVIDER_META = {
-  anthropic: { color: '#cc785c', placeholder: 'sk-ant-api03-…', iconPath: 'Assets/Icons/Claude.png',     fallback: 'C'   },
-  openai:    { color: '#10a37f', placeholder: 'sk-proj-…',      iconPath: 'Assets/Icons/ChatGPT.png',    fallback: 'GPT' },
-  google:    { color: '#4285f4', placeholder: 'AIza…',          iconPath: 'Assets/Icons/Gemini.png',     fallback: 'G'   },
-  openrouter:{ color: '#9b59b6', placeholder: 'sk-or-v1-…',     iconPath: 'Assets/Icons/OpenRouter.png', fallback: 'OR'  },
+  anthropic:  { color: '#cc785c', placeholder: 'sk-ant-api03-…', iconPath: 'Assets/Icons/Claude.png',     fallback: 'C'   },
+  openai:     { color: '#10a37f', placeholder: 'sk-proj-…',      iconPath: 'Assets/Icons/ChatGPT.png',    fallback: 'GPT' },
+  google:     { color: '#4285f4', placeholder: 'AIza…',          iconPath: 'Assets/Icons/Gemini.png',     fallback: 'G'   },
+  openrouter: { color: '#9b59b6', placeholder: 'sk-or-v1-…',     iconPath: 'Assets/Icons/OpenRouter.png', fallback: 'OR'  },
 };
 
 const settingsState = {
-  activeTab:          'user',
-  providerCatalog:    [],
+  activeTab:           'user',
+  providerCatalog:     [],
   pendingProviderKeys: {},
 };
 
@@ -40,9 +40,7 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function getDisplayName(name) {
-  return String(name ?? '').trim() || 'User';
-}
+function getDisplayName(name) { return String(name ?? '').trim() || 'User'; }
 
 function getInitials(name) {
   const d = getDisplayName(name);
@@ -57,15 +55,15 @@ function setFeedback(element, message = '', tone = 'info') {
 }
 
 function applyUserProfile(user = {}) {
-  const rawName    = String(user?.name ?? '').trim();
+  const rawName     = String(user?.name ?? '').trim();
   const displayName = getDisplayName(rawName);
-  const initials   = getInitials(displayName);
-  const firstName  = displayName.split(/\s+/)[0];
+  const initials    = getInitials(displayName);
+  const firstName   = displayName.split(/\s+/)[0];
 
   state.userName     = rawName;
   state.userInitials = initials;
 
-  if (avatarBtn)       { avatarBtn.textContent = initials; avatarBtn.title = displayName; avatarBtn.setAttribute('data-tip', displayName); }
+  if (avatarBtn)        { avatarBtn.textContent = initials; avatarBtn.title = displayName; avatarBtn.setAttribute('data-tip', displayName); }
   if (avatarPanelBadge) avatarPanelBadge.textContent = initials;
   if (avatarPanelName)  avatarPanelName.textContent  = displayName;
 
@@ -75,23 +73,18 @@ function applyUserProfile(user = {}) {
 
 function switchSettingsTab(tabId) {
   settingsState.activeTab = tabId;
-
   settingsTabs.forEach(btn => {
     const active = btn.dataset.settingsTab === tabId;
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-selected', String(active));
   });
-
   settingsPanels.forEach(panel => {
     const active = panel.dataset.settingsPanel === tabId;
     panel.classList.toggle('active', active);
     panel.hidden = !active;
   });
-
   setFeedback(settingsSaveFeedback);
   updateSaveButtonState();
-
-  // Lazy-load connectors panel on first open
   if (tabId === 'connectors') loadConnectorsPanel();
 }
 
@@ -124,10 +117,9 @@ function renderSettingsProviders() {
   });
 
   settingsProvidersList.innerHTML = sorted.map(provider => {
-    const meta       = PROVIDER_META[provider.provider] ?? {};
-    const currentKey = String(provider.api ?? '').trim();
-    const nextKey    = settingsState.pendingProviderKeys[provider.provider] ?? '';
-    const inputId    = `settings-key-${provider.provider}`;
+    const meta    = PROVIDER_META[provider.provider] ?? {};
+    const inputId = `settings-key-${provider.provider}`;
+    const nextKey = settingsState.pendingProviderKeys[provider.provider] ?? '';
     return `
       <article class="settings-provider-row" style="--p-color:${meta.color ?? 'var(--accent)'}">
         <div class="spr-icon">
@@ -193,7 +185,10 @@ async function saveUserSettings() {
   const nextName         = settingsUserNameInput?.value.trim() ?? '';
   const nextMemory       = settingsMemoryInput?.value ?? '';
   const nextInstructions = settingsCustomInstructionsInput?.value ?? '';
-  if (nextName.length < 2) { setFeedback(settingsSaveFeedback, 'Enter a name with at least 2 characters.', 'error'); settingsUserNameInput?.focus(); return; }
+  if (nextName.length < 2) {
+    setFeedback(settingsSaveFeedback, 'Enter a name with at least 2 characters.', 'error');
+    settingsUserNameInput?.focus(); return;
+  }
   settingsSaveBtn.disabled = true;
   setFeedback(settingsSaveFeedback, 'Saving…', 'info');
   try {
@@ -207,6 +202,8 @@ async function saveUserSettings() {
     if (!memoryResult?.ok)       throw new Error(memoryResult?.error       ?? 'Could not save memory.');
     applyUserProfile(profileResult.user ?? { name: nextName });
     setFeedback(settingsSaveFeedback, 'Changes saved.', 'success');
+    // Notify Main.js to refresh the system prompt (includes new memory + instructions)
+    window.dispatchEvent(new CustomEvent('ow:settings-saved'));
   } catch (err) {
     console.error('[openworld] Could not save user settings:', err);
     setFeedback(settingsSaveFeedback, err.message || 'Could not save.', 'error');
@@ -219,7 +216,9 @@ async function saveProviderSettings() {
       .map(([id, key]) => [id, String(key ?? '').trim()])
       .filter(([, key]) => key.length > 0),
   );
-  if (!Object.keys(changes).length) { setFeedback(settingsSaveFeedback, 'Add at least one API key before saving.', 'error'); return; }
+  if (!Object.keys(changes).length) {
+    setFeedback(settingsSaveFeedback, 'Add at least one API key before saving.', 'error'); return;
+  }
   settingsSaveBtn.disabled = true;
   setFeedback(settingsSaveFeedback, 'Saving provider keys…', 'info');
   try {
@@ -231,6 +230,7 @@ async function saveProviderSettings() {
     renderSettingsProviders();
     const count = Object.keys(changes).length;
     setFeedback(settingsSaveFeedback, count === 1 ? 'Provider key saved.' : `${count} provider keys saved.`, 'success');
+    window.dispatchEvent(new CustomEvent('ow:settings-saved'));
   } catch (err) {
     console.error('[openworld] Could not save provider keys:', err);
     setFeedback(settingsSaveFeedback, err.message || 'Could not save.', 'error');
@@ -290,5 +290,4 @@ document.addEventListener('click', e => {
   if (!avatarPanel?.contains(e.target) && e.target !== avatarBtn) closeAvatarPanel();
 });
 
-// Init connectors tab lazy loading
 initConnectors();

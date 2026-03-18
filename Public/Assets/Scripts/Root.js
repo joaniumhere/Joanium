@@ -13,6 +13,7 @@ export const state = {
     currentChatId: null,
     userName: '',
     userInitials: 'OW',
+    systemPrompt: '',   // ← built by main process: OS + GitHub repos + memory + custom instructions
 };
 
 /* ══════════════════════════════════════════
@@ -57,7 +58,6 @@ export const syncModalOpenState = () => {
     const hasOpenModal = Boolean(
         document.querySelector('#settings-modal-backdrop.open, #library-modal-backdrop.open')
     );
-
     document.body.classList.toggle('modal-open', hasOpenModal);
 };
 

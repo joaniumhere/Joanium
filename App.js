@@ -1,37 +1,41 @@
-// ─────────────────────────────────────────────
-//  openworld — App.js
-//  Electron main process · root entry point
-// ─────────────────────────────────────────────
-
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
-import { AutomationEngine }  from './Packages/Automation/AutomationEngine.js';
-import { ConnectorEngine }   from './Packages/Connectors/ConnectorEngine.js';
-import * as GmailAPI         from './Packages/Automation/Gmail.js';
-import * as GithubAPI        from './Packages/Automation/Github.js';
+import { AutomationEngine } from './Packages/Automation/AutomationEngine.js';
+import { ConnectorEngine } from './Packages/Connectors/ConnectorEngine.js';
+import * as GmailAPI from './Packages/Automation/Gmail.js';
+import * as GithubAPI from './Packages/Automation/Github.js';
+import { startGmailOAuthFlow } from './Packages/Automation/Gmail.js';
+import { buildSystemPrompt } from './Packages/System/SystemPrompt.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /* ── Paths ── */
-const DATA_DIR                 = path.join(__dirname, 'Data');
-const USER_FILE                = path.join(DATA_DIR, 'User.json');
-const MODELS_FILE              = path.join(DATA_DIR, 'Models.json');
+const DATA_DIR = path.join(__dirname, 'Data');
+const USER_FILE = path.join(DATA_DIR, 'User.json');
+const MODELS_FILE = path.join(DATA_DIR, 'Models.json');
 const CUSTOM_INSTRUCTIONS_FILE = path.join(DATA_DIR, 'CustomInstructions.md');
-const MEMORY_FILE              = path.join(DATA_DIR, 'Memory.md');
-const CHATS_DIR                = path.join(DATA_DIR, 'Chats');
-const AUTOMATIONS_FILE         = path.join(DATA_DIR, 'Automations.json');
-const CONNECTORS_FILE          = path.join(DATA_DIR, 'Connectors.json');
-const PRELOAD                  = path.join(__dirname, 'Packages', 'Electron', 'Preload.js');
-const SETUP_PAGE               = path.join(__dirname, 'Public', 'Setup.html');
-const MAIN_PAGE                = path.join(__dirname, 'Public', 'index.html');
-const AUTOMATIONS_PAGE         = path.join(__dirname, 'Public', 'Automations.html');
+const MEMORY_FILE = path.join(DATA_DIR, 'Memory.md');
+const CHATS_DIR = path.join(DATA_DIR, 'Chats');
+const AUTOMATIONS_FILE = path.join(DATA_DIR, 'Automations.json');
+const CONNECTORS_FILE = path.join(DATA_DIR, 'Connectors.json');
+const PRELOAD = path.join(__dirname, 'Packages', 'Electron', 'Preload.js');
+const SETUP_PAGE = path.join(__dirname, 'Public', 'Setup.html');
+const MAIN_PAGE = path.join(__dirname, 'Public', 'index.html');
+const AUTOMATIONS_PAGE = path.join(__dirname, 'Public', 'Automations.html');
 
 /* ── Engines (singletons) ── */
-const connectorEngine  = new ConnectorEngine(CONNECTORS_FILE);
+const connectorEngine = new ConnectorEngine(CONNECTORS_FILE);
 const automationEngine = new AutomationEngine(AUTOMATIONS_FILE, connectorEngine);
+
+/* ── System-prompt cache (5 min TTL) ── */
+let _sysPromptCache = null;
+let _sysPromptTime = 0;
+const SYS_PROMPT_TTL = 5 * 60_000;
+
+function invalidateSysPromptCache() { _sysPromptCache = null; _sysPromptTime = 0; }
 
 /* ══════════════════════════════════════════
    HELPERS
@@ -52,9 +56,9 @@ const ensureDataDir = () => {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 };
 
-const readJSON  = (f) => JSON.parse(fs.readFileSync(f, 'utf-8'));
+const readJSON = (f) => JSON.parse(fs.readFileSync(f, 'utf-8'));
 const writeJSON = (f, d) => { ensureDataDir(); fs.writeFileSync(f, JSON.stringify(d, null, 2), 'utf-8'); };
-const readText  = (f) => fs.readFileSync(f, 'utf-8');
+const readText = (f) => fs.readFileSync(f, 'utf-8');
 const writeText = (f, text) => { ensureDataDir(); fs.writeFileSync(f, text, 'utf-8'); };
 
 function mergeUserData(existing = {}, updates = {}) {
@@ -76,7 +80,7 @@ function mergeUserData(existing = {}, updates = {}) {
 }
 
 function readUserData() {
-  try   { return mergeUserData(readJSON(USER_FILE)); }
+  try { return mergeUserData(readJSON(USER_FILE)); }
   catch { return mergeUserData(); }
 }
 
@@ -87,12 +91,12 @@ function writeUserData(updates = {}) {
 }
 
 function readCustomInstructions() {
-  try   { return readText(CUSTOM_INSTRUCTIONS_FILE); }
+  try { return readText(CUSTOM_INSTRUCTIONS_FILE); }
   catch { return ''; }
 }
 
 function readMemory() {
-  try   { return readText(MEMORY_FILE); }
+  try { return readText(MEMORY_FILE); }
   catch { return ''; }
 }
 
@@ -108,19 +112,19 @@ let win = null;
 
 function createWindow(page) {
   win = new BrowserWindow({
-    width:    1100,
-    height:   720,
+    width: 1100,
+    height: 720,
     minWidth: 1100,
     minHeight: 720,
-    frame:    false,
+    frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#1a1a1a',
     show: false,
     webPreferences: {
-      preload:          PRELOAD,
+      preload: PRELOAD,
       contextIsolation: true,
-      nodeIntegration:  false,
-      sandbox:          false,
+      nodeIntegration: false,
+      sandbox: false,
     },
   });
 
@@ -158,13 +162,13 @@ app.on('window-all-closed', () => {
    IPC — SETUP
 ══════════════════════════════════════════ */
 ipcMain.handle('save-user', (_e, userData) => {
-  try   { return { ok: true, user: writeUserData(userData) }; }
+  try { return { ok: true, user: writeUserData(userData) }; }
   catch (err) { return { ok: false, error: err.message }; }
 });
 
 ipcMain.handle('save-api-keys', (_e, keysMap) => {
   try {
-    const user     = readUserData();
+    const user = readUserData();
     const nextKeys = { ...(user.api_keys ?? {}) };
 
     Object.entries(keysMap ?? {}).forEach(([providerId, apiKey]) => {
@@ -186,6 +190,7 @@ ipcMain.handle('save-user-profile', (_e, profile) => {
   try {
     const updates = {};
     if (typeof profile?.name === 'string') updates.name = profile.name.trim();
+    invalidateSysPromptCache();
     return { ok: true, user: writeUserData(updates) };
   } catch (err) { return { ok: false, error: err.message }; }
 });
@@ -193,14 +198,22 @@ ipcMain.handle('save-user-profile', (_e, profile) => {
 ipcMain.handle('get-custom-instructions', () => readCustomInstructions());
 
 ipcMain.handle('save-custom-instructions', (_e, content) => {
-  try   { writeText(CUSTOM_INSTRUCTIONS_FILE, String(content ?? '').replace(/\r\n/g, '\n')); return { ok: true }; }
+  try {
+    writeText(CUSTOM_INSTRUCTIONS_FILE, String(content ?? '').replace(/\r\n/g, '\n'));
+    invalidateSysPromptCache();
+    return { ok: true };
+  }
   catch (err) { return { ok: false, error: err.message }; }
 });
 
 ipcMain.handle('get-memory', () => readMemory());
 
 ipcMain.handle('save-memory', (_e, content) => {
-  try   { writeText(MEMORY_FILE, String(content ?? '').replace(/\r\n/g, '\n')); return { ok: true }; }
+  try {
+    writeText(MEMORY_FILE, String(content ?? '').replace(/\r\n/g, '\n'));
+    invalidateSysPromptCache();
+    return { ok: true };
+  }
   catch (err) { return { ok: false, error: err.message }; }
 });
 
@@ -212,12 +225,58 @@ ipcMain.handle('launch-main', () => { win?.loadFile(MAIN_PAGE); return { ok: tru
 ipcMain.handle('get-user', () => readUserData());
 
 ipcMain.handle('get-models', () => {
-  const models  = readJSON(MODELS_FILE);
+  const models = readJSON(MODELS_FILE);
   const apiKeys = readUserData().api_keys ?? {};
   return models.map(provider => ({ ...provider, api: apiKeys[provider.provider] ?? null }));
 });
 
 ipcMain.handle('get-api-key', (_e, providerId) => readUserData()?.api_keys?.[providerId] ?? null);
+
+/* ══════════════════════════════════════════
+   IPC — SYSTEM PROMPT
+   Builds a full context-aware system prompt and caches it for 5 min.
+══════════════════════════════════════════ */
+ipcMain.handle('get-system-prompt', async () => {
+  const now = Date.now();
+  if (_sysPromptCache && now - _sysPromptTime < SYS_PROMPT_TTL) return _sysPromptCache;
+
+  try {
+    const user = readUserData();
+    const customInstructions = readCustomInstructions();
+    const memory = readMemory();
+
+    const githubCreds = connectorEngine.getCredentials('github');
+    const gmailCreds = connectorEngine.getCredentials('gmail');
+
+    let githubUsername = null;
+    let githubRepos = [];
+
+    if (githubCreds?.token) {
+      try {
+        const ghUser = await GithubAPI.getUser(githubCreds);
+        githubUsername = ghUser.login;
+        githubRepos = await GithubAPI.getRepos(githubCreds, 20);
+      } catch (e) {
+        console.warn('[SystemPrompt] GitHub fetch failed:', e.message);
+      }
+    }
+
+    _sysPromptCache = await buildSystemPrompt({
+      userName: user.name,
+      customInstructions,
+      memory,
+      githubUsername,
+      githubRepos,
+      gmailEmail: gmailCreds?.email ?? null,
+    });
+    _sysPromptTime = now;
+
+    return _sysPromptCache;
+  } catch (err) {
+    console.error('[SystemPrompt] build error:', err);
+    return 'You are a helpful AI assistant.';
+  }
+});
 
 /* ══════════════════════════════════════════
    IPC — CHAT STORAGE
@@ -241,10 +300,10 @@ ipcMain.handle('get-chats', () => {
   } catch { return []; }
 });
 
-ipcMain.handle('load-chat',   (_e, chatId) => readJSON(path.join(CHATS_DIR, chatId + '.json')));
+ipcMain.handle('load-chat', (_e, chatId) => readJSON(path.join(CHATS_DIR, chatId + '.json')));
 
 ipcMain.handle('delete-chat', (_e, chatId) => {
-  try   { fs.unlinkSync(path.join(CHATS_DIR, chatId + '.json')); return { ok: true }; }
+  try { fs.unlinkSync(path.join(CHATS_DIR, chatId + '.json')); return { ok: true }; }
   catch (err) { return { ok: false, error: err.message }; }
 });
 
@@ -257,7 +316,7 @@ ipcMain.handle('launch-automations', () => {
 });
 
 ipcMain.handle('get-automations', () => {
-  try   { return { ok: true, automations: automationEngine.getAll() }; }
+  try { return { ok: true, automations: automationEngine.getAll() }; }
   catch (err) { return { ok: false, error: err.message, automations: [] }; }
 });
 
@@ -286,30 +345,30 @@ ipcMain.handle('toggle-automation', (_e, id, enabled) => {
 });
 
 /* ══════════════════════════════════════════
-   IPC — CONNECTORS (credential management)
+   IPC — CONNECTORS
 ══════════════════════════════════════════ */
-
-/** Return status summary for all connectors (no credentials exposed). */
 ipcMain.handle('get-connectors', () => {
-  try   { return connectorEngine.getAll(); }
+  try { return connectorEngine.getAll(); }
   catch (err) { console.error('[connectors] get-connectors error:', err); return {}; }
 });
 
-/** Save connector credentials. */
 ipcMain.handle('save-connector', (_e, name, credentials) => {
   try {
     const result = connectorEngine.saveConnector(name, credentials);
+    invalidateSysPromptCache();
     return { ok: true, ...result };
   } catch (err) { return { ok: false, error: err.message }; }
 });
 
-/** Remove / disconnect a connector. */
 ipcMain.handle('remove-connector', (_e, name) => {
-  try   { connectorEngine.removeConnector(name); return { ok: true }; }
+  try {
+    connectorEngine.removeConnector(name);
+    invalidateSysPromptCache();
+    return { ok: true };
+  }
   catch (err) { return { ok: false, error: err.message }; }
 });
 
-/** Validate stored credentials against the live API. */
 ipcMain.handle('validate-connector', async (_e, name) => {
   try {
     const creds = connectorEngine.getCredentials(name);
@@ -332,9 +391,27 @@ ipcMain.handle('validate-connector', async (_e, name) => {
 });
 
 /* ══════════════════════════════════════════
+   IPC — GMAIL OAUTH (easy one-click flow)
+   User provides Client ID + Secret from Google Cloud Console.
+   A BrowserWindow opens → user signs in → tokens stored automatically.
+══════════════════════════════════════════ */
+ipcMain.handle('gmail-oauth-start', async (_e, clientId, clientSecret) => {
+  try {
+    if (!clientId?.trim() || !clientSecret?.trim())
+      return { ok: false, error: 'Client ID and Client Secret are required' };
+
+    const tokens = await startGmailOAuthFlow(clientId.trim(), clientSecret.trim());
+    connectorEngine.saveConnector('gmail', tokens);
+    invalidateSysPromptCache();
+    return { ok: true, email: tokens.email };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+/* ══════════════════════════════════════════
    IPC — GMAIL
 ══════════════════════════════════════════ */
-
 ipcMain.handle('gmail-get-brief', async (_e, maxResults = 15) => {
   try {
     const creds = connectorEngine.getCredentials('gmail');
@@ -374,7 +451,6 @@ ipcMain.handle('gmail-search', async (_e, query, maxResults = 10) => {
 /* ══════════════════════════════════════════
    IPC — GITHUB
 ══════════════════════════════════════════ */
-
 ipcMain.handle('github-get-repos', async () => {
   try {
     const creds = connectorEngine.getCredentials('github');
@@ -443,4 +519,4 @@ ipcMain.handle('github-get-commits', async (_e, owner, repo) => {
 ══════════════════════════════════════════ */
 ipcMain.on('window-minimize', () => win?.minimize());
 ipcMain.on('window-maximize', () => win?.isMaximized() ? win.unmaximize() : win.maximize());
-ipcMain.on('window-close',    () => win?.close());
+ipcMain.on('window-close', () => win?.close());
