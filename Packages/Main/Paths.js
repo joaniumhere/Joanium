@@ -26,6 +26,7 @@ export const Paths = {
   AUTOMATIONS_FILE:         path.join(ROOT, 'Data', 'Automations.json'),
   CONNECTORS_FILE:          path.join(ROOT, 'Data', 'Connectors.json'),
   ACTIVE_AGENT_FILE:        path.join(ROOT, 'Data', 'ActiveAgent.json'),
+  USAGE_FILE:               path.join(ROOT, 'Data', 'Usage.json'),
 
   // Skills & Agents directories (project root)
   SKILLS_DIR: path.join(ROOT, 'Skills'),
@@ -38,6 +39,7 @@ export const Paths = {
   AUTOMATIONS_PAGE: path.join(ROOT, 'Public', 'Automations.html'),
   SKILLS_PAGE:      path.join(ROOT, 'Public', 'Skills.html'),
   AGENTS_PAGE:      path.join(ROOT, 'Public', 'Agents.html'),
+  USAGE_PAGE: path.join(ROOT, 'Public', 'Usage.html'),
 };
 
 export default Paths;

@@ -2,6 +2,7 @@
 //  openworld — Public/Assets/Scripts/Features/AI/AIProvider.js
 //  Provider adapters with NATIVE function/tool calling support.
 //  Each provider has its own tool format — we normalize here.
+//  Returns token usage alongside responses for analytics.
 // ─────────────────────────────────────────────
 
 function extractBase64(dataUrl) {
@@ -48,13 +49,8 @@ function buildOpenAIContent(msg) {
 
 /* ══════════════════════════════════════════
    TOOL FORMAT CONVERTERS
-   Each provider wants tools in a different shape.
 ══════════════════════════════════════════ */
 
-/**
- * Convert our tool definitions to Anthropic format.
- * https://docs.anthropic.com/en/docs/tool-use
- */
 function toAnthropicTools(tools) {
   return tools.map(t => ({
     name:        t.name,
@@ -74,9 +70,6 @@ function toAnthropicTools(tools) {
   }));
 }
 
-/**
- * Convert our tool definitions to OpenAI/OpenRouter format.
- */
 function toOpenAITools(tools) {
   return tools.map(t => ({
     type: 'function',
@@ -99,9 +92,6 @@ function toOpenAITools(tools) {
   }));
 }
 
-/**
- * Convert our tool definitions to Google Gemini format.
- */
 function toGoogleTools(tools) {
   return [{
     functionDeclarations: tools.map(t => ({
@@ -124,12 +114,6 @@ function toGoogleTools(tools) {
 }
 
 /* ══════════════════════════════════════════
-   TOOL CALL RESULT TYPE
-   { type: 'text', text: string }
-   { type: 'tool_call', name: string, params: object, callId: string }
-══════════════════════════════════════════ */
-
-/* ══════════════════════════════════════════
    MAIN FETCH — TEXT ONLY (existing behaviour)
 ══════════════════════════════════════════ */
 export async function fetchFromProvider(provider, modelId, messages, sysPrompt = '') {
@@ -140,7 +124,9 @@ export async function fetchFromProvider(provider, modelId, messages, sysPrompt =
 
 /* ══════════════════════════════════════════
    MAIN FETCH — WITH NATIVE TOOL CALLING
-   Returns { type: 'text', text } or { type: 'tool_call', name, params, callId }
+   Returns:
+     { type: 'text',      text, usage: {inputTokens, outputTokens} }
+     { type: 'tool_call', name, params, callId, usage: {...} }
 ══════════════════════════════════════════ */
 export async function fetchWithTools(provider, modelId, messages, sysPrompt = '', tools = []) {
   const { provider: providerId, endpoint, api, auth_header, auth_prefix = '' } = provider;
@@ -168,8 +154,11 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
 
     const data = await res.json();
+    const usage = {
+      inputTokens:  data.usage?.input_tokens  ?? 0,
+      outputTokens: data.usage?.output_tokens ?? 0,
+    };
 
-    // Check for tool_use block
     const toolUseBlock = data.content?.find(b => b.type === 'tool_use');
     if (toolUseBlock) {
       return {
@@ -177,10 +166,11 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
         name:   toolUseBlock.name,
         params: toolUseBlock.input ?? {},
         callId: toolUseBlock.id,
+        usage,
       };
     }
 
-    return { type: 'text', text: data.content?.find(b => b.type === 'text')?.text ?? '(empty response)' };
+    return { type: 'text', text: data.content?.find(b => b.type === 'text')?.text ?? '(empty response)', usage };
   }
 
   /* ── Google Gemini ── */
@@ -203,6 +193,10 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
 
     const data = await res.json();
+    const usage = {
+      inputTokens:  data.usageMetadata?.promptTokenCount     ?? 0,
+      outputTokens: data.usageMetadata?.candidatesTokenCount ?? 0,
+    };
     const part = data.candidates?.[0]?.content?.parts?.[0];
 
     if (part?.functionCall) {
@@ -211,10 +205,11 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
         name:   part.functionCall.name,
         params: part.functionCall.args ?? {},
         callId: null,
+        usage,
       };
     }
 
-    return { type: 'text', text: part?.text ?? '(empty response)' };
+    return { type: 'text', text: part?.text ?? '(empty response)', usage };
   }
 
   /* ── OpenAI / OpenRouter / Mistral ── */
@@ -243,6 +238,10 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
 
   const data    = await res.json();
+  const usage = {
+    inputTokens:  data.usage?.prompt_tokens     ?? 0,
+    outputTokens: data.usage?.completion_tokens ?? 0,
+  };
   const message = data.choices?.[0]?.message;
 
   if (message?.tool_calls?.length) {
@@ -252,8 +251,9 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
       name:   tc.function.name,
       params: JSON.parse(tc.function.arguments ?? '{}'),
       callId: tc.id,
+      usage,
     };
   }
 
-  return { type: 'text', text: message?.content ?? '(empty response)' };
+  return { type: 'text', text: message?.content ?? '(empty response)', usage };
 }

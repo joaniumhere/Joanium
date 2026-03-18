@@ -24,6 +24,7 @@ const sidebar = initSidebar({
   onAutomations: () => window.electronAPI?.launchAutomations?.(),
   onSkills:      () => window.electronAPI?.launchSkills?.(),
   onAgents:      () => { /* already here */ },
+  onUsage:       () => window.electronAPI?.launchUsage?.(),
   onSettings:    () => settings.open(),
   onAbout:       () => about.open(),
 });

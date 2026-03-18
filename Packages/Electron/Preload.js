@@ -66,6 +66,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setActiveAgent:   (agentData)   => ipcRenderer.invoke('set-active-agent', agentData),
   resetActiveAgent: ()            => ipcRenderer.invoke('reset-active-agent'),
 
+  // Usage analytics
+  trackUsage:  (record) => ipcRenderer.invoke('track-usage', record),
+  getUsage:    ()       => ipcRenderer.invoke('get-usage'),
+  clearUsage:  ()       => ipcRenderer.invoke('clear-usage'),
+  launchUsage: ()       => ipcRenderer.invoke('launch-usage'),
+
   // Window controls
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),

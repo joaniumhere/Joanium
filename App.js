@@ -30,6 +30,7 @@ import * as GithubIPC     from './Packages/Main/IPC/GithubIPC.js';
 import * as WindowIPC     from './Packages/Main/IPC/WindowIPC.js';
 import * as SkillsIPC     from './Packages/Main/IPC/SkillsIPC.js';
 import * as AgentsIPC     from './Packages/Main/IPC/AgentsIPC.js';
+import * as UsageIPC      from './Packages/Main/IPC/UsageIPC.js';
 
 /* ══════════════════════════════════════════
    ENGINES  (singletons shared across IPC modules)
@@ -52,6 +53,7 @@ GithubIPC.register(connectorEngine);
 WindowIPC.register();
 SkillsIPC.register();
 AgentsIPC.register();
+UsageIPC.register();
 
 /* ══════════════════════════════════════════
    APP LIFECYCLE

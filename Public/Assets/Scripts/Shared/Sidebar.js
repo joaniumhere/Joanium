@@ -23,6 +23,10 @@ const ICON = {
              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
            </svg>`,
 
+  usage: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>`,
+
   theme: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="4"/>
             <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41
@@ -87,6 +91,7 @@ function buildSidebarHTML(activePage) {
     ${btn('automations', ICON.automations, 'Automations')}
     ${btn('skills',      ICON.skills,      'Skills')}
     ${btn('agents',      ICON.agents,      'Agents')}
+    ${btn('usage',       ICON.usage,       'Usage')}
 
     <div class="sidebar-spacer"></div>
 
@@ -145,12 +150,13 @@ function buildAvatarPanelHTML() {
  * Mount and wire the shared sidebar.
  *
  * @param {object} opts
- * @param {'chat'|'library'|'automations'|'skills'|'agents'} [opts.activePage='chat']
+ * @param {'chat'|'library'|'automations'|'skills'|'agents'|'usage'} [opts.activePage='chat']
  * @param {() => void} [opts.onNewChat]
  * @param {() => void} [opts.onLibrary]
  * @param {() => void} [opts.onAutomations]
  * @param {() => void} [opts.onSkills]
  * @param {() => void} [opts.onAgents]
+ * @param {() => void} [opts.onUsage]
  * @param {() => void} [opts.onSettings]
  * @param {() => void} [opts.onAbout]
  */
@@ -161,6 +167,7 @@ export function initSidebar({
   onAutomations = () => {},
   onSkills      = () => {},
   onAgents      = () => {},
+  onUsage       = () => {},
   onSettings    = () => {},
   onAbout       = () => {},
 } = {}) {
@@ -198,6 +205,7 @@ export function initSidebar({
       if (view === 'automations') { onAutomations(); return; }
       if (view === 'skills')      { onSkills();      return; }
       if (view === 'agents')      { onAgents();      return; }
+      if (view === 'usage')       { onUsage();       return; }
     });
   });
 

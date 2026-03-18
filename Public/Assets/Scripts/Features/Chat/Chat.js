@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────
 //  openworld — Public/Assets/Scripts/Features/Chat/Chat.js
-//  Core chat logic with NATIVE tool calling (agentic loop) and robust message actions.
+//  Core chat logic with NATIVE tool calling (agentic loop),
+//  robust message actions, and token usage tracking.
 // ─────────────────────────────────────────────
 
 import { state } from '../../Shared/State.js';
@@ -22,7 +23,7 @@ function checkIcon() {
   return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 }
 
-// Global delegate for code-block copying (injected via Markdown.js)
+// Global delegate for code-block copying
 chatMessages.addEventListener('click', async (e) => {
   const copyCodeBtn = e.target.closest('.copy-code-btn');
   if (copyCodeBtn) {
@@ -104,6 +105,28 @@ function smoothScrollToBottom() {
 
 let _updateSendBtn = () => { };
 export function setSendBtnUpdater(fn) { _updateSendBtn = fn; }
+
+/* ══════════════════════════════════════════
+   USAGE TRACKING
+══════════════════════════════════════════ */
+async function trackUsage(usage, chatId) {
+  if (!usage || (!usage.inputTokens && !usage.outputTokens)) return;
+  if (!state.selectedProvider || !state.selectedModel) return;
+
+  try {
+    const modelInfo = state.selectedProvider.models?.[state.selectedModel];
+    await window.electronAPI?.trackUsage?.({
+      provider:     state.selectedProvider.provider,
+      model:        state.selectedModel,
+      modelName:    modelInfo?.name ?? state.selectedModel,
+      inputTokens:  usage.inputTokens  ?? 0,
+      outputTokens: usage.outputTokens ?? 0,
+      chatId:       chatId ?? state.currentChatId ?? null,
+    });
+  } catch (err) {
+    console.warn('[Chat] Could not track usage:', err);
+  }
+}
 
 /* ══════════════════════════════════════════
    LIVE ASSISTANT BUBBLE
@@ -295,6 +318,7 @@ export async function callAI() {
   try {
     const result = await fetchWithTools(state.selectedProvider, state.selectedModel, state.messages, state.systemPrompt, []);
     const reply = result.type === 'text' ? result.text : '(unexpected tool call)';
+    await trackUsage(result.usage, chatIdAtRequest);
     remove(() => {
       if (state.currentChatId !== chatIdAtRequest) return;
       appendMessage('assistant', reply);
@@ -317,6 +341,7 @@ export async function callAIWithContext(contextPrompt) {
   try {
     const result = await fetchWithTools(state.selectedProvider, state.selectedModel, msgs, state.systemPrompt, []);
     const reply = result.type === 'text' ? result.text : '(unexpected tool call)';
+    await trackUsage(result.usage, state.currentChatId);
     replaceLastAssistant(reply);
     state.messages.push({ role: 'assistant', content: reply, attachments: [] });
     saveCurrentChat();
@@ -336,6 +361,9 @@ async function agentLoop(messages, live) {
   const MAX_TURNS = 5;
   let toolsUsed = false;
 
+  // Accumulate usage across all turns in the loop
+  const totalUsage = { inputTokens: 0, outputTokens: 0 };
+
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const toolsThisTurn = toolsUsed ? [] : TOOLS;
 
@@ -347,9 +375,15 @@ async function agentLoop(messages, live) {
       toolsThisTurn,
     );
 
+    // Accumulate token usage
+    if (result.usage) {
+      totalUsage.inputTokens  += result.usage.inputTokens  ?? 0;
+      totalUsage.outputTokens += result.usage.outputTokens ?? 0;
+    }
+
     if (result.type === 'text') {
       live.set(result.text);
-      return result.text;
+      return { text: result.text, usage: totalUsage };
     }
 
     if (result.type === 'tool_call') {
@@ -381,7 +415,7 @@ async function agentLoop(messages, live) {
   }
 
   live.set('Done.');
-  return 'Done.';
+  return { text: 'Done.', usage: totalUsage };
 }
 
 /* ══════════════════════════════════════════
@@ -413,7 +447,11 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
   live.push('_Thinking…_');
 
   try {
-    const finalReply = await agentLoop(state.messages, live);
+    const { text: finalReply, usage } = await agentLoop(state.messages, live);
+
+    // Track token usage for analytics
+    await trackUsage(usage, state.currentChatId);
+
     state.messages.push({ role: 'assistant', content: finalReply, attachments: [] });
     saveCurrentChat();
   } catch (err) {
