@@ -2,20 +2,25 @@
 //  openworld — Public/Assets/Scripts/Features/Chat/ToolExecutor.js
 //  Executes a tool call decided by the AI and returns a result string.
 //  Free API tools (weather, crypto, FRED, etc.) call APIs directly from renderer.
+//
+//  onStage() message prefixes:
+//    [GMAIL]  … → renders with Gmail logo in the agent log
+//    [GITHUB] … → renders with GitHub logo in the agent log
+//    (no prefix) → plain dot log item
 // ─────────────────────────────────────────────
 
 /* ══════════════════════════════════════════
    WEATHER CODE MAP  (Open-Meteo WMO codes)
 ══════════════════════════════════════════ */
 const WMO_CODES = {
-  0: '☀️ Clear sky',        1: '🌤️ Mainly clear',     2: '⛅ Partly cloudy',
-  3: '☁️ Overcast',          45: '🌫️ Foggy',            48: '🌫️ Icy fog',
-  51: '🌦️ Light drizzle',    53: '🌦️ Drizzle',          55: '🌦️ Heavy drizzle',
-  61: '🌧️ Slight rain',      63: '🌧️ Moderate rain',    65: '🌧️ Heavy rain',
-  71: '🌨️ Slight snow',      73: '🌨️ Moderate snow',    75: '❄️ Heavy snow',
-  77: '🌨️ Snow grains',      80: '🌦️ Light showers',    81: '🌧️ Showers',
-  82: '⛈️ Violent showers',  85: '🌨️ Snow showers',     86: '❄️ Heavy snow showers',
-  95: '⛈️ Thunderstorm',     96: '⛈️ Thunderstorm + hail', 99: '⛈️ Thunderstorm + heavy hail',
+  0: '☀️ Clear sky', 1: '🌤️ Mainly clear', 2: '⛅ Partly cloudy',
+  3: '☁️ Overcast', 45: '🌫️ Foggy', 48: '🌫️ Icy fog',
+  51: '🌦️ Light drizzle', 53: '🌦️ Drizzle', 55: '🌦️ Heavy drizzle',
+  61: '🌧️ Slight rain', 63: '🌧️ Moderate rain', 65: '🌧️ Heavy rain',
+  71: '🌨️ Slight snow', 73: '🌨️ Moderate snow', 75: '❄️ Heavy snow',
+  77: '🌨️ Snow grains', 80: '🌦️ Light showers', 81: '🌧️ Showers',
+  82: '⛈️ Violent showers', 85: '🌨️ Snow showers', 86: '❄️ Heavy snow showers',
+  95: '⛈️ Thunderstorm', 96: '⛈️ Thunderstorm + hail', 99: '⛈️ Thunderstorm + heavy hail',
 };
 
 /* ══════════════════════════════════════════
@@ -28,8 +33,8 @@ function fmt(n, decimals = 2) {
 function fmtBig(n) {
   if (n == null) return 'N/A';
   if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
-  if (n >= 1e9)  return `$${(n / 1e9).toFixed(2)}B`;
-  if (n >= 1e6)  return `$${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
   return `$${fmt(n)}`;
 }
 
@@ -46,7 +51,7 @@ async function safeJson(url, opts = {}) {
  * @param {function} onStage  — callback(message) to update the UI during execution
  * @returns {Promise<string>} — a plain-text result to feed back to the AI
  */
-export async function executeTool(toolName, params, onStage = () => {}) {
+export async function executeTool(toolName, params, onStage = () => { }) {
   switch (toolName) {
 
     /* ════════════════════════════════════════════
@@ -56,7 +61,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'gmail_send_email': {
       const { to, subject, body } = params;
       if (!to || !subject || !body) throw new Error('Missing required params: to, subject, body');
-      onStage(`📤 Sending email to **${to}**…`);
+      onStage(`[GMAIL] Sending email to ${to}…`);
       const res = await window.electronAPI?.gmailSend?.(to, subject, body);
       if (!res?.ok) throw new Error(res?.error ?? 'Failed to send email');
       return `Email sent successfully to ${to} with subject "${subject}".`;
@@ -64,11 +69,11 @@ export async function executeTool(toolName, params, onStage = () => {}) {
 
     case 'gmail_read_inbox': {
       const maxResults = params.maxResults ?? 15;
-      onStage(`📬 Connecting to Gmail…`);
-      onStage(`📥 Fetching unread emails…`);
+      onStage(`[GMAIL] Connecting to Gmail…`);
+      onStage(`[GMAIL] Fetching unread emails…`);
       const res = await window.electronAPI?.gmailGetBrief?.(maxResults);
       if (!res?.ok) throw new Error(res?.error ?? 'Gmail not connected');
-      onStage(`📖 Reading ${res.count} email${res.count !== 1 ? 's' : ''}…`);
+      onStage(`[GMAIL] Reading ${res.count} email${res.count !== 1 ? 's' : ''}…`);
       if (res.count === 0) return 'Inbox is empty — no unread emails.';
       return `Found ${res.count} unread email(s):\n\n${res.text}`;
     }
@@ -76,7 +81,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'gmail_search_emails': {
       const { query, maxResults = 10 } = params;
       if (!query) throw new Error('Missing required param: query');
-      onStage(`🔍 Searching Gmail for **"${query}"**…`);
+      onStage(`[GMAIL] Searching for "${query}"…`);
       const res = await window.electronAPI?.gmailSearch?.(query, maxResults);
       if (!res?.ok) throw new Error(res?.error ?? 'Gmail error');
       if (!res.emails?.length) return `No emails found matching "${query}".`;
@@ -91,8 +96,8 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     ════════════════════════════════════════════ */
 
     case 'github_list_repos': {
-      onStage(`🐙 Connecting to GitHub…`);
-      onStage(`📦 Fetching repositories…`);
+      onStage(`[GITHUB] Connecting to GitHub…`);
+      onStage(`[GITHUB] Fetching repositories…`);
       const res = await window.electronAPI?.githubGetRepos?.();
       if (!res?.ok) throw new Error(res?.error ?? 'GitHub not connected');
       const lines = res.repos.slice(0, 20).map(r =>
@@ -104,7 +109,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'github_get_issues': {
       const { owner, repo } = params;
       if (!owner || !repo) throw new Error('Missing required params: owner, repo');
-      onStage(`🐛 Fetching issues from **${owner}/${repo}**…`);
+      onStage(`[GITHUB] Fetching issues from ${owner}/${repo}…`);
       const res = await window.electronAPI?.githubGetIssues?.(owner, repo);
       if (!res?.ok) throw new Error(res?.error ?? 'GitHub error');
       if (!res.issues?.length) return `No open issues in ${owner}/${repo}.`;
@@ -115,7 +120,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'github_get_pull_requests': {
       const { owner, repo } = params;
       if (!owner || !repo) throw new Error('Missing required params: owner, repo');
-      onStage(`🔀 Fetching pull requests from **${owner}/${repo}**…`);
+      onStage(`[GITHUB] Fetching pull requests from ${owner}/${repo}…`);
       const res = await window.electronAPI?.githubGetPRs?.(owner, repo);
       if (!res?.ok) throw new Error(res?.error ?? 'GitHub error');
       if (!res.prs?.length) return `No open pull requests in ${owner}/${repo}.`;
@@ -126,7 +131,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'github_get_file': {
       const { owner, repo, filePath } = params;
       if (!owner || !repo || !filePath) throw new Error('Missing required params: owner, repo, filePath');
-      onStage(`📂 Loading \`${filePath}\` from **${owner}/${repo}**…`);
+      onStage(`[GITHUB] Loading ${filePath} from ${owner}/${repo}…`);
       const res = await window.electronAPI?.githubGetFile?.(owner, repo, filePath);
       if (!res?.ok) throw new Error(res?.error ?? 'GitHub error');
       const preview = res.content.length > 4000
@@ -138,7 +143,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'github_get_file_tree': {
       const { owner, repo } = params;
       if (!owner || !repo) throw new Error('Missing required params: owner, repo');
-      onStage(`🌲 Reading file tree of **${owner}/${repo}**…`);
+      onStage(`[GITHUB] Reading file tree of ${owner}/${repo}…`);
       const res = await window.electronAPI?.githubGetTree?.(owner, repo);
       if (!res?.ok) throw new Error(res?.error ?? 'GitHub error');
       const blobs = res.tree.filter(f => f.type === 'blob');
@@ -147,7 +152,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     }
 
     case 'github_get_notifications': {
-      onStage(`🔔 Fetching GitHub notifications…`);
+      onStage(`[GITHUB] Fetching notifications…`);
       const res = await window.electronAPI?.githubGetNotifications?.();
       if (!res?.ok) throw new Error(res?.error ?? 'GitHub error');
       const n = res.notifications ?? [];
@@ -165,9 +170,8 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'get_weather': {
       const { location, units = 'celsius' } = params;
       if (!location) throw new Error('Missing required param: location');
-      onStage(`🌍 Locating **${location}**…`);
+      onStage(`🌍 Locating ${location}…`);
 
-      // Step 1: Geocode
       const geoData = await safeJson(
         `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&format=json`
       );
@@ -175,9 +179,8 @@ export async function executeTool(toolName, params, onStage = () => {}) {
         return `Couldn't find a location called "${location}". Try a specific city name like "Mumbai" or "London".`;
       }
       const { latitude, longitude, name, country, timezone } = geoData.results[0];
-      onStage(`🌡️ Fetching weather for **${name}, ${country}**…`);
+      onStage(`🌡️ Fetching weather for ${name}, ${country}…`);
 
-      // Step 2: Weather
       const tz = encodeURIComponent(timezone ?? 'auto');
       const weatherData = await safeJson(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
@@ -222,9 +225,8 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'get_crypto_price': {
       const { coin, vs_currency = 'usd' } = params;
       if (!coin) throw new Error('Missing required param: coin (e.g. "bitcoin", "ethereum", "BTC")');
-      onStage(`🔍 Searching for **${coin}**…`);
+      onStage(`🔍 Searching for ${coin}…`);
 
-      // Search for coin ID
       const searchData = await safeJson(
         `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(coin)}`
       );
@@ -233,7 +235,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
         return `Couldn't find cryptocurrency "${coin}". Try common names like "bitcoin", "ethereum", "solana", "dogecoin".`;
       }
 
-      onStage(`📈 Loading market data for **${coinResult.name}**…`);
+      onStage(`📈 Loading market data for ${coinResult.name}…`);
 
       const currencies = [vs_currency, 'usd', 'eur', 'inr'].filter((v, i, a) => a.indexOf(v) === i).join(',');
       const priceData = await safeJson(
@@ -260,10 +262,9 @@ export async function executeTool(toolName, params, onStage = () => {}) {
         `24h Volume: ${fmtBig(d[`${vs_currency}_24h_vol`])}`,
       ];
 
-      // Add other currencies
-      if (vs_currency !== 'usd' && d.usd)  lines.push(`USD: $${fmt(d.usd)}`);
-      if (vs_currency !== 'eur' && d.eur)  lines.push(`EUR: €${fmt(d.eur)}`);
-      if (vs_currency !== 'inr' && d.inr)  lines.push(`INR: ₹${fmt(d.inr, 0)}`);
+      if (vs_currency !== 'usd' && d.usd) lines.push(`USD: $${fmt(d.usd)}`);
+      if (vs_currency !== 'eur' && d.eur) lines.push(`EUR: €${fmt(d.eur)}`);
+      if (vs_currency !== 'inr' && d.inr) lines.push(`INR: ₹${fmt(d.inr, 0)}`);
       lines.push(``, `Last updated: ${lastUpdated}`, `Source: CoinGecko`);
 
       return lines.join('\n');
@@ -291,7 +292,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
     case 'get_exchange_rate': {
       const { from = 'USD', to } = params;
       const fromUpper = from.toUpperCase();
-      onStage(`💱 Fetching exchange rates for **${fromUpper}**…`);
+      onStage(`💱 Fetching exchange rates for ${fromUpper}…`);
 
       const data = await safeJson(`https://open.er-api.com/v6/latest/${fromUpper}`);
 
@@ -303,13 +304,11 @@ export async function executeTool(toolName, params, onStage = () => {}) {
       const updated = new Date(data.time_last_update_utc).toLocaleString();
 
       if (to) {
-        // Specific conversion requested
         const toUpper = to.toUpperCase();
         const rate = rates[toUpper];
         if (!rate) return `Currency "${to}" not found. Use ISO codes like USD, EUR, GBP, JPY, INR, AUD, CAD, CHF, CNY, SGD.`;
 
-        // Build a few reference rates
-        const MAJORS = ['USD','EUR','GBP','JPY','INR','CAD','AUD','CHF','CNY','SGD','AED'];
+        const MAJORS = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD', 'AED'];
         const refs = MAJORS.filter(c => c !== fromUpper).slice(0, 8)
           .map(c => `  ${c}: ${fmt(rates[c], 4)}`)
           .join('\n');
@@ -328,8 +327,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
         ].join('\n');
       }
 
-      // General rates
-      const DISPLAY = ['USD','EUR','GBP','JPY','INR','CAD','AUD','CHF','CNY','SGD','AED','BRL','MXN','KRW','THB'];
+      const DISPLAY = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'CAD', 'AUD', 'CHF', 'CNY', 'SGD', 'AED', 'BRL', 'MXN', 'KRW', 'THB'];
       const rateLines = DISPLAY.filter(c => c !== fromUpper && rates[c])
         .map(c => `  ${c}: ${fmt(rates[c], 4)}`)
         .join('\n');
@@ -377,7 +375,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
           url = `${BASE}/accounting/dts/dts_table_1/?fields=record_date,open_today_bal,close_today_bal,open_month_bal,open_fiscal_year_bal&sort=-record_date&limit=5`;
           title = '💰 US Treasury Daily Cash Balance';
           formatter = rows => rows.map(r => {
-            const open  = parseFloat(r.open_today_bal)  / 1000;
+            const open = parseFloat(r.open_today_bal) / 1000;
             const close = parseFloat(r.close_today_bal) / 1000;
             return `  ${r.record_date}: Open $${open.toFixed(1)}B → Close $${close.toFixed(1)}B`;
           }).join('\n');
@@ -424,10 +422,9 @@ export async function executeTool(toolName, params, onStage = () => {}) {
       }
 
       const sid = series_id.toUpperCase();
-      onStage(`📊 Fetching FRED series **${sid}**…`);
+      onStage(`📊 Fetching FRED series ${sid}…`);
 
-      // Get optional FRED API key
-      let apiKey = 'abcdefghijklmnopqrstuvwxyz012345'; // Public demo — limited access
+      let apiKey = 'abcdefghijklmnopqrstuvwxyz012345';
       try {
         const config = await window.electronAPI?.getFreeConnectorConfig?.('fred');
         if (config?.credentials?.apiKey?.trim()) {
@@ -435,12 +432,11 @@ export async function executeTool(toolName, params, onStage = () => {}) {
         } else {
           onStage(`ℹ️ Using public FRED access — add a free API key for full access`);
         }
-      } catch {}
+      } catch { }
 
       const FRED_BASE = 'https://api.stlouisfed.org/fred';
-      const keyParam  = `api_key=${apiKey}&file_type=json`;
+      const keyParam = `api_key=${apiKey}&file_type=json`;
 
-      // Fetch series metadata
       let seriesInfo = null;
       try {
         const infoData = await safeJson(`${FRED_BASE}/series?series_id=${sid}&${keyParam}`);
@@ -453,9 +449,8 @@ export async function executeTool(toolName, params, onStage = () => {}) {
         return `FRED error for "${sid}": ${err.message}\n\n${note}\n\nCommon IDs: GDP, UNRATE, CPIAUCSL, FEDFUNDS, DGS10, SP500`;
       }
 
-      onStage(`📈 Loading observations for **${seriesInfo?.title ?? sid}**…`);
+      onStage(`📈 Loading observations for ${seriesInfo?.title ?? sid}…`);
 
-      // Fetch observations
       const obsData = await safeJson(
         `${FRED_BASE}/series/observations?series_id=${sid}&${keyParam}&limit=${limit}&sort_order=desc`
       );
@@ -491,12 +486,11 @@ export async function executeTool(toolName, params, onStage = () => {}) {
       const { query, count = 5, orientation } = params;
       if (!query) throw new Error('Missing required param: query');
 
-      // Get Unsplash API key
       let apiKey = '';
       try {
         const config = await window.electronAPI?.getFreeConnectorConfig?.('unsplash');
         apiKey = config?.credentials?.apiKey?.trim() ?? '';
-      } catch {}
+      } catch { }
 
       if (!apiKey) {
         return [
@@ -512,7 +506,7 @@ export async function executeTool(toolName, params, onStage = () => {}) {
         ].join('\n');
       }
 
-      onStage(`📷 Searching Unsplash for **"${query}"**…`);
+      onStage(`📷 Searching Unsplash for "${query}"…`);
 
       const perPage = Math.min(count, 10);
       const orientParam = orientation ? `&orientation=${orientation}` : '';

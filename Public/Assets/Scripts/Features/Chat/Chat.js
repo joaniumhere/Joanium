@@ -34,8 +34,8 @@ chatMessages.addEventListener('click', async (e) => {
       const originalHtml = copyCodeBtn.innerHTML;
       copyCodeBtn.innerHTML = `${checkIcon()} Copied`;
       copyCodeBtn.style.color = 'var(--accent)';
-      setTimeout(() => { 
-        copyCodeBtn.innerHTML = originalHtml; 
+      setTimeout(() => {
+        copyCodeBtn.innerHTML = originalHtml;
         copyCodeBtn.style.color = '';
       }, 2000);
     } catch (err) {
@@ -51,8 +51,8 @@ function attachCopyEvent(btn, textToCopy) {
       await navigator.clipboard.writeText(textToCopy);
       btn.innerHTML = checkIcon();
       btn.style.color = 'var(--accent)';
-      setTimeout(() => { 
-        btn.innerHTML = copyIcon(); 
+      setTimeout(() => {
+        btn.innerHTML = copyIcon();
         btn.style.color = '';
       }, 2000);
     } catch (err) {
@@ -129,6 +129,88 @@ async function trackUsage(usage, chatId) {
 }
 
 /* ══════════════════════════════════════════
+   SKILL DETECTION
+   Loads skills and returns ones whose trigger
+   keywords overlap with the user message.
+══════════════════════════════════════════ */
+async function detectRelevantSkills(userText) {
+  try {
+    const res = await window.electronAPI?.getSkills?.();
+    const skills = res?.skills ?? [];
+    const msgWords = userText.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+    const matched = [];
+    for (const skill of skills) {
+      const triggerWords = (skill.trigger || skill.description || '')
+        .toLowerCase().split(/\W+/).filter(w => w.length > 3);
+      const overlap = msgWords.some(w => triggerWords.includes(w));
+      if (overlap) matched.push(skill.name);
+    }
+    return matched;
+  } catch {
+    return [];
+  }
+}
+
+/* ══════════════════════════════════════════
+   LIVE ASSISTANT BUBBLE — LOG ITEM BUILDER
+   Supports prefixed lines:
+     [GMAIL]  … → Gmail logo
+     [GITHUB] … → GitHub logo
+     [SKILL]  … → openworld logo
+   Anything else → plain dot log item
+══════════════════════════════════════════ */
+function buildLogItem(line) {
+  const item = document.createElement('div');
+  item.className = 'agent-log-item';
+
+  let iconHtml = '';
+  let displayText = line;
+
+  if (line.startsWith('[GMAIL]')) {
+    displayText = line.replace('[GMAIL]', '').trim();
+    iconHtml = `<img
+      src="Assets/Icons/Gmail.png"
+      alt="Gmail"
+      style="width:14px;height:14px;object-fit:contain;vertical-align:middle;border-radius:2px;flex-shrink:0;"
+    />`;
+  } else if (line.startsWith('[GITHUB]')) {
+    displayText = line.replace('[GITHUB]', '').trim();
+    iconHtml = `<img
+      src="Assets/Icons/Github.png"
+      alt="GitHub"
+      style="width:14px;height:14px;object-fit:contain;vertical-align:middle;border-radius:2px;flex-shrink:0;"
+    />`;
+  } else if (line.startsWith('[SKILL]')) {
+    displayText = line.replace('[SKILL]', '').trim();
+    iconHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+      style="width:14px;height:14px;vertical-align:middle;flex-shrink:0;color:var(--accent)">
+      <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z"/>
+    </svg>`;
+  } else {
+    // Legacy emoji path
+    const clean = line.replace(/[*_`]/g, '').replace(/^[🔧📤📬📥📖🔍📦🌲🐛🔀🔔❌✅]\s*/, '');
+    const emojiMatch = line.match(/^([🔧📤📬📥📖🔍📦🌲🐛🔀🔔❌✅])/);
+    item.innerHTML = `
+      <span class="agent-log-dot"></span>
+      <span class="agent-log-text">${emojiMatch ? emojiMatch[1] + ' ' : ''}${clean}</span>
+    `;
+    return item;
+  }
+
+  // Strip markdown from display text
+  const cleanDisplay = displayText.replace(/[*_`]/g, '');
+
+  item.innerHTML = `
+    <span class="agent-log-dot"></span>
+    <span style="display:inline-flex;align-items:center;gap:5px;">
+      ${iconHtml}
+      <span class="agent-log-text">${cleanDisplay}</span>
+    </span>
+  `;
+  return item;
+}
+
+/* ══════════════════════════════════════════
    LIVE ASSISTANT BUBBLE
 ══════════════════════════════════════════ */
 function assistantIcon() {
@@ -153,25 +235,18 @@ function createLiveRow() {
         <button class="action-btn copy-msg-btn" title="Copy Message">${copyIcon()}</button>
       </div>
     </div>`;
-    
+
   chatMessages.appendChild(row);
   smoothScrollToBottom();
 
-  const logEl = row.querySelector('.agent-log');
+  const logEl   = row.querySelector('.agent-log');
   const replyEl = row.querySelector('.agent-reply');
   const actionsEl = row.querySelector('.message-actions');
 
   return {
     row,
     push(line) {
-      const item = document.createElement('div');
-      item.className = 'agent-log-item';
-      item.textContent = line.replace(/[*_`]/g, '').replace(/^[🔧📤📬📥📖🔍📦🌲🐛🔀🔔❌✅]\s*/, '');
-      const emojiMatch = line.match(/^([🔧📤📬📥📖🔍📦🌲🐛🔀🔔❌✅])/);
-      item.innerHTML = `
-        <span class="agent-log-dot"></span>
-        <span class="agent-log-text">${emojiMatch ? emojiMatch[1] + ' ' : ''}${item.textContent}</span>
-      `;
+      const item = buildLogItem(line);
       logEl.appendChild(item);
       requestAnimationFrame(() => item.classList.add('agent-log-item--in'));
       smoothScrollToBottom();
@@ -183,10 +258,10 @@ function createLiveRow() {
         logEl.innerHTML = '';
         logEl.style.display = 'none';
         replyEl.innerHTML = renderMarkdown(markdown);
-        
+
         actionsEl.style.display = 'flex';
         attachCopyEvent(actionsEl.querySelector('.copy-msg-btn'), markdown);
-        
+
         smoothScrollToBottom();
       }, 200);
     },
@@ -354,14 +429,13 @@ export async function callAIWithContext(contextPrompt) {
 }
 
 /* ══════════════════════════════════════════
-   THE AGENTIC LOOP 
+   THE AGENTIC LOOP
 ══════════════════════════════════════════ */
 async function agentLoop(messages, live) {
   const loopMessages = [...messages];
   const MAX_TURNS = 5;
   let toolsUsed = false;
 
-  // Accumulate usage across all turns in the loop
   const totalUsage = { inputTokens: 0, outputTokens: 0 };
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -375,7 +449,6 @@ async function agentLoop(messages, live) {
       toolsThisTurn,
     );
 
-    // Accumulate token usage
     if (result.usage) {
       totalUsage.inputTokens  += result.usage.inputTokens  ?? 0;
       totalUsage.outputTokens += result.usage.outputTokens ?? 0;
@@ -446,10 +519,22 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
   const live = createLiveRow();
   live.push('_Thinking…_');
 
+  // ── Skill detection ───────────────────────────────────────────────────
+  // Check which skills are relevant to this message and surface them visually
+  if (text) {
+    try {
+      const matchedSkills = await detectRelevantSkills(text);
+      for (const skillName of matchedSkills) {
+        live.push(`[SKILL] Reading skill: ${skillName}`);
+        // Small stagger so items don't all appear at once
+        await new Promise(r => setTimeout(r, 180));
+      }
+    } catch { /* non-fatal */ }
+  }
+
   try {
     const { text: finalReply, usage } = await agentLoop(state.messages, live);
 
-    // Track token usage for analytics
     await trackUsage(usage, state.currentChatId);
 
     state.messages.push({ role: 'assistant', content: finalReply, attachments: [] });
