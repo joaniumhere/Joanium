@@ -25,12 +25,12 @@ export const Paths = {
   CHATS_DIR:                path.join(ROOT, 'Data', 'Chats'),
   AUTOMATIONS_FILE:         path.join(ROOT, 'Data', 'Automations.json'),
   CONNECTORS_FILE:          path.join(ROOT, 'Data', 'Connectors.json'),
-  ACTIVE_AGENT_FILE:        path.join(ROOT, 'Data', 'ActiveAgent.json'),
+  ACTIVE_PERSONA_FILE:      path.join(ROOT, 'Data', 'ActivePersona.json'),
   USAGE_FILE:               path.join(ROOT, 'Data', 'Usage.json'),
 
-  // Skills & Agents directories (project root)
-  SKILLS_DIR: path.join(ROOT, 'Skills'),
-  AGENTS_DIR: path.join(ROOT, 'Agents'),
+  // Skills & Personas directories (project root)
+  SKILLS_DIR:   path.join(ROOT, 'Skills'),
+  PERSONAS_DIR: path.join(ROOT, 'Personas'),
 
   // Electron
   PRELOAD:          path.join(ROOT, 'Packages', 'Electron', 'Preload.js'),
@@ -38,8 +38,8 @@ export const Paths = {
   MAIN_PAGE:        path.join(ROOT, 'Public', 'index.html'),
   AUTOMATIONS_PAGE: path.join(ROOT, 'Public', 'Automations.html'),
   SKILLS_PAGE:      path.join(ROOT, 'Public', 'Skills.html'),
-  AGENTS_PAGE:      path.join(ROOT, 'Public', 'Agents.html'),
-  USAGE_PAGE: path.join(ROOT, 'Public', 'Usage.html'),
+  PERSONAS_PAGE:    path.join(ROOT, 'Public', 'Personas.html'),
+  USAGE_PAGE:       path.join(ROOT, 'Public', 'Usage.html'),
 };
 
 export default Paths;

@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 //  openworld — Packages/Main/Services/SystemPromptService.js
 //  Builds and caches the context-aware system prompt.
-//  Cache is invalidated whenever settings, connectors, or active agent change.
+//  Cache is invalidated whenever settings, connectors, or active persona change.
 // ─────────────────────────────────────────────
 
 import fs from 'fs';
@@ -50,14 +50,14 @@ export async function get({ user, customInstructions, memory, connectorEngine })
     }
   }
 
-  // Load active agent (if any)
-  let activeAgent = null;
+  // Load active persona (if any)
+  let activePersona = null;
   try {
-    if (fs.existsSync(Paths.ACTIVE_AGENT_FILE)) {
-      activeAgent = JSON.parse(fs.readFileSync(Paths.ACTIVE_AGENT_FILE, 'utf-8'));
+    if (fs.existsSync(Paths.ACTIVE_PERSONA_FILE)) {
+      activePersona = JSON.parse(fs.readFileSync(Paths.ACTIVE_PERSONA_FILE, 'utf-8'));
     }
   } catch {
-    activeAgent = null;
+    activePersona = null;
   }
 
   _cache = await buildSystemPrompt({
@@ -66,8 +66,8 @@ export async function get({ user, customInstructions, memory, connectorEngine })
     memory,
     githubUsername,
     githubRepos,
-    gmailEmail:  gmailCreds?.email ?? null,
-    activeAgent,
+    gmailEmail:    gmailCreds?.email ?? null,
+    activePersona,
   });
   _cacheTime = now;
 

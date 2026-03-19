@@ -1,5 +1,5 @@
 ---
-name: OKRGoalSetting
+name: OKR Goal Setting
 trigger: OKR, goals, objective key results, goal setting, quarterly planning, annual goals, team goals, goal framework, performance goals, SMART goals, goal alignment, strategic goals, KPI
 description: Design and run a rigorous OKR process — writing great objectives, defining meaningful key results, cascading across teams, and avoiding the common failure modes that make OKRs feel like bureaucracy.
 ---

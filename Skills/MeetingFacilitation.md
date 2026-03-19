@@ -1,5 +1,5 @@
 ---
-name: MeetingFacilitation
+name: Meeting Facilitation
 trigger: run a meeting, facilitate, meeting agenda, workshop, brainstorm, retrospective, sprint planning, decision meeting, meeting template, meeting structure, team meeting, planning session, run a retrospective
 description: Design and facilitate effective meetings and workshops. Covers agenda design, facilitation techniques, decision frameworks, retrospectives, brainstorming sessions, and async alternatives.
 ---

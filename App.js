@@ -29,7 +29,7 @@ import * as GmailIPC      from './Packages/Main/IPC/GmailIPC.js';
 import * as GithubIPC     from './Packages/Main/IPC/GithubIPC.js';
 import * as WindowIPC     from './Packages/Main/IPC/WindowIPC.js';
 import * as SkillsIPC     from './Packages/Main/IPC/SkillsIPC.js';
-import * as AgentsIPC     from './Packages/Main/IPC/AgentsIPC.js';
+import * as PersonasIPC   from './Packages/Main/IPC/PersonasIPC.js';
 import * as UsageIPC      from './Packages/Main/IPC/UsageIPC.js';
 
 /* ══════════════════════════════════════════
@@ -52,7 +52,7 @@ GmailIPC.register(connectorEngine);
 GithubIPC.register(connectorEngine);
 WindowIPC.register();
 SkillsIPC.register();
-AgentsIPC.register();
+PersonasIPC.register();
 UsageIPC.register();
 
 /* ══════════════════════════════════════════

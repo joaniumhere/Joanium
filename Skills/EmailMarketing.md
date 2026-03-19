@@ -1,5 +1,5 @@
 ---
-name: EmailMarketing
+name: Email Marketing
 trigger: email campaign, email marketing, newsletter, drip campaign, email sequence, welcome email, onboarding email, re-engagement, abandoned cart email, email automation, subscriber, open rate, click rate, deliverability
 description: Design and write high-performing email marketing campaigns — welcome sequences, nurture drips, newsletters, transactional emails, and re-engagement flows. Covers copy, structure, segmentation, and deliverability.
 ---

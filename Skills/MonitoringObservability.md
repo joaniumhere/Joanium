@@ -1,5 +1,5 @@
 ---
-name: MonitoringObservability
+name: Monitoring Observability
 trigger: monitoring, observability, logging, metrics, tracing, prometheus, grafana, datadog, sentry, alerting, logs, error tracking, performance monitoring, SLO, SLA, dashboards, pagerduty
 description: Design and implement observability for production systems. Covers structured logging, metrics, distributed tracing, alerting, SLOs, dashboards, and incident response tooling.
 ---

@@ -1,5 +1,5 @@
 ---
-name: SalesOutreach
+name: Sales Outreach
 trigger: cold email, outreach email, sales email, prospecting, cold outreach, sales message, follow up email, linkedin outreach, sales sequence, SDR, business development, reach out to prospect
 description: Write high-converting cold outreach for email and LinkedIn. Covers research-based personalization, proven frameworks, subject lines, follow-up sequences, and objection-handling replies.
 ---

@@ -1,5 +1,5 @@
 ---
-name: DatabaseDesign
+name: Database Design
 trigger: design a database, schema design, data model, database schema, table structure, relationships, normalization, foreign key, indexes, ERD, postgres schema, mongodb schema, relational model
 description: Design clean, performant, evolvable database schemas. Covers relational modeling, normalization, naming conventions, relationships, indexes, soft deletes, auditing, and common modeling patterns.
 ---

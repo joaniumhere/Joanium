@@ -1,5 +1,5 @@
 ---
-name: APIDesign
+name: API Design
 trigger: design an API, REST API design, API endpoints, API schema, API versioning, REST conventions, API contract, openapi, swagger, api best practices, design endpoints, resource modeling
 description: Design clean, consistent, developer-friendly REST APIs from scratch. Covers resource modeling, endpoint naming, HTTP semantics, request/response schemas, versioning, pagination, errors, and OpenAPI spec.
 ---

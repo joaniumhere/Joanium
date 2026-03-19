@@ -1,5 +1,5 @@
 ---
-name: ProductRequirements
+name: Product Requirements
 trigger: write a PRD, product requirements, product spec, requirements document, feature spec, write requirements, define the feature, product brief, feature requirements, user stories, acceptance criteria
 description: Write clear, complete, actionable product requirements documents (PRDs) that engineering teams can build from without constant clarification. Covers problem framing, user stories, acceptance criteria, edge cases, and success metrics.
 ---

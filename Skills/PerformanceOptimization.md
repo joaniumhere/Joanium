@@ -1,5 +1,5 @@
 ---
-name: PerformanceOptimization
+name: Performance Optimization
 trigger: slow, performance, optimize, bottleneck, latency, speed up, profiling, too slow, high cpu, memory usage, page load slow, database slow, bundle size, lighthouse, web vitals
 description: Systematically find and fix performance bottlenecks across the full stack — frontend bundle, runtime JS, backend APIs, database queries, and infrastructure. Profile first, optimize second.
 ---

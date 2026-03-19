@@ -1,5 +1,5 @@
 ---
-name: SEOStrategy
+name: SEO Strategy
 trigger: SEO, search engine optimization, keyword research, rank higher, google ranking, organic traffic, on-page SEO, technical SEO, backlinks, content SEO, meta tags, search visibility, SERP, domain authority
 description: Build and execute a complete SEO strategy — technical foundations, keyword research, content optimization, and link building. Covers both on-page and off-page SEO with actionable implementation steps.
 ---

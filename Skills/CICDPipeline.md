@@ -1,5 +1,5 @@
 ---
-name: CICDPipeline
+name: CICD Pipeline
 trigger: CI/CD, github actions, pipeline, deploy, deployment, continuous integration, continuous deployment, docker build pipeline, automated tests pipeline, build workflow, release process, devops pipeline
 description: Design and implement CI/CD pipelines using GitHub Actions. Covers full pipeline anatomy, caching, matrix builds, Docker builds, environment deployments, secrets, rollback, and production deploy patterns.
 ---

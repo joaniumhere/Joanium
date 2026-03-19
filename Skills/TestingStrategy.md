@@ -1,5 +1,5 @@
 ---
-name: TestingStrategy
+name: Testing Strategy
 trigger: write tests, unit test, integration test, e2e test, test coverage, testing strategy, jest, pytest, vitest, cypress, playwright, TDD, test this function, how to test, test suite
 description: Design and write high-quality tests across all levels — unit, integration, and end-to-end. Covers Jest/Vitest, pytest, Playwright/Cypress, TDD, mocking strategy, coverage, and what NOT to test.
 ---

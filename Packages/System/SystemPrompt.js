@@ -93,7 +93,7 @@ async function fetchCountry() {
  * @param {string}   [opts.githubUsername]
  * @param {object[]} [opts.githubRepos]
  * @param {string}   [opts.gmailEmail]
- * @param {object}   [opts.activeAgent]  – { name, personality, description, instructions }
+ * @param {object}   [opts.activePersona]  – { name, personality, description, instructions }
  * @returns {Promise<string>}
  */
 export async function buildSystemPrompt({
@@ -103,7 +103,7 @@ export async function buildSystemPrompt({
   githubUsername = null,
   githubRepos = [],
   gmailEmail = null,
-  activeAgent = null,
+  activePersona = null,
 } = {}) {
 
   /* ── Time ── */
@@ -130,18 +130,18 @@ export async function buildSystemPrompt({
   const push  = (...args) => L.push(...args);
   const blank = () => L.push('');
 
-  /* ── Opening — agent persona OR default assistant ── */
-  if (activeAgent) {
-    push(`You are ${activeAgent.name}.`);
-    if (activeAgent.personality) {
-      push(`Your personality: ${activeAgent.personality}.`);
+  /* ── Opening — persona OR default assistant ── */
+  if (activePersona) {
+    push(`You are ${activePersona.name}.`);
+    if (activePersona.personality) {
+      push(`Your personality: ${activePersona.personality}.`);
     }
-    if (activeAgent.description) {
-      push(activeAgent.description);
+    if (activePersona.description) {
+      push(activePersona.description);
     }
-    if (activeAgent.instructions?.trim()) {
+    if (activePersona.instructions?.trim()) {
       blank();
-      push(activeAgent.instructions.trim());
+      push(activePersona.instructions.trim());
     }
     blank();
     push('---');

@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 //  openworld — Public/Assets/Scripts/Features/ModelSelector/ModelSelector.js
-//  Loads available models, renders the dropdown, and fires a custom event
-//  whenever the active model changes so other features can react.
+//  Loads available models, renders the dropdown sorted by rank,
+//  and fires a custom event whenever the active model changes.
 // ─────────────────────────────────────────────
 
 import { state }                          from '../../Shared/State.js';
@@ -17,6 +17,37 @@ function normalizeInputs(inputs = {}) {
     pdf:   Boolean(inputs.pdf),
     docx:  Boolean(inputs.docx),
   };
+}
+
+/** Sort model entries by their rank field (ascending — lower = better). */
+function sortedModelEntries(models = {}) {
+  return Object.entries(models).sort(
+    ([, a], [, b]) => (a.rank ?? 999) - (b.rank ?? 999),
+  );
+}
+
+/**
+ * Find the single best model across all available providers.
+ * Provider order in the array defines tie-breaking priority
+ * (anthropic first, then openai, google, etc.).
+ */
+function findBestModel(providers) {
+  let bestProvider = null;
+  let bestModelId  = null;
+  let bestRank     = Infinity;
+
+  for (const provider of providers) {
+    for (const [modelId, info] of Object.entries(provider.models ?? {})) {
+      const rank = info.rank ?? 999;
+      if (rank < bestRank) {
+        bestRank     = rank;
+        bestProvider = provider;
+        bestModelId  = modelId;
+      }
+    }
+  }
+
+  return { bestProvider, bestModelId };
 }
 
 /* ══════════════════════════════════════════
@@ -65,7 +96,7 @@ export function updateModelLabel() {
 }
 
 /* ══════════════════════════════════════════
-   DROPDOWN
+   DROPDOWN  (models sorted by rank within each provider)
 ══════════════════════════════════════════ */
 export function buildModelDropdown() {
   if (!modelDropdown) return;
@@ -80,7 +111,8 @@ export function buildModelDropdown() {
     header.textContent = provider.label;
     section.appendChild(header);
 
-    Object.entries(provider.models).forEach(([modelId, info]) => {
+    // Sort models by rank before rendering
+    sortedModelEntries(provider.models).forEach(([modelId, info]) => {
       const item     = document.createElement('button');
       item.className = 'model-item';
       const isActive =
@@ -130,21 +162,29 @@ export async function loadProviders() {
       return;
     }
 
-    const nextProvider =
-      state.providers.find(p => p.provider === prevProviderId) ?? state.providers[0];
-    const nextModelId =
-      (prevModelId && nextProvider.models?.[prevModelId]) ? prevModelId
-      : Object.keys(nextProvider.models)[0];
+    // Restore the previous selection if it's still valid
+    const prevProvider    = state.providers.find(p => p.provider === prevProviderId);
+    const prevModelValid  = prevProvider && prevModelId && prevProvider.models?.[prevModelId];
 
-    state.selectedProvider = nextProvider;
-    state.selectedModel    = nextModelId;
+    if (prevModelValid) {
+      state.selectedProvider = prevProvider;
+      state.selectedModel    = prevModelId;
+    } else {
+      // No valid prior selection — pick the globally best model.
+      // Provider array order (anthropic → openai → google → …) acts as the
+      // tie-breaker when two models share the same rank value.
+      const { bestProvider, bestModelId } = findBestModel(state.providers);
+      state.selectedProvider = bestProvider ?? state.providers[0];
+      state.selectedModel    = bestModelId  ?? sortedModelEntries(state.selectedProvider.models)[0]?.[0];
+    }
+
     updateModelLabel();
     buildModelDropdown();
     notifyModelSelectionChanged();
   } catch (err) {
     console.warn('[ModelSelector] Could not load models:', err);
-    state.allProviders = [];
-    state.providers    = [];
+    state.allProviders     = [];
+    state.providers        = [];
     state.selectedProvider = null;
     state.selectedModel    = null;
     if (modelLabel)    modelLabel.textContent = 'openworld';

@@ -23,7 +23,7 @@ const sidebar = initSidebar({
   onLibrary:     () => library.isOpen() ? library.close() : library.open(),
   onAutomations: () => window.electronAPI?.launchAutomations?.(),
   onSkills:      () => { /* already here */ },
-  onAgents:      () => window.electronAPI?.launchAgents?.(),
+  onPersonas:    () => window.electronAPI?.launchPersonas?.(),
   onUsage:       () => window.electronAPI?.launchUsage?.(),
   onSettings:    () => settings.open(),
   onAbout:       () => about.open(),
@@ -82,8 +82,6 @@ function matchesSearch(skill, query) {
     .join(' ').toLowerCase().includes(q);
 }
 
-// ── Card builder ──────────────────────────────────────────────────────────
-
 function buildSkillCard(skill) {
   const card = document.createElement('div');
   card.className = 'skill-card';
@@ -121,14 +119,10 @@ function buildSkillCard(skill) {
   return card;
 }
 
-// ── Render ────────────────────────────────────────────────────────────────
-
 function render(query = '') {
   const filtered = _allSkills.filter(s => matchesSearch(s, query));
-
   if (countEl) countEl.textContent = `${_allSkills.length} skill${_allSkills.length !== 1 ? 's' : ''}`;
 
-  // No skills installed at all → show empty state, hide everything else
   if (_allSkills.length === 0) {
     skillsEmpty.hidden   = false;
     skillsGrid.hidden    = true;
@@ -136,7 +130,6 @@ function render(query = '') {
     return;
   }
 
-  // Skills installed → hide empty, show search + grid
   skillsEmpty.hidden   = true;
   searchWrapper.hidden = false;
   skillsGrid.hidden    = false;
@@ -152,8 +145,6 @@ function render(query = '') {
 
   filtered.forEach(skill => skillsGrid.appendChild(buildSkillCard(skill)));
 }
-
-// ── Modal ─────────────────────────────────────────────────────────────────
 
 function openModal(skill) {
   modalName.textContent  = skill.name;
@@ -171,8 +162,6 @@ modalCloseBtn?.addEventListener('click', closeModal);
 modalBackdrop?.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// ── Search + clear button ─────────────────────────────────────────────────
-
 const clearBtn = document.getElementById('skills-search-clear');
 
 searchInput?.addEventListener('input', () => {
@@ -186,8 +175,6 @@ clearBtn?.addEventListener('click', () => {
   render('');
   searchInput?.focus();
 });
-
-// ── Boot ──────────────────────────────────────────────────────────────────
 
 async function load() {
   try {

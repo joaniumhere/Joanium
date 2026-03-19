@@ -34,8 +34,8 @@ export function register() {
     return { ok: true };
   });
 
-  ipcMain.handle('launch-agents', () => {
-    loadPage(Paths.AGENTS_PAGE);
+  ipcMain.handle('launch-personas', () => {
+    loadPage(Paths.PERSONAS_PAGE);
     return { ok: true };
   });
 }

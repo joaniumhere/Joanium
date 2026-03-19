@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveUserProfile:        (profile)  => ipcRenderer.invoke('save-user-profile', profile),
   launchMain:             ()         => ipcRenderer.invoke('launch-main'),
   launchSkills:           ()         => ipcRenderer.invoke('launch-skills'),
-  launchAgents:           ()         => ipcRenderer.invoke('launch-agents'),
+  launchPersonas:         ()         => ipcRenderer.invoke('launch-personas'),
 
   // Runtime reads
   getUser:                ()         => ipcRenderer.invoke('get-user'),
@@ -60,11 +60,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Skills
   getSkills: () => ipcRenderer.invoke('get-skills'),
 
-  // Agents
-  getAgents:        ()            => ipcRenderer.invoke('get-agents'),
-  getActiveAgent:   ()            => ipcRenderer.invoke('get-active-agent'),
-  setActiveAgent:   (agentData)   => ipcRenderer.invoke('set-active-agent', agentData),
-  resetActiveAgent: ()            => ipcRenderer.invoke('reset-active-agent'),
+  // Personas (custom AI personalities)
+  getPersonas:          ()              => ipcRenderer.invoke('get-personas'),
+  getActivePersona:     ()              => ipcRenderer.invoke('get-active-persona'),
+  setActivePersona:     (personaData)   => ipcRenderer.invoke('set-active-persona', personaData),
+  resetActivePersona:   ()              => ipcRenderer.invoke('reset-active-persona'),
 
   // Usage analytics
   trackUsage:  (record) => ipcRenderer.invoke('track-usage', record),

@@ -18,10 +18,10 @@ const ICON = {
                    stroke-linecap="round" stroke-linejoin="round"/>
            </svg>`,
 
-  agents: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-             <circle cx="12" cy="8" r="4"/>
-             <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
-           </svg>`,
+  personas: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+               <circle cx="12" cy="8" r="4"/>
+               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+             </svg>`,
 
   usage: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke-linecap="round" stroke-linejoin="round"/>
@@ -90,7 +90,7 @@ function buildSidebarHTML(activePage) {
     ${btn('library',     ICON.library,     'Library')}
     ${btn('automations', ICON.automations, 'Automations')}
     ${btn('skills',      ICON.skills,      'Skills')}
-    ${btn('agents',      ICON.agents,      'Agents')}
+    ${btn('personas',    ICON.personas,    'Personas')}
     ${btn('usage',       ICON.usage,       'Usage')}
 
     <div class="sidebar-spacer"></div>
@@ -150,12 +150,12 @@ function buildAvatarPanelHTML() {
  * Mount and wire the shared sidebar.
  *
  * @param {object} opts
- * @param {'chat'|'library'|'automations'|'skills'|'agents'|'usage'} [opts.activePage='chat']
+ * @param {'chat'|'library'|'automations'|'skills'|'personas'|'usage'} [opts.activePage='chat']
  * @param {() => void} [opts.onNewChat]
  * @param {() => void} [opts.onLibrary]
  * @param {() => void} [opts.onAutomations]
  * @param {() => void} [opts.onSkills]
- * @param {() => void} [opts.onAgents]
+ * @param {() => void} [opts.onPersonas]
  * @param {() => void} [opts.onUsage]
  * @param {() => void} [opts.onSettings]
  * @param {() => void} [opts.onAbout]
@@ -166,7 +166,7 @@ export function initSidebar({
   onLibrary     = () => {},
   onAutomations = () => {},
   onSkills      = () => {},
-  onAgents      = () => {},
+  onPersonas    = () => {},
   onUsage       = () => {},
   onSettings    = () => {},
   onAbout       = () => {},
@@ -204,7 +204,7 @@ export function initSidebar({
       if (view === 'library')     { onLibrary();     return; }
       if (view === 'automations') { onAutomations(); return; }
       if (view === 'skills')      { onSkills();      return; }
-      if (view === 'agents')      { onAgents();      return; }
+      if (view === 'personas')    { onPersonas();    return; }
       if (view === 'usage')       { onUsage();       return; }
     });
   });

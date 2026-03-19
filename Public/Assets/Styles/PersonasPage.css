@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════
-   AgentsPage.css  —  openworld Agents page entry point
+   PersonasPage.css  —  openworld Personas page entry point
    ═══════════════════════════════════════════════════ */
 
 @import './Animations.css';
@@ -18,5 +18,5 @@
 @import './Footer.css';
 @import './Themes.css';
 @import './Root.css';
-@import './Agents.css';
+@import './Personas.css';
 @import './SharedSearchBarSkills&Agents.css';

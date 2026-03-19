@@ -1,5 +1,5 @@
 ---
-name: TechnicalWriting
+name: Technical Writing
 trigger: write documentation, README, API docs, technical doc, architecture doc, runbook, ADR, technical blog post, how-to guide, tutorial, changelog, write a spec, document this code
 description: Write clear, complete, maintainable technical documentation. Covers README structure, API docs, architecture decision records, runbooks, tutorials, and changelogs — with templates for each.
 ---

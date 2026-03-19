@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
-//  openworld — Packages/Main/IPC/AgentsIPC.js
-//  Reads agent .md files from Agents/ directory.
-//  Manages active agent persistence in Data/ActiveAgent.json
+//  openworld — Packages/Main/IPC/PersonasIPC.js
+//  Reads persona .md files from Personas/ directory.
+//  Manages active persona persistence in Data/ActivePersona.json
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
@@ -25,15 +25,15 @@ function parseFrontmatter(content) {
 }
 
 export function register() {
-  /* ── List all agents ── */
-  ipcMain.handle('get-agents', () => {
+  /* ── List all personas ── */
+  ipcMain.handle('get-personas', () => {
     try {
-      if (!fs.existsSync(Paths.AGENTS_DIR)) return { ok: true, agents: [] };
+      if (!fs.existsSync(Paths.PERSONAS_DIR)) return { ok: true, personas: [] };
 
-      const files = fs.readdirSync(Paths.AGENTS_DIR).filter(f => f.endsWith('.md'));
-      const agents = files.map(filename => {
+      const files = fs.readdirSync(Paths.PERSONAS_DIR).filter(f => f.endsWith('.md'));
+      const personas = files.map(filename => {
         try {
-          const raw = fs.readFileSync(path.join(Paths.AGENTS_DIR, filename), 'utf-8');
+          const raw = fs.readFileSync(path.join(Paths.PERSONAS_DIR, filename), 'utf-8');
           const { meta, body } = parseFrontmatter(raw);
           return {
             filename,
@@ -45,43 +45,43 @@ export function register() {
         } catch { return null; }
       }).filter(Boolean);
 
-      return { ok: true, agents };
+      return { ok: true, personas };
     } catch (err) {
-      return { ok: false, error: err.message, agents: [] };
+      return { ok: false, error: err.message, personas: [] };
     }
   });
 
-  /* ── Get active agent ── */
-  ipcMain.handle('get-active-agent', () => {
+  /* ── Get active persona ── */
+  ipcMain.handle('get-active-persona', () => {
     try {
-      if (!fs.existsSync(Paths.ACTIVE_AGENT_FILE)) return { ok: true, agent: null };
+      if (!fs.existsSync(Paths.ACTIVE_PERSONA_FILE)) return { ok: true, persona: null };
 
-      const data = JSON.parse(fs.readFileSync(Paths.ACTIVE_AGENT_FILE, 'utf-8'));
+      const data = JSON.parse(fs.readFileSync(Paths.ACTIVE_PERSONA_FILE, 'utf-8'));
 
-      // Verify the agent file still exists — if deleted, clear active
+      // Verify the persona file still exists — if deleted, clear active
       if (data?.filename) {
-        const agentPath = path.join(Paths.AGENTS_DIR, data.filename);
-        if (!fs.existsSync(agentPath)) {
-          fs.unlinkSync(Paths.ACTIVE_AGENT_FILE);
+        const personaPath = path.join(Paths.PERSONAS_DIR, data.filename);
+        if (!fs.existsSync(personaPath)) {
+          fs.unlinkSync(Paths.ACTIVE_PERSONA_FILE);
           invalidateSysPrompt();
-          return { ok: true, agent: null };
+          return { ok: true, persona: null };
         }
       }
 
-      return { ok: true, agent: data };
+      return { ok: true, persona: data };
     } catch {
-      return { ok: true, agent: null };
+      return { ok: true, persona: null };
     }
   });
 
-  /* ── Set active agent ── */
-  ipcMain.handle('set-active-agent', (_e, agentData) => {
+  /* ── Set active persona ── */
+  ipcMain.handle('set-active-persona', (_e, personaData) => {
     try {
-      const dir = path.dirname(Paths.ACTIVE_AGENT_FILE);
+      const dir = path.dirname(Paths.ACTIVE_PERSONA_FILE);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(
-        Paths.ACTIVE_AGENT_FILE,
-        JSON.stringify(agentData, null, 2),
+        Paths.ACTIVE_PERSONA_FILE,
+        JSON.stringify(personaData, null, 2),
         'utf-8',
       );
       invalidateSysPrompt();
@@ -92,10 +92,10 @@ export function register() {
   });
 
   /* ── Reset to default assistant ── */
-  ipcMain.handle('reset-active-agent', () => {
+  ipcMain.handle('reset-active-persona', () => {
     try {
-      if (fs.existsSync(Paths.ACTIVE_AGENT_FILE))
-        fs.unlinkSync(Paths.ACTIVE_AGENT_FILE);
+      if (fs.existsSync(Paths.ACTIVE_PERSONA_FILE))
+        fs.unlinkSync(Paths.ACTIVE_PERSONA_FILE);
       invalidateSysPrompt();
       return { ok: true };
     } catch (err) {

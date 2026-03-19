@@ -1,5 +1,5 @@
 ---
-name: SecurityAudit
+name: Security Audit
 trigger: security review, security audit, vulnerabilities, is this secure, OWASP, SQL injection, XSS, CSRF, authentication security, authorization bug, input validation, secure code review, penetration test, hardening
 description: Perform systematic security audits on code, APIs, and systems. Covers OWASP Top 10, injection attacks, auth vulnerabilities, secrets management, dependency scanning, and security hardening.
 ---

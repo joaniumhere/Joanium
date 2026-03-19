@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>openworld — Agents</title>
-  <link rel="stylesheet" href="Assets/Styles/AgentsPage.css" />
+  <title>openworld — Personas</title>
+  <link rel="stylesheet" href="Assets/Styles/PersonasPage.css" />
 </head>
 <body>
 
@@ -35,42 +35,42 @@
       <div id="theme-panel"></div>
       <div id="avatar-panel"></div>
 
-      <main id="main" class="agents-main">
-        <div class="agents-scroll">
+      <main id="main" class="personas-main">
+        <div class="personas-scroll">
 
           <!-- Page header -->
-          <div class="agents-page-header">
-            <div class="agents-page-header-copy">
-              <h2>Agents</h2>
-              <p>Choose a persona for your AI — the active agent shapes every conversation</p>
+          <div class="personas-page-header">
+            <div class="personas-page-header-copy">
+              <h2>Personas</h2>
+              <p>Choose a personality for your AI — the active persona shapes every conversation</p>
             </div>
-            <span class="page-count" id="agents-count"></span>
+            <span class="page-count" id="personas-count"></span>
           </div>
 
-          <!-- Active agent banner -->
-          <div id="agents-active-banner" class="agents-active-banner" hidden>
-            <div class="agents-active-banner-dot"></div>
-            <div class="agents-active-banner-text">
-              Active agent: <strong id="agents-active-name">Default Assistant</strong>
+          <!-- Active persona banner -->
+          <div id="personas-active-banner" class="personas-active-banner" hidden>
+            <div class="personas-active-banner-dot"></div>
+            <div class="personas-active-banner-text">
+              Active persona: <strong id="personas-active-name">Default Assistant</strong>
             </div>
           </div>
 
           <!-- Search bar -->
-          <div id="agents-search-wrapper" class="page-search-wrapper">
+          <div id="personas-search-wrapper" class="page-search-wrapper">
             <div class="page-search-box">
               <svg class="page-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                 <circle cx="11" cy="11" r="7"/>
                 <path d="M16.5 16.5L21 21" stroke-linecap="round"/>
               </svg>
               <input
-                id="agents-search"
+                id="personas-search"
                 type="text"
                 class="page-search-input"
                 placeholder="Search by name, personality, description…"
                 autocomplete="off"
                 spellcheck="false"
               />
-              <button class="page-search-clear" id="agents-search-clear" type="button" aria-label="Clear search">
+              <button class="page-search-clear" id="personas-search-clear" type="button" aria-label="Clear search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
                 </svg>
@@ -78,14 +78,14 @@
             </div>
           </div>
 
-          <!-- Merged agents grid (default + installed, all together) -->
-          <div id="agents-grid" class="agents-grid"></div>
+          <!-- Personas grid -->
+          <div id="personas-grid" class="personas-grid"></div>
 
         </div>
       </main>
     </div>
   </div>
 
-  <script type="module" src="Assets/Scripts/Pages/Agents.js"></script>
+  <script type="module" src="Assets/Scripts/Pages/Personas.js"></script>
 </body>
 </html>

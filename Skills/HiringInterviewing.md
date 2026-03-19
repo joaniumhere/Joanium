@@ -1,5 +1,5 @@
 ---
-name: HiringInterviewing
+name: Hiring Interviewing
 trigger: hire, interview questions, interview process, job description, evaluate candidates, technical interview, behavioral interview, hiring process, candidate assessment, offer letter, hiring manager, recruiting
 description: Design and run a rigorous hiring process — job descriptions, structured interviews, evaluation rubrics, technical assessments, and offer decisions. Covers both the hiring manager and candidate perspectives.
 ---

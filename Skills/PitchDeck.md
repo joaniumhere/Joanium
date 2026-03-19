@@ -1,5 +1,5 @@
 ---
-name: PitchDeck
+name: Pitch Deck
 trigger: pitch deck, investor pitch, fundraising deck, startup pitch, VC pitch, angel investor, seed round, series A, pitch presentation, investment deck, demo day pitch
 description: Build a compelling investor pitch deck that tells a clear story, proves the opportunity, and makes investors want to take the next meeting. Covers slide-by-slide structure, what to include/exclude, and narrative flow.
 ---
