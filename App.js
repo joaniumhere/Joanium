@@ -17,6 +17,7 @@ import { create as createWindow } from './Packages/Main/Window.js';
 import { isFirstRun }       from './Packages/Main/Services/UserService.js';
 import { AutomationEngine } from './Packages/Automation/AutomationEngine.js';
 import { ConnectorEngine }  from './Packages/Connectors/ConnectorEngine.js';
+import { AgentsEngine }  from './Packages/Agents/AgentsEngine.js';
 
 // ── IPC handler modules ───────────────────────────────────────────────
 import * as SetupIPC      from './Packages/Main/IPC/SetupIPC.js';
@@ -31,12 +32,14 @@ import * as WindowIPC     from './Packages/Main/IPC/WindowIPC.js';
 import * as SkillsIPC     from './Packages/Main/IPC/SkillsIPC.js';
 import * as PersonasIPC   from './Packages/Main/IPC/PersonasIPC.js';
 import * as UsageIPC      from './Packages/Main/IPC/UsageIPC.js';
+import * as AgentsIPC    from './Packages/Main/IPC/AgentsIPC.js';
 
 /* ══════════════════════════════════════════
    ENGINES  (singletons shared across IPC modules)
 ══════════════════════════════════════════ */
 const connectorEngine  = new ConnectorEngine(Paths.CONNECTORS_FILE);
 const automationEngine = new AutomationEngine(Paths.AUTOMATIONS_FILE, connectorEngine);
+const agentsEngine = new AgentsEngine(Paths.AGENTS_FILE, connectorEngine);
 
 /* ══════════════════════════════════════════
    IPC REGISTRATION
@@ -54,6 +57,7 @@ WindowIPC.register();
 SkillsIPC.register();
 PersonasIPC.register();
 UsageIPC.register();
+AgentsIPC.register(agentsEngine);
 
 /* ══════════════════════════════════════════
    APP LIFECYCLE
@@ -64,6 +68,7 @@ app.whenReady().then(() => {
   if (!fs.existsSync(Paths.CHATS_DIR)) fs.mkdirSync(Paths.CHATS_DIR, { recursive: true });
 
   automationEngine.start();
+  agentsEngine.start();
 
   const startPage = isFirstRun() ? Paths.SETUP_PAGE : Paths.MAIN_PAGE;
   createWindow(startPage);
@@ -76,5 +81,6 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   automationEngine.stop();
+  agentsEngine.stop();
   if (process.platform !== 'darwin') app.quit();
 });

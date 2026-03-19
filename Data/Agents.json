@@ -1,0 +1,47 @@
+{
+  "agents": [
+    {
+      "id": "agent_1773940519870_pei1",
+      "name": "Morning Digest",
+      "description": "Morning Digest",
+      "enabled": true,
+      "primaryModel": {
+        "provider": "openrouter",
+        "modelId": "mistralai/mistral-large"
+      },
+      "fallbackModels": [
+        {
+          "provider": "mistral",
+          "modelId": "mistral-large-latest"
+        },
+        {
+          "provider": "mistral",
+          "modelId": "codestral-latest"
+        },
+        {
+          "provider": "mistral",
+          "modelId": "mistral-small-latest"
+        }
+      ],
+      "jobs": [
+        {
+          "id": "job_1773940444978_7225",
+          "name": "Morning Email Digest",
+          "trigger": {
+            "type": "daily",
+            "time": "08:00"
+          },
+          "dataSource": {
+            "type": "gmail_inbox"
+          },
+          "instruction": "Read these emails carefully. Identify the 3 most important ones requiring action today. For each, write: subject, sender, what action is needed, and by when. Then list FYI emails briefly.",
+          "output": {
+            "type": "send_email",
+            "to": "joeljollyeng@gmail.com"
+          },
+          "lastRun": "2026-03-19T17:16:11.900Z"
+        }
+      ]
+    }
+  ]
+}

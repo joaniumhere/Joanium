@@ -28,6 +28,7 @@ export const Paths = {
   CONNECTORS_FILE:          path.join(ROOT, 'Data', 'Connectors.json'),
   ACTIVE_PERSONA_FILE:      path.join(ROOT, 'Data', 'ActivePersona.json'),
   USAGE_FILE:               path.join(ROOT, 'Data', 'Usage.json'),
+  AGENTS_FILE:              path.join(ROOT, 'Data', 'Agents.json'),
 
   // Skills & Personas directories (project root)
   SKILLS_DIR:   path.join(ROOT, 'Skills'),
@@ -41,6 +42,7 @@ export const Paths = {
   SKILLS_PAGE:      path.join(ROOT, 'Public', 'Skills.html'),
   PERSONAS_PAGE:    path.join(ROOT, 'Public', 'Personas.html'),
   USAGE_PAGE:       path.join(ROOT, 'Public', 'Usage.html'),
+  AGENTS_PAGE:      path.join(ROOT, 'Public', 'Agents.html'),
 };
 
 export default Paths;
