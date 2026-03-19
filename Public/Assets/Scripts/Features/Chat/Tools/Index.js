@@ -8,13 +8,21 @@ import { CRYPTO_TOOLS } from './CryptoTools.js';
 import { FINANCE_TOOLS } from './FinanceTools.js';
 import { PHOTO_TOOLS } from './PhotoTools.js';
 import { WIKI_TOOLS } from './WikiTools.js';
-import { DICTIONARY_TOOLS } from './DictionaryTools.js';
-import { NEWS_TOOLS } from './NewsTools.js';
 import { GEO_TOOLS } from './GeoTools.js';
 import { FUN_TOOLS } from './FunTools.js';
+import { JOKE_TOOLS } from './JokeTools.js';
+import { QUOTE_TOOLS } from './QuoteTools.js';
+import { COUNTRY_TOOLS } from './CountryTools.js';
+import { ASTRONOMY_TOOLS } from './AstronomyTools.js';
+import { HACKERNEWS_TOOLS } from './HackerNewsTools.js';
+import { URL_TOOLS } from './UrlTools.js';
 
-export { GMAIL_TOOLS, GITHUB_TOOLS, WEATHER_TOOLS, CRYPTO_TOOLS, FINANCE_TOOLS, PHOTO_TOOLS,
-         WIKI_TOOLS, DICTIONARY_TOOLS, NEWS_TOOLS, GEO_TOOLS, FUN_TOOLS };
+export {
+    GMAIL_TOOLS, GITHUB_TOOLS, WEATHER_TOOLS, CRYPTO_TOOLS, FINANCE_TOOLS, PHOTO_TOOLS,
+    WIKI_TOOLS, GEO_TOOLS, FUN_TOOLS,
+    JOKE_TOOLS, QUOTE_TOOLS, COUNTRY_TOOLS, ASTRONOMY_TOOLS, HACKERNEWS_TOOLS,
+    URL_TOOLS,
+};
 
 /** Complete flat list of every tool available to the AI. */
 export const TOOLS = [
@@ -25,10 +33,14 @@ export const TOOLS = [
     ...FINANCE_TOOLS,
     ...PHOTO_TOOLS,
     ...WIKI_TOOLS,
-    ...DICTIONARY_TOOLS,
-    ...NEWS_TOOLS,
     ...GEO_TOOLS,
     ...FUN_TOOLS,
+    ...JOKE_TOOLS,
+    ...QUOTE_TOOLS,
+    ...COUNTRY_TOOLS,
+    ...ASTRONOMY_TOOLS,
+    ...HACKERNEWS_TOOLS,
+    ...URL_TOOLS,
 ];
 
 const CATEGORY_TO_CONNECTOR = {
@@ -42,10 +54,14 @@ const CATEGORY_TO_CONNECTOR = {
     openweathermap: 'openweathermap',
     unsplash: 'unsplash',
     wikipedia: 'wikipedia',
-    dictionary: 'dictionary',
-    newsdata: 'newsdata',
     ipgeo: 'ipgeo',
     funfacts: 'funfacts',
+    jokeapi: 'jokeapi',
+    quotes: 'quotes',
+    restcountries: 'restcountries',
+    nasa: 'nasa',
+    hackernews: 'hackernews',
+    cleanuri: 'cleanuri',
 };
 
 /**

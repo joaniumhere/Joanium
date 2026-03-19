@@ -11,10 +11,14 @@ import * as CryptoExecutor     from './CryptoExecutor.js';
 import * as FinanceExecutor    from './FinanceExecutor.js';
 import * as PhotoExecutor      from './PhotoExecutor.js';
 import * as WikiExecutor       from './WikiExecutor.js';
-import * as DictionaryExecutor from './DictionaryExecutor.js';
-import * as NewsExecutor       from './NewsExecutor.js';
 import * as GeoExecutor        from './GeoExecutor.js';
 import * as FunExecutor        from './FunExecutor.js';
+import * as JokeExecutor       from './JokeExecutor.js';
+import * as QuoteExecutor      from './QuoteExecutor.js';
+import * as CountryExecutor    from './CountryExecutor.js';
+import * as AstronomyExecutor  from './AstronomyExecutor.js';
+import * as HackerNewsExecutor from './HackerNewsExecutor.js';
+import * as UrlExecutor        from './UrlExecutor.js';
 
 const EXECUTORS = [
   GmailExecutor,
@@ -24,10 +28,14 @@ const EXECUTORS = [
   FinanceExecutor,
   PhotoExecutor,
   WikiExecutor,
-  DictionaryExecutor,
-  NewsExecutor,
   GeoExecutor,
   FunExecutor,
+  JokeExecutor,
+  QuoteExecutor,
+  CountryExecutor,
+  AstronomyExecutor,
+  HackerNewsExecutor,
+  UrlExecutor,
 ];
 
 /**
@@ -65,8 +73,6 @@ export async function executeTool(toolName, params, onStage = () => {}) {
   // ── Fallback: normalized match ───────────────────────────────────────
   const normalized = normalizeName(toolName);
   for (const executor of EXECUTORS) {
-    // Build a normalized version of every tool name the executor handles
-    // by checking against a small probe set
     if (executor.handles(normalized)) {
       console.warn(`[Executors] Normalized tool name "${toolName}" → "${normalized}"`);
       return executor.execute(normalized, params, onStage);
