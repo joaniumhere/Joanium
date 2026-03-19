@@ -7,8 +7,14 @@ import { WEATHER_TOOLS } from './WeatherTools.js';
 import { CRYPTO_TOOLS } from './CryptoTools.js';
 import { FINANCE_TOOLS } from './FinanceTools.js';
 import { PHOTO_TOOLS } from './PhotoTools.js';
+import { WIKI_TOOLS } from './WikiTools.js';
+import { DICTIONARY_TOOLS } from './DictionaryTools.js';
+import { NEWS_TOOLS } from './NewsTools.js';
+import { GEO_TOOLS } from './GeoTools.js';
+import { FUN_TOOLS } from './FunTools.js';
 
-export { GMAIL_TOOLS, GITHUB_TOOLS, WEATHER_TOOLS, CRYPTO_TOOLS, FINANCE_TOOLS, PHOTO_TOOLS };
+export { GMAIL_TOOLS, GITHUB_TOOLS, WEATHER_TOOLS, CRYPTO_TOOLS, FINANCE_TOOLS, PHOTO_TOOLS,
+         WIKI_TOOLS, DICTIONARY_TOOLS, NEWS_TOOLS, GEO_TOOLS, FUN_TOOLS };
 
 /** Complete flat list of every tool available to the AI. */
 export const TOOLS = [
@@ -18,6 +24,11 @@ export const TOOLS = [
     ...CRYPTO_TOOLS,
     ...FINANCE_TOOLS,
     ...PHOTO_TOOLS,
+    ...WIKI_TOOLS,
+    ...DICTIONARY_TOOLS,
+    ...NEWS_TOOLS,
+    ...GEO_TOOLS,
+    ...FUN_TOOLS,
 ];
 
 const CATEGORY_TO_CONNECTOR = {
@@ -30,6 +41,11 @@ const CATEGORY_TO_CONNECTOR = {
     fred: 'fred',
     openweathermap: 'openweathermap',
     unsplash: 'unsplash',
+    wikipedia: 'wikipedia',
+    dictionary: 'dictionary',
+    newsdata: 'newsdata',
+    ipgeo: 'ipgeo',
+    funfacts: 'funfacts',
 };
 
 /**

@@ -4,12 +4,17 @@
 // model-output variations (extra spaces, case differences) don't cause
 // "Unknown tool" errors.
 
-import * as GmailExecutor   from './GmailExecutor.js';
-import * as GithubExecutor  from './GithubExecutor.js';
-import * as WeatherExecutor from './WeatherExecutor.js';
-import * as CryptoExecutor  from './CryptoExecutor.js';
-import * as FinanceExecutor from './FinanceExecutor.js';
-import * as PhotoExecutor   from './PhotoExecutor.js';
+import * as GmailExecutor      from './GmailExecutor.js';
+import * as GithubExecutor     from './GithubExecutor.js';
+import * as WeatherExecutor    from './WeatherExecutor.js';
+import * as CryptoExecutor     from './CryptoExecutor.js';
+import * as FinanceExecutor    from './FinanceExecutor.js';
+import * as PhotoExecutor      from './PhotoExecutor.js';
+import * as WikiExecutor       from './WikiExecutor.js';
+import * as DictionaryExecutor from './DictionaryExecutor.js';
+import * as NewsExecutor       from './NewsExecutor.js';
+import * as GeoExecutor        from './GeoExecutor.js';
+import * as FunExecutor        from './FunExecutor.js';
 
 const EXECUTORS = [
   GmailExecutor,
@@ -18,6 +23,11 @@ const EXECUTORS = [
   CryptoExecutor,
   FinanceExecutor,
   PhotoExecutor,
+  WikiExecutor,
+  DictionaryExecutor,
+  NewsExecutor,
+  GeoExecutor,
+  FunExecutor,
 ];
 
 /**
