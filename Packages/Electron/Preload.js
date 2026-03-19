@@ -35,11 +35,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteAutomation:   (id)                 => ipcRenderer.invoke('delete-automation', id),
   toggleAutomation:   (id, enabled)        => ipcRenderer.invoke('toggle-automation', id, enabled),
 
-  // Connectors (credential management)
+  // Connectors — service (Gmail, GitHub)
   getConnectors:     ()                       => ipcRenderer.invoke('get-connectors'),
   saveConnector:     (name, credentials)      => ipcRenderer.invoke('save-connector', name, credentials),
   removeConnector:   (name)                   => ipcRenderer.invoke('remove-connector', name),
   validateConnector: (name)                   => ipcRenderer.invoke('validate-connector', name),
+
+  // Connectors — free APIs
+  getFreeConnectorConfig: (name)            => ipcRenderer.invoke('get-free-connector-config', name),
+  toggleFreeConnector:    (name, enabled)   => ipcRenderer.invoke('toggle-free-connector', name, enabled),
+  saveFreeConnectorKey:   (name, apiKey)    => ipcRenderer.invoke('save-free-connector-key', name, apiKey),
 
   // Gmail
   gmailOAuthStart:  (clientId, clientSecret)  => ipcRenderer.invoke('gmail-oauth-start', clientId, clientSecret),

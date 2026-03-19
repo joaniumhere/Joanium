@@ -71,3 +71,6 @@
 
 /* 23. Agent Log */
 @import  './AgentLog.css';
+
+/* 24. Free API Connectors */
+@import  './FreeConnectors.css';

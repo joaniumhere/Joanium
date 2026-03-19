@@ -74,3 +74,6 @@
 
 /* 24. Automations */
 @import  './Automations.css';
+
+/* 25. Free API Connectors */
+@import  './FreeConnectors.css';

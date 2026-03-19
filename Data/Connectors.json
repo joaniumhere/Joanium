@@ -10,7 +10,9 @@
         "clientId": "492756371702-6o4sfs7hsksds0aqgf3vgr14jm6voftl.apps.googleusercontent.com",
         "clientSecret": "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"
       },
-      "connectedAt": "2026-03-18T08:55:32.224Z"
+      "connectedAt": "2026-03-18T08:55:32.224Z",
+      "isFree": false,
+      "noKey": false
     },
     "github": {
       "enabled": true,
@@ -18,7 +20,64 @@
         "token": "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",
         "username": "withinJoel"
       },
-      "connectedAt": "2026-03-18T04:04:07.687Z"
+      "connectedAt": "2026-03-18T04:04:07.687Z",
+      "isFree": false,
+      "noKey": false
+    },
+    "open_meteo": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "coingecko": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "exchange_rate": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "treasury": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "fred": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": false,
+      "credentials": {
+        "apiKey": ""
+      },
+      "connectedAt": null
+    },
+    "openweathermap": {
+      "enabled": false,
+      "isFree": true,
+      "noKey": false,
+      "credentials": {
+        "apiKey": ""
+      },
+      "connectedAt": null
+    },
+    "unsplash": {
+      "enabled": false,
+      "isFree": true,
+      "noKey": false,
+      "credentials": {
+        "apiKey": ""
+      },
+      "connectedAt": null
     }
   }
 }

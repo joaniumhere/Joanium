@@ -1,9 +1,12 @@
 // ─────────────────────────────────────────────
 //  openworld — Public/Assets/Scripts/Features/Connectors/Connectors.js
-//  Renders connector cards and handles connect / disconnect flows.
-//  Imported and used by User.js (settings modal connectors tab).
+//  Renders connector cards and handles connect/disconnect/toggle flows.
+//  Includes service connectors (Gmail, GitHub) and free API connectors.
 // ─────────────────────────────────────────────
 
+/* ══════════════════════════════════════════
+   SERVICE CONNECTORS  (require credentials)
+══════════════════════════════════════════ */
 const CONNECTORS = [
   {
     id:          'gmail',
@@ -74,12 +77,102 @@ const CONNECTORS = [
 ];
 
 /* ══════════════════════════════════════════
+   FREE API CONNECTORS  (enabled by default)
+══════════════════════════════════════════ */
+const FREE_CONNECTORS = [
+  {
+    id:          'open_meteo',
+    name:        'Open-Meteo',
+    icon:        '🌤️',
+    description: 'Real-time weather for any city — temperature, humidity, wind, and 3-day forecast.',
+    noKey:       true,
+    docsUrl:     'https://open-meteo.com',
+    tools:       ['get_weather'],
+    toolHint:    'Ask: "What\'s the weather in Tokyo?" or "Will it rain in Mumbai tomorrow?"',
+  },
+  {
+    id:          'coingecko',
+    name:        'CoinGecko',
+    icon:        '🦎',
+    description: 'Live crypto prices, market caps, 24h changes, and trending coins. 10,000+ tokens.',
+    noKey:       true,
+    docsUrl:     'https://coingecko.com',
+    tools:       ['get_crypto_price', 'get_crypto_trending'],
+    toolHint:    'Ask: "What\'s the price of Ethereum?" or "What coins are trending right now?"',
+  },
+  {
+    id:          'exchange_rate',
+    name:        'Exchange Rates',
+    icon:        '💱',
+    description: 'Real-time currency exchange rates for 160+ currencies. Powered by open.er-api.com.',
+    noKey:       true,
+    docsUrl:     'https://open.er-api.com',
+    tools:       ['get_exchange_rate'],
+    toolHint:    'Ask: "Convert 100 USD to INR" or "What\'s the EUR/GBP rate?"',
+  },
+  {
+    id:          'treasury',
+    name:        'US Treasury',
+    icon:        '🏛️',
+    description: 'Official US government fiscal data — national debt, treasury rates, and daily cash balance.',
+    noKey:       true,
+    docsUrl:     'https://fiscaldata.treasury.gov',
+    tools:       ['get_treasury_data'],
+    toolHint:    'Ask: "What is the current US national debt?" or "Show US treasury interest rates"',
+  },
+  {
+    id:          'fred',
+    name:        'Federal Reserve (FRED)',
+    icon:        '📊',
+    description: 'Economic indicators from the St. Louis Fed — GDP, unemployment, CPI, interest rates, and hundreds more.',
+    noKey:       false,
+    optionalKey: true,
+    keyLabel:    'FRED API Key',
+    keyPlaceholder: 'Get your free key at fred.stlouisfed.org',
+    keyHint:     'Free key at fred.stlouisfed.org/docs/api/api_key.html — unlocks full access to 800,000+ series.',
+    docsUrl:     'https://fred.stlouisfed.org/docs/api/api_key.html',
+    tools:       ['get_fred_data'],
+    toolHint:    'Ask: "Show me US GDP" or "What\'s the current unemployment rate?" or "What\'s the inflation rate?"',
+  },
+  {
+    id:          'openweathermap',
+    name:        'OpenWeatherMap',
+    icon:        '🌦️',
+    description: 'Detailed weather with hourly forecasts, air quality, and historical data. Free tier included.',
+    noKey:       false,
+    optionalKey: false,
+    keyLabel:    'OpenWeatherMap API Key',
+    keyPlaceholder: 'Get your free key at openweathermap.org/api',
+    keyHint:     'Register at openweathermap.org/api — free tier allows 1,000 calls/day.',
+    docsUrl:     'https://openweathermap.org/api',
+    tools:       ['get_weather'],
+    toolHint:    'Works alongside Open-Meteo for richer weather data when a key is provided.',
+  },
+  {
+    id:          'unsplash',
+    name:        'Unsplash',
+    icon:        '📷',
+    description: 'Search millions of high-quality free photos by topic. Get image URLs and photographer credits.',
+    noKey:       false,
+    optionalKey: false,
+    keyLabel:    'Unsplash Access Key',
+    keyPlaceholder: 'Get your free key at unsplash.com/developers',
+    keyHint:     'Register at unsplash.com/oauth/applications — free tier: 50 requests/hour.',
+    docsUrl:     'https://unsplash.com/developers',
+    tools:       ['search_photos'],
+    toolHint:    'Ask: "Find me photos of minimal workspace setups" or "Search for sunset mountain photos"',
+  },
+];
+
+/* ══════════════════════════════════════════
    MODULE STATE
 ══════════════════════════════════════════ */
 const cxState = {
-  loaded:   false,
-  statuses: {},
-  pending:  {},
+  loaded:        false,
+  statuses:      {},    // service connector statuses
+  freeStatuses:  {},    // free connector enabled states
+  freeKeys:      {},    // pending key edits for free connectors
+  pending:       {},    // pending credential edits for service connectors
 };
 
 /* ══════════════════════════════════════════
@@ -100,7 +193,7 @@ function setConnectBtnState(id, loading, label) {
 }
 
 /* ══════════════════════════════════════════
-   CARD BUILDER
+   SERVICE CONNECTOR CARD BUILDER
 ══════════════════════════════════════════ */
 function buildCard(def) {
   const status      = cxState.statuses[def.id] ?? { enabled: false };
@@ -110,7 +203,6 @@ function buildCard(def) {
   card.className = `cx-card${isConnected ? ' cx-connected' : ''}`;
   card.id        = `cx-card-${def.id}`;
 
-  /* Header */
   card.innerHTML = `
     <div class="cx-card-header">
       <div class="cx-icon">${def.icon}</div>
@@ -123,7 +215,6 @@ function buildCard(def) {
       </span>
     </div>`;
 
-  /* Capabilities */
   const caps = document.createElement('div');
   caps.className = 'cx-capabilities';
   def.capabilities.forEach(cap => {
@@ -134,7 +225,6 @@ function buildCard(def) {
   });
   card.appendChild(caps);
 
-  /* Connected account info */
   if (isConnected && status.accountInfo) {
     const info    = document.createElement('div');
     info.className = 'cx-account-info';
@@ -145,7 +235,6 @@ function buildCard(def) {
     card.appendChild(info);
   }
 
-  /* Suggested automations */
   if (def.automations?.length) {
     const autoSec   = document.createElement('div');
     autoSec.className = 'cx-auto-section';
@@ -159,13 +248,11 @@ function buildCard(def) {
     card.appendChild(autoSec);
   }
 
-  /* Status message */
   const statusEl   = document.createElement('div');
   statusEl.className = 'cx-status-msg';
   statusEl.id        = `cx-status-${def.id}`;
   card.appendChild(statusEl);
 
-  /* Credential fields (hidden when connected) */
   const fieldsWrap   = document.createElement('div');
   fieldsWrap.className = 'cx-fields';
   fieldsWrap.id        = `cx-fields-${def.id}`;
@@ -174,12 +261,10 @@ function buildCard(def) {
   def.fields.forEach(field => {
     const wrap  = document.createElement('div');
     wrap.className = 'cx-field-wrap';
-
     const label    = document.createElement('label');
     label.className = 'cx-field-label';
     label.textContent = field.label;
     label.htmlFor   = `cx-field-${def.id}-${field.key}`;
-
     const input    = document.createElement('input');
     input.id       = `cx-field-${def.id}-${field.key}`;
     input.type     = field.type;
@@ -191,7 +276,6 @@ function buildCard(def) {
       if (!cxState.pending[def.id]) cxState.pending[def.id] = {};
       cxState.pending[def.id][field.key] = input.value.trim();
     });
-
     wrap.append(label, input);
     if (field.hint) {
       const hint = document.createElement('div');
@@ -203,7 +287,6 @@ function buildCard(def) {
   });
   card.appendChild(fieldsWrap);
 
-  /* Action row */
   const actions   = document.createElement('div');
   actions.className = 'cx-actions';
 
@@ -248,17 +331,187 @@ function buildCard(def) {
 }
 
 /* ══════════════════════════════════════════
-   RENDER
+   FREE API CONNECTOR CARD BUILDER
+══════════════════════════════════════════ */
+function buildFreeCard(def) {
+  const isEnabled = cxState.freeStatuses[def.id] ?? true;
+  const hasKey    = Boolean(cxState.freeKeys[def.id]?.saved);
+
+  const card = document.createElement('div');
+  card.className = `cx-free-card${isEnabled ? ' cx-free-enabled' : ' cx-free-disabled'}`;
+  card.id = `cx-free-card-${def.id}`;
+
+  // ── Header ──────────────────────────────────────────────
+  const header = document.createElement('div');
+  header.className = 'cx-free-header';
+  header.innerHTML = `
+    <div class="cx-free-icon">${def.icon}</div>
+    <div class="cx-free-info">
+      <div class="cx-free-name">
+        ${def.name}
+        ${def.noKey ? '<span class="cx-free-badge">Free · No key</span>' : def.optionalKey ? '<span class="cx-free-badge cx-free-badge--optional">Free · Optional key</span>' : '<span class="cx-free-badge cx-free-badge--key">Free key required</span>'}
+      </div>
+      <div class="cx-free-desc">${def.description}</div>
+    </div>`;
+
+  // Toggle switch
+  const toggleWrap = document.createElement('label');
+  toggleWrap.className = 'cx-free-toggle';
+  toggleWrap.title = isEnabled ? 'Click to disable' : 'Click to enable';
+  toggleWrap.innerHTML = `
+    <input type="checkbox" class="cx-free-toggle-input" ${isEnabled ? 'checked' : ''} />
+    <span class="cx-free-toggle-track"></span>`;
+  toggleWrap.querySelector('.cx-free-toggle-input').addEventListener('change', async (e) => {
+    const enabled = e.target.checked;
+    cxState.freeStatuses[def.id] = enabled;
+    card.classList.toggle('cx-free-enabled', enabled);
+    card.classList.toggle('cx-free-disabled', !enabled);
+    toggleWrap.title = enabled ? 'Click to disable' : 'Click to enable';
+    await window.electronAPI?.toggleFreeConnector?.(def.id, enabled);
+  });
+
+  header.appendChild(toggleWrap);
+  card.appendChild(header);
+
+  // ── Tool hint ────────────────────────────────────────────
+  if (def.toolHint) {
+    const hint = document.createElement('div');
+    hint.className = 'cx-free-tool-hint';
+    hint.innerHTML = `<span class="cx-free-tool-hint-icon">💬</span> ${def.toolHint}`;
+    card.appendChild(hint);
+  }
+
+  // ── Optional / required API key field ───────────────────
+  if (!def.noKey) {
+    const keySection = document.createElement('div');
+    keySection.className = 'cx-free-key-section';
+
+    const keyLabel = document.createElement('div');
+    keyLabel.className = 'cx-free-key-label';
+    keyLabel.textContent = def.keyLabel;
+
+    const keyWrap = document.createElement('div');
+    keyWrap.className = 'cx-free-key-wrap key-input-wrap';
+
+    const keyInput = document.createElement('input');
+    keyInput.type = 'password';
+    keyInput.className = 'cx-field-input cx-free-key-input';
+    keyInput.id = `cx-free-key-${def.id}`;
+    keyInput.placeholder = def.keyPlaceholder;
+    keyInput.autocomplete = 'off';
+    keyInput.spellcheck = false;
+    // Pre-fill saved key (masked)
+    if (cxState.freeKeys[def.id]?.saved) {
+      keyInput.value = cxState.freeKeys[def.id].value ?? '';
+    }
+
+    const eyeBtn = document.createElement('button');
+    eyeBtn.type = 'button';
+    eyeBtn.className = 'key-eye';
+    eyeBtn.title = 'Show / hide';
+    eyeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke-width="1.8"/></svg>`;
+    eyeBtn.addEventListener('click', () => {
+      keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
+    });
+
+    keyWrap.append(keyInput, eyeBtn);
+
+    const keyHint = document.createElement('div');
+    keyHint.className = 'cx-field-hint';
+    keyHint.textContent = def.keyHint;
+
+    const keyActions = document.createElement('div');
+    keyActions.className = 'cx-free-key-actions';
+
+    const saveKeyBtn = document.createElement('button');
+    saveKeyBtn.className = 'cx-connect-btn cx-free-save-btn';
+    saveKeyBtn.textContent = 'Save key';
+    saveKeyBtn.addEventListener('click', async () => {
+      const val = keyInput.value.trim();
+      saveKeyBtn.disabled = true;
+      saveKeyBtn.textContent = 'Saving…';
+      const res = await window.electronAPI?.saveFreeConnectorKey?.(def.id, val);
+      if (res?.ok !== false) {
+        cxState.freeKeys[def.id] = { saved: true, value: val };
+        saveKeyBtn.textContent = '✓ Saved';
+        setFreeStatus(def.id, val ? `Key saved — ${def.name} is ready.` : 'Key cleared.', 'success');
+        setTimeout(() => { saveKeyBtn.disabled = false; saveKeyBtn.textContent = 'Save key'; }, 2000);
+      } else {
+        setFreeStatus(def.id, `Error: ${res.error}`, 'error');
+        saveKeyBtn.disabled = false;
+        saveKeyBtn.textContent = 'Save key';
+      }
+    });
+
+    const docsLink = document.createElement('a');
+    docsLink.className = 'cx-help-link';
+    docsLink.textContent = 'Get free key →';
+    docsLink.href = '#';
+    docsLink.addEventListener('click', e => {
+      e.preventDefault();
+      const a = Object.assign(document.createElement('a'), { href: def.docsUrl, target: '_blank', rel: 'noopener noreferrer' });
+      a.click();
+    });
+
+    keyActions.append(docsLink, saveKeyBtn);
+    keySection.append(keyLabel, keyWrap, keyHint, keyActions);
+
+    // Status message
+    const statusEl = document.createElement('div');
+    statusEl.className = 'cx-status-msg';
+    statusEl.id = `cx-free-status-${def.id}`;
+    keySection.appendChild(statusEl);
+
+    card.appendChild(keySection);
+  }
+
+  return card;
+}
+
+function setFreeStatus(id, message, type = '') {
+  const el = document.getElementById(`cx-free-status-${id}`);
+  if (!el) return;
+  el.textContent = message;
+  el.className   = `cx-status-msg${message && type ? ` ${type}` : ''}`;
+}
+
+/* ══════════════════════════════════════════
+   RENDER PANEL
 ══════════════════════════════════════════ */
 function renderPanel() {
   const list = document.getElementById('connector-list');
   if (!list) return;
   list.innerHTML = '';
+
+  // ── Section: Service Connectors ──────────
+  const svcHeader = document.createElement('div');
+  svcHeader.className = 'cx-section-header';
+  svcHeader.innerHTML = `
+    <div class="cx-section-title">
+      <span class="cx-section-icon">🔌</span>
+      Service Connectors
+    </div>
+    <div class="cx-section-sub">Requires authentication</div>`;
+  list.appendChild(svcHeader);
+
   CONNECTORS.forEach(def => list.appendChild(buildCard(def)));
+
+  // ── Section: Free APIs ───────────────────
+  const freeHeader = document.createElement('div');
+  freeHeader.className = 'cx-section-header cx-section-header--free';
+  freeHeader.innerHTML = `
+    <div class="cx-section-title">
+      <span class="cx-section-icon">⚡</span>
+      Free APIs
+    </div>
+    <div class="cx-section-sub">Enabled by default · Toggle to disable</div>`;
+  list.appendChild(freeHeader);
+
+  FREE_CONNECTORS.forEach(def => list.appendChild(buildFreeCard(def)));
 }
 
 /* ══════════════════════════════════════════
-   CONNECT HANDLERS
+   SERVICE CONNECTOR HANDLERS
 ══════════════════════════════════════════ */
 async function handleConnect(id, def) {
   def.oauthFlow ? await handleOAuthConnect(id, def) : await handleTokenConnect(id, def);
@@ -331,7 +584,7 @@ async function handleDisconnect(id) {
 }
 
 /* ══════════════════════════════════════════
-   LOAD PANEL  (called by User.js on tab switch)
+   LOAD PANEL  (called by SettingsModal on tab switch)
 ══════════════════════════════════════════ */
 export async function loadConnectorsPanel() {
   const list = document.getElementById('connector-list');
@@ -339,11 +592,16 @@ export async function loadConnectorsPanel() {
   if (!cxState.loaded) list.innerHTML = '<div class="cx-loading">Loading connectors…</div>';
 
   try {
+    // Load service connector statuses
     const statuses = await window.electronAPI?.getConnectors?.() ?? {};
     cxState.statuses = {};
-    for (const [name, s] of Object.entries(statuses))
-      cxState.statuses[name] = { ...s, accountInfo: null };
+    for (const [name, s] of Object.entries(statuses)) {
+      if (!s.isFree) {
+        cxState.statuses[name] = { ...s, accountInfo: null };
+      }
+    }
 
+    // Validate service connectors
     await Promise.all(
       Object.entries(cxState.statuses)
         .filter(([, s]) => s.enabled)
@@ -352,6 +610,19 @@ export async function loadConnectorsPanel() {
           if (v?.ok) cxState.statuses[name].accountInfo = { email: v.email ?? null, username: v.username ?? null };
         }),
     );
+
+    // Load free connector statuses and keys
+    for (const def of FREE_CONNECTORS) {
+      const config = await window.electronAPI?.getFreeConnectorConfig?.(def.id).catch(() => null);
+      if (config) {
+        cxState.freeStatuses[def.id] = config.enabled ?? true;
+        if (!def.noKey && config.credentials?.apiKey) {
+          cxState.freeKeys[def.id] = { saved: true, value: config.credentials.apiKey };
+        }
+      } else {
+        cxState.freeStatuses[def.id] = true; // default enabled
+      }
+    }
 
     cxState.loaded = true;
     renderPanel();
