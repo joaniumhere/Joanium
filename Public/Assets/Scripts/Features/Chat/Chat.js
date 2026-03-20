@@ -144,7 +144,7 @@ function normalizeMessage(msg) {
     role: msg?.role ?? 'user',
     content: String(msg?.content ?? ''),
     attachments: Array.isArray(msg?.attachments)
-      ? msg.attachments.filter(a => a?.type === 'image' && typeof a.dataUrl === 'string')
+      ? msg.attachments.filter(a => (a?.type === 'image' || a?.type === 'file') && (typeof a.dataUrl === 'string' || typeof a.textContent === 'string'))
       : [],
   };
 }
@@ -158,6 +158,32 @@ function buildImageFrame(attachment, className) {
   img.alt = attachment.name || 'Pasted image';
   img.loading = 'lazy';
   frame.appendChild(img);
+  return frame;
+}
+
+function buildFileFrame(attachment, className) {
+  const extMatch = (attachment.name || '').match(/\.([^.]+)$/);
+  const ext = extMatch ? extMatch[1].toUpperCase() : 'FILE';
+  const linesText = attachment.lines ? `${attachment.lines} lines` : 'File';
+  const frame = document.createElement('div');
+  frame.className = className;
+  frame.title = attachment.name || 'File';
+  frame.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${attachment.name}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${linesText}</div>
+    <div style="margin-top:auto;font-size:10px;font-weight:bold;color:var(--text-secondary);border:1px solid var(--border-subtle);border-radius:4px;padding:2px 6px;align-self:flex-start;">${ext}</div>
+  `;
+  frame.style.display = 'flex';
+  frame.style.flexDirection = 'column';
+  frame.style.alignItems = 'flex-start';
+  frame.style.justifyContent = 'flex-start';
+  frame.style.width = '135px';
+  frame.style.height = '135px';
+  frame.style.padding = '12px';
+  frame.style.backgroundColor = 'var(--bg-tertiary)';
+  frame.style.borderRadius = '12px';
+  frame.style.boxSizing = 'border-box';
+  frame.style.border = '1px solid var(--border-color)';
   return frame;
 }
 
@@ -477,7 +503,10 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       bubble.classList.add('has-attachments');
       const gallery = document.createElement('div');
       gallery.className = 'bubble-attachments';
-      msg.attachments.forEach(a => gallery.appendChild(buildImageFrame(a, 'bubble-attachment')));
+      msg.attachments.forEach(a => {
+        if (a.type === 'image') gallery.appendChild(buildImageFrame(a, 'bubble-attachment'));
+        else if (a.type === 'file') gallery.appendChild(buildFileFrame(a, 'bubble-attachment'));
+      });
       bubble.appendChild(gallery);
     }
 

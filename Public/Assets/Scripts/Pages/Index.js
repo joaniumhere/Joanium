@@ -18,7 +18,7 @@ import { initSettingsModal } from '../Shared/Modals/SettingsModal.js';
 
 // Features
 import { init as initModelSelector, loadProviders, updateModelLabel, buildModelDropdown, notifyModelSelectionChanged } from '../Features/ModelSelector/ModelSelector.js';
-import { init as initComposer, syncCapabilities } from '../Features/Composer/Composer.js';
+import { init as initComposer, syncCapabilities, addAttachments } from '../Features/Composer/Composer.js';
 import {
   sendMessage, startNewChat, loadChat,
   setSendBtnUpdater,
@@ -197,4 +197,65 @@ const _originalSendBtnUpdater = updateSendBtn;
 setSendBtnUpdater(() => {
   _originalSendBtnUpdater();
   updateEnhanceBtn();
+});
+
+// ─────────────────────────────────────────────
+// Drag and Drop support for context files
+// ─────────────────────────────────────────────
+
+let dragCounter = 0;
+
+const dropOverlay = document.createElement('div');
+dropOverlay.className = 'drop-overlay';
+dropOverlay.innerHTML = '<div class="drop-overlay-content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="48" height="48" style="margin-bottom:12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg><h2>Drop files to attach</h2></div>';
+document.body.appendChild(dropOverlay);
+
+Object.assign(dropOverlay.style, {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  zIndex: 9999, opacity: 0, pointerEvents: 'none',
+  transition: 'opacity 0.2s ease, transform 0.2s ease',
+  transform: 'scale(1.02)'
+});
+Object.assign(dropOverlay.querySelector('.drop-overlay-content').style, {
+  display: 'flex', flexDirection: 'column', alignItems: 'center',
+  color: 'white'
+});
+
+document.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+document.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter++;
+  if (dragCounter === 1) {
+    dropOverlay.style.opacity = '1';
+    dropOverlay.style.transform = 'scale(1)';
+  }
+});
+
+document.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter--;
+  if (dragCounter === 0) {
+    dropOverlay.style.opacity = '0';
+    dropOverlay.style.transform = 'scale(1.02)';
+  }
+});
+
+document.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter = 0;
+  dropOverlay.style.opacity = '0';
+  dropOverlay.style.transform = 'scale(1.02)';
+
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    await addAttachments(Array.from(e.dataTransfer.files));
+  }
 });

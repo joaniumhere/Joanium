@@ -96,9 +96,32 @@ function renderAttachments() {
   state.composerAttachments.forEach(att => {
     const chip    = document.createElement('div');
     chip.className = 'composer-attachment';
-    chip.title     = att.name || 'Pasted image';
+    chip.title     = att.name || 'Attachment';
 
-    const preview   = buildImageFrame(att, 'composer-attachment-preview');
+    let preview;
+    if (att.type === 'image') {
+      preview = buildImageFrame(att, 'composer-attachment-preview');
+    } else {
+      const extMatch = (att.name || '').match(/\.([^.]+)$/);
+      const ext = extMatch ? extMatch[1].toUpperCase() : 'FILE';
+      const linesText = att.lines ? `${att.lines} lines` : 'File';
+      preview = document.createElement('div');
+      preview.className = 'composer-file-preview';
+      preview.innerHTML = `
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${att.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${linesText}</div>
+        <div style="margin-top:auto;font-size:10px;font-weight:bold;color:var(--text-secondary);border:1px solid var(--border-subtle);border-radius:4px;padding:2px 6px;align-self:flex-start;">${ext}</div>
+      `;
+      preview.style.display = 'flex';
+      preview.style.flexDirection = 'column';
+      preview.style.alignItems = 'flex-start';
+      preview.style.justifyContent = 'flex-start';
+      preview.style.width = '100%';
+      preview.style.height = '100%';
+      preview.style.padding = '12px';
+      preview.style.boxSizing = 'border-box';
+    }
+
     const removeBtn = document.createElement('button');
     removeBtn.type      = 'button';
     removeBtn.className = 'composer-attachment-remove';
@@ -168,6 +191,58 @@ async function handlePaste(event) {
   updateSendBtn();
 }
 
+/* ── External Drag and Drop Support ── */
+export async function addAttachments(files) {
+  const newAttachments = [];
+  let rejectedImages = false;
+
+  for (const file of files) {
+    if (file.type.startsWith('image/')) {
+      if (!modelSupportsInput('image')) {
+        rejectedImages = true;
+        continue;
+      }
+      const dataUrl = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+      if (dataUrl) {
+        newAttachments.push({
+          id: generateId('attachment'),
+          type: 'image',
+          mimeType: file.type || 'image/png',
+          name: file.name,
+          dataUrl
+        });
+      }
+    } else {
+      const textContent = await file.text().catch(() => null);
+      if (textContent !== null) {
+        newAttachments.push({
+          id: generateId('attachment'),
+          type: 'file',
+          mimeType: file.type || 'text/plain',
+          name: file.name,
+          textContent,
+          lines: textContent.split('\n').length
+        });
+      }
+    }
+  }
+  
+  if (rejectedImages) {
+    showHint(`${getModelName()} does not support images. Ignoring image files.`, 'warning');
+  }
+
+  if (newAttachments.length) {
+    state.composerAttachments = [...state.composerAttachments, ...newAttachments];
+    renderAttachments();
+    updateSendBtn();
+  }
+}
+
 /* ══════════════════════════════════════════
    PUBLIC — SYNC CAPABILITIES
    Called whenever the model changes.
@@ -182,12 +257,15 @@ export function syncCapabilities() {
       : `${getModelName()} does not support image input`;
   }
 
-  if (!supportsImages && state.composerAttachments.length > 0) {
-    showHint(
-      `${getModelName()} cannot send the pasted image. Remove it or switch models.`,
-      'warning',
-      { sticky: true },
-    );
+  if (!supportsImages) {
+    const hasImages = state.composerAttachments.some(a => a.type === 'image');
+    if (hasImages) {
+      state.composerAttachments = state.composerAttachments.filter(a => a.type !== 'image');
+      renderAttachments();
+      showHint(`Switched to a model that does not support images. Images were removed.`, 'warning');
+    } else {
+      clearCapabilityHint();
+    }
   } else {
     clearCapabilityHint();
   }

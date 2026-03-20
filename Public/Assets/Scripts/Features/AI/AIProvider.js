@@ -14,9 +14,27 @@ function normalizeMessage(msg) {
     role:        msg?.role ?? 'user',
     content:     String(msg?.content ?? ''),
     attachments: Array.isArray(msg?.attachments)
-      ? msg.attachments.filter(a => a?.type === 'image' && typeof a.dataUrl === 'string')
+      ? msg.attachments.filter(a => (a?.type === 'image' || a?.type === 'file') && (typeof a.dataUrl === 'string' || typeof a.textContent === 'string'))
       : [],
   };
+}
+
+function embedFileAttachments(messages) {
+  return messages.map(m => {
+    const fileAttachments = m.attachments ? m.attachments.filter(a => a.type === 'file') : [];
+    const imageAttachments = m.attachments ? m.attachments.filter(a => a.type === 'image') : [];
+    
+    let newContent = String(m.content || '');
+    for (const f of fileAttachments) {
+      newContent += `\n\nFile: ${f.name}\n\`\`\`\n${f.textContent}\n\`\`\``;
+    }
+    
+    return {
+      ...m,
+      content: newContent,
+      attachments: imageAttachments
+    };
+  });
 }
 
 function buildAnthropicContent(msg) {
@@ -221,7 +239,8 @@ export async function fetchStreamingWithTools(
   onToken = null,
 ) {
   const { provider: providerId, endpoint, api, auth_header, auth_prefix = '' } = provider;
-  const history = messages.slice(-20).map(normalizeMessage);
+  const _history = messages.slice(-20).map(normalizeMessage);
+  const history = embedFileAttachments(_history);
 
   /* ── Anthropic ── */
   if (providerId === 'anthropic') {
@@ -451,7 +470,8 @@ export async function fetchStreamingWithTools(
 ══════════════════════════════════════════ */
 export async function fetchWithTools(provider, modelId, messages, sysPrompt = '', tools = []) {
   const { provider: providerId, endpoint, api, auth_header, auth_prefix = '' } = provider;
-  const history = messages.slice(-20).map(normalizeMessage);
+  const _history = messages.slice(-20).map(normalizeMessage);
+  const history = embedFileAttachments(_history);
 
   /* ── Anthropic ── */
   if (providerId === 'anthropic') {
