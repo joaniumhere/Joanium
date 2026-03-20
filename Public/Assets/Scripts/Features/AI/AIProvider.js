@@ -597,12 +597,3 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
   }
   return { type: 'text', text: message?.content ?? '(empty response)', usage };
 }
-
-/* ══════════════════════════════════════════
-   LEGACY TEXT-ONLY HELPER
-══════════════════════════════════════════ */
-export async function fetchFromProvider(provider, modelId, messages, sysPrompt = '') {
-  const result = await fetchWithTools(provider, modelId, messages, sysPrompt, []);
-  if (result.type === 'text') return result.text;
-  return '(unexpected tool call in text-only mode)';
-}
