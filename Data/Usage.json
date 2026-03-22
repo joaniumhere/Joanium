@@ -584,6 +584,24 @@
       "inputTokens": 10267,
       "outputTokens": 521,
       "chatId": "2026-03-22_12-04-40"
+    },
+    {
+      "timestamp": "2026-03-22T06:55:43.394Z",
+      "provider": "mistral",
+      "model": "mistral-large-latest",
+      "modelName": "Mistral Large",
+      "inputTokens": 4771,
+      "outputTokens": 929,
+      "chatId": "2026-03-22_12-25-15"
+    },
+    {
+      "timestamp": "2026-03-22T06:56:13.000Z",
+      "provider": "mistral",
+      "model": "mistral-large-latest",
+      "modelName": "Mistral Large",
+      "inputTokens": 5706,
+      "outputTokens": 731,
+      "chatId": "2026-03-22_12-25-15"
     }
   ]
 }

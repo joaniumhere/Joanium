@@ -8,6 +8,8 @@
 //    • Unified AI planning step — AI decides skills + tools in one call
 //    • Edit & Retry for user messages; Retry for assistant messages
 //    • Auto-learning memory — extracts facts from conversation every 10 messages
+//    • Right-rail message timeline navigator (2+ user messages)
+//    • Scroll-to-bottom button
 // ─────────────────────────────────────────────
 
 import { state } from '../../Shared/State.js';
@@ -130,6 +132,116 @@ function attachCopyEvent(btn, textToCopy) {
     } catch (err) { console.error('Failed to copy message:', err); }
   };
 }
+
+/* ══════════════════════════════════════════
+   MESSAGE TIMELINE — right-rail navigator
+   Shows a proportional tick per user message.
+   Only visible when 2+ user messages exist.
+══════════════════════════════════════════ */
+
+let _timelineRafId = null;
+
+function updateTimeline() {
+  const timeline = document.getElementById('chat-timeline');
+  if (!timeline) return;
+
+  // Debounce via rAF so layout is settled before measuring
+  if (_timelineRafId) cancelAnimationFrame(_timelineRafId);
+  _timelineRafId = requestAnimationFrame(() => {
+    const userRows = Array.from(chatMessages.querySelectorAll('.message-row.user'));
+
+    if (userRows.length < 2) {
+      timeline.classList.remove('visible');
+      return;
+    }
+
+    timeline.classList.add('visible');
+
+    // Remove old ticks (keep track div)
+    timeline.querySelectorAll('.chat-timeline-tick').forEach(t => t.remove());
+
+    const totalHeight = chatMessages.scrollHeight;
+    if (totalHeight === 0) return;
+
+    userRows.forEach((row) => {
+      const tick = document.createElement('div');
+      tick.className = 'chat-timeline-tick';
+
+      // Position proportional to scroll content height
+      const rowCenter = row.offsetTop + row.offsetHeight / 2;
+      const pct = Math.min(97, Math.max(2, (rowCenter / totalHeight) * 100));
+      tick.style.top = `${pct}%`;
+
+      // Build preview text — collect from text bubble
+      const textEl = row.querySelector('.bubble-text');
+      const attachmentCount = row.querySelectorAll('.bubble-attachment').length;
+      let raw = (textEl?.textContent || '').trim();
+      if (!raw && attachmentCount > 0) raw = `${attachmentCount} attachment${attachmentCount > 1 ? 's' : ''}`;
+      const preview = raw.slice(0, 55) + (raw.length > 55 ? '…' : '');
+      tick.dataset.preview = preview || 'Message';
+
+      tick.addEventListener('click', () => {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Brief highlight flash
+        row.style.transition = 'background 0.2s ease, border-radius 0.2s ease';
+        row.style.background = 'color-mix(in srgb, var(--accent) 5%, transparent)';
+        row.style.borderRadius = '16px';
+        setTimeout(() => { row.style.background = ''; row.style.borderRadius = ''; }, 700);
+      });
+
+      timeline.appendChild(tick);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════
+   SCROLL-TO-BOTTOM BUTTON
+══════════════════════════════════════════ */
+let _newMsgsSinceScrolled = 0;
+
+function setupScrollFeatures() {
+  const btn = document.getElementById('scroll-to-bottom');
+  if (!btn) return;
+
+  chatMessages.addEventListener('scroll', () => {
+    const distFromBottom =
+      chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight;
+
+    const shouldShow = distFromBottom > 220;
+    btn.classList.toggle('visible', shouldShow);
+
+    // Clear badge when user scrolls to bottom
+    if (!shouldShow) {
+      _newMsgsSinceScrolled = 0;
+      const badge = btn.querySelector('.scroll-to-bottom-badge');
+      if (badge) badge.remove();
+    }
+  });
+
+  btn.addEventListener('click', () => {
+    chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+    _newMsgsSinceScrolled = 0;
+    const badge = btn.querySelector('.scroll-to-bottom-badge');
+    if (badge) badge.remove();
+  });
+}
+
+function bumpScrollBadge() {
+  const btn = document.getElementById('scroll-to-bottom');
+  if (!btn || !btn.classList.contains('visible')) return;
+
+  _newMsgsSinceScrolled++;
+  let badge = btn.querySelector('.scroll-to-bottom-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.className = 'scroll-to-bottom-badge';
+    btn.appendChild(badge);
+  }
+  badge.textContent = _newMsgsSinceScrolled > 9 ? '9+' : String(_newMsgsSinceScrolled);
+}
+
+// Initialise scroll features once DOM is ready
+setupScrollFeatures();
 
 /* ══════════════════════════════════════════
    AUTO-LEARNING MEMORY
@@ -393,6 +505,7 @@ async function doSendFromState() {
     await trackUsage(usage, state.currentChatId, usedProvider, usedModel);
     state.messages.push({ role: 'assistant', content: finalReply, attachments: [] });
     saveCurrentChat();
+    bumpScrollBadge();
   } catch (err) {
     const errMsg = `Something went wrong: ${err.message}`;
     live.set(errMsg);
@@ -401,6 +514,7 @@ async function doSendFromState() {
   } finally {
     state.isTyping = false;
     _updateSendBtn();
+    updateTimeline();
   }
 }
 
@@ -746,6 +860,7 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
         actions.style.opacity = '';
         actions.style.pointerEvents = '';
 
+        updateTimeline();
         await doSendFromState();
       });
     });
@@ -758,6 +873,7 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       if (rowIdx === -1) return;
       rows.slice(rowIdx + 1).forEach(r => r.remove());
       state.messages = state.messages.slice(0, rowIdx + 1);
+      updateTimeline();
       await doSendFromState();
     });
 
@@ -782,12 +898,19 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       if (rowIdx === -1) return;
       rows.slice(rowIdx).forEach(r => r.remove());
       state.messages = state.messages.slice(0, rowIdx);
+      updateTimeline();
       await doSendFromState();
     });
   }
 
   chatMessages.appendChild(row);
   if (scroll) smoothScrollToBottom();
+
+  // Update timeline after a brief layout settle
+  if (msg.role === 'user') {
+    setTimeout(updateTimeline, 60);
+  }
+
   return row;
 }
 
@@ -952,6 +1075,9 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
     await trackUsage(usage, state.currentChatId, usedProvider, usedModel);
     state.messages.push({ role: 'assistant', content: finalReply, attachments: [] });
     saveCurrentChat();
+    bumpScrollBadge();
+    // Re-calculate timeline after assistant response (scroll height changed)
+    setTimeout(updateTimeline, 100);
 
     // ── Auto-learning memory (background, non-blocking) ──────────────
     attemptMemoryUpdate().catch(() => {});
@@ -996,6 +1122,11 @@ export function startNewChat(extraCleanup = () => { }) {
   chatMessages.innerHTML = '';
   restoreWelcome();
   resetComposer();
+  // Hide timeline + scroll button
+  const timeline = document.getElementById('chat-timeline');
+  if (timeline) timeline.classList.remove('visible');
+  const scrollBtn = document.getElementById('scroll-to-bottom');
+  if (scrollBtn) scrollBtn.classList.remove('visible');
   extraCleanup();
 }
 
@@ -1032,5 +1163,7 @@ export async function loadChat(chatId, { updateModelLabel, buildModelDropdown, n
     }
     notifyModelSelectionChanged();
     _updateSendBtn();
+    // Recalculate timeline after all messages are laid out
+    setTimeout(updateTimeline, 150);
   } catch (err) { console.error('[Chat] Load error:', err); }
 }
