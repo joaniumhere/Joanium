@@ -10,6 +10,7 @@
 //    • Auto-learning memory — extracts facts from conversation every 10 messages
 //    • Right-rail message timeline navigator (2+ user messages)
 //    • Scroll-to-bottom button
+//    • Stop generation button support via AbortController
 // ─────────────────────────────────────────────
 
 import { state } from '../../Shared/State.js';
@@ -21,8 +22,6 @@ import { planRequest, agentLoop } from './Agent.js';
 
 /* ══════════════════════════════════════════
    TOKEN FOOTER — always on
-   Token usage + estimated cost shown under
-   every assistant reply automatically.
 ══════════════════════════════════════════ */
 document.documentElement.classList.add('show-tokens');
 
@@ -56,6 +55,18 @@ function buildTokenFooter(usage, provider, modelId) {
   return el;
 }
 
+/* ══════════════════════════════════════════
+   ABORT CONTROLLER — stop generation
+══════════════════════════════════════════ */
+let _currentAbortController = null;
+
+/** Call this to cancel the in-flight generation. */
+export function stopGeneration() {
+  if (_currentAbortController) {
+    _currentAbortController.abort();
+    _currentAbortController = null;
+  }
+}
 
 /* ══════════════════════════════════════════
    ICONS & EVENT LISTENERS (MESSAGE ACTIONS)
@@ -134,9 +145,7 @@ function attachCopyEvent(btn, textToCopy) {
 }
 
 /* ══════════════════════════════════════════
-   MESSAGE TIMELINE — right-rail navigator
-   Shows a proportional tick per user message.
-   Only visible when 2+ user messages exist.
+   MESSAGE TIMELINE
 ══════════════════════════════════════════ */
 
 let _timelineRafId = null;
@@ -145,7 +154,6 @@ function updateTimeline() {
   const timeline = document.getElementById('chat-timeline');
   if (!timeline) return;
 
-  // Debounce via rAF so layout is settled before measuring
   if (_timelineRafId) cancelAnimationFrame(_timelineRafId);
   _timelineRafId = requestAnimationFrame(() => {
     const userRows = Array.from(chatMessages.querySelectorAll('.message-row.user'));
@@ -156,8 +164,6 @@ function updateTimeline() {
     }
 
     timeline.classList.add('visible');
-
-    // Remove old ticks (keep track div)
     timeline.querySelectorAll('.chat-timeline-tick').forEach(t => t.remove());
 
     const totalHeight = chatMessages.scrollHeight;
@@ -167,12 +173,10 @@ function updateTimeline() {
       const tick = document.createElement('div');
       tick.className = 'chat-timeline-tick';
 
-      // Position proportional to scroll content height
       const rowCenter = row.offsetTop + row.offsetHeight / 2;
       const pct = Math.min(97, Math.max(2, (rowCenter / totalHeight) * 100));
       tick.style.top = `${pct}%`;
 
-      // Build preview text — collect from text bubble
       const textEl = row.querySelector('.bubble-text');
       const attachmentCount = row.querySelectorAll('.bubble-attachment').length;
       let raw = (textEl?.textContent || '').trim();
@@ -182,7 +186,6 @@ function updateTimeline() {
 
       tick.addEventListener('click', () => {
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Brief highlight flash
         row.style.transition = 'background 0.2s ease, border-radius 0.2s ease';
         row.style.background = 'color-mix(in srgb, var(--accent) 5%, transparent)';
         row.style.borderRadius = '16px';
@@ -210,7 +213,6 @@ function setupScrollFeatures() {
     const shouldShow = distFromBottom > 220;
     btn.classList.toggle('visible', shouldShow);
 
-    // Clear badge when user scrolls to bottom
     if (!shouldShow) {
       _newMsgsSinceScrolled = 0;
       const badge = btn.querySelector('.scroll-to-bottom-badge');
@@ -240,27 +242,15 @@ function bumpScrollBadge() {
   badge.textContent = _newMsgsSinceScrolled > 9 ? '9+' : String(_newMsgsSinceScrolled);
 }
 
-// Initialise scroll features once DOM is ready
 setupScrollFeatures();
 
 /* ══════════════════════════════════════════
    AUTO-LEARNING MEMORY
-   Runs every 10 user messages in the background.
-   Extracts key facts about the user from recent
-   conversation and appends them to Memory.md.
-   Completely non-blocking — never affects the chat UX.
 ══════════════════════════════════════════ */
 
-// How often (in user messages) to trigger a memory extraction
 const MEMORY_LEARN_INTERVAL = 5;
-
-// Track how many user messages have been sent this session
 let _userMessagesSinceLastLearn = 0;
 
-/**
- * Show a brief "Learning..." indicator near the model selector.
- * Returns a cleanup function to hide it.
- */
 function showMemoryIndicator() {
   const existing = document.getElementById('memory-learn-indicator');
   if (existing) return () => {};
@@ -284,7 +274,6 @@ function showMemoryIndicator() {
     pointer-events:none;
   `;
 
-  // inject spin keyframe once
   if (!document.getElementById('mem-spin-style')) {
     const style = document.createElement('style');
     style.id = 'mem-spin-style';
@@ -300,9 +289,6 @@ function showMemoryIndicator() {
   };
 }
 
-/**
- * Background memory learning — never throws, never blocks.
- */
 async function attemptMemoryUpdate() {
   _userMessagesSinceLastLearn++;
   if (_userMessagesSinceLastLearn < MEMORY_LEARN_INTERVAL) return;
@@ -310,7 +296,6 @@ async function attemptMemoryUpdate() {
 
   if (!state.selectedProvider || !state.selectedModel) return;
 
-  // Need at least a few exchanges to learn anything meaningful
   const userMessages = state.messages.filter(m => m.role === 'user');
   if (userMessages.length < 4) return;
 
@@ -319,7 +304,6 @@ async function attemptMemoryUpdate() {
   try {
     const existingMemory = (await window.electronAPI?.getMemory?.()) ?? '';
 
-    // Use the last 20 messages for extraction context
     const recentMessages = state.messages.slice(-20);
     const conversationText = recentMessages
       .map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${m.content.slice(0, 400)}`)
@@ -354,7 +338,6 @@ async function attemptMemoryUpdate() {
     const text = result.text?.trim() ?? '';
     if (!text || text === '[NOTHING]' || text.toUpperCase().includes('[NOTHING]')) return;
 
-    // Only accept lines that look like bullets
     const bullets = text.split('\n').filter(l => l.trim().startsWith('- ')).join('\n');
     if (!bullets) return;
 
@@ -467,9 +450,6 @@ async function trackUsage(usage, chatId, provider = null, modelId = null) {
 
 /* ══════════════════════════════════════════
    RESEND FROM CURRENT STATE
-   Used by edit-save and retry actions.
-   Assumes state.messages already ends with
-   the user message to respond to.
 ══════════════════════════════════════════ */
 async function doSendFromState() {
   if (!state.selectedProvider || !state.selectedModel || state.isTyping) return;
@@ -499,14 +479,22 @@ async function doSendFromState() {
   }
 
   try {
+    _currentAbortController = new AbortController();
     const { text: finalReply, usage, usedProvider, usedModel } = await agentLoop(
-      state.messages, live, plannedToolCalls, state.systemPrompt,
-    );
+      state.messages, live, plannedToolCalls, state.systemPrompt, _currentAbortController.signal,
+    ).finally(() => { _currentAbortController = null; });
+
     await trackUsage(usage, state.currentChatId, usedProvider, usedModel);
     state.messages.push({ role: 'assistant', content: finalReply, attachments: [] });
     saveCurrentChat();
     bumpScrollBadge();
   } catch (err) {
+    _currentAbortController = null;
+    if (err.name === 'AbortError') {
+      // User stopped generation — clean up the live row gracefully
+      live.setAborted();
+      return;
+    }
     const errMsg = `Something went wrong: ${err.message}`;
     live.set(errMsg);
     state.messages.push({ role: 'assistant', content: errMsg, attachments: [] });
@@ -520,9 +508,6 @@ async function doSendFromState() {
 
 /* ══════════════════════════════════════════
    LIVE ASSISTANT BUBBLE — LOG ITEM BUILDER
-   Prefix tags ([GMAIL], [GITHUB], [SKILL], [TOOL])
-   are internal — set by our own code, never user input.
-   Display text is set via textContent so it is safe.
 ══════════════════════════════════════════ */
 function buildLogItem(rawLine) {
   const item = document.createElement('div');
@@ -579,11 +564,6 @@ function buildLogItem(rawLine) {
 
 /* ══════════════════════════════════════════
    LIVE ASSISTANT BUBBLE
-   Methods:
-     push(line)                   — add a log item while tools run
-     stream(chunk)                — append streamed token, throttled md render
-     finalize(md, usage, p, mid)  — final markdown + token footer + retry btn
-     set(markdown)                — direct set (errors / non-streaming fallback)
 ══════════════════════════════════════════ */
 const RENDER_THROTTLE_MS = 80;
 
@@ -666,7 +646,6 @@ function createLiveRow() {
       actionsEl.style.display = 'flex';
       attachCopyEvent(actionsEl.querySelector('.copy-msg-btn'), markdown);
 
-      // Wire retry button
       const retryBtn = actionsEl.querySelector('.retry-msg-btn');
       if (retryBtn) {
         retryBtn.addEventListener('click', async () => {
@@ -703,6 +682,38 @@ function createLiveRow() {
         smoothScrollToBottom();
       }, 200);
     },
+
+    /** Called when the user clicks stop mid-stream */
+    setAborted() {
+      _cursorEl?.remove();
+      _cursorEl = null;
+      replyEl.classList.remove('is-streaming');
+      logEl.style.display = 'none';
+
+      // Render whatever streamed so far, with a stopped indicator
+      if (_accumulated) {
+        replyEl.innerHTML = renderMarkdown(_accumulated);
+        // Append a small "stopped" badge
+        const badge = document.createElement('span');
+        badge.style.cssText = `
+          display:inline-flex;align-items:center;gap:4px;
+          font-size:10.5px;font-weight:600;letter-spacing:0.3px;
+          color:var(--text-muted);background:var(--bg-tertiary);
+          border:1px solid var(--border-subtle);border-radius:6px;
+          padding:2px 8px;margin-left:8px;vertical-align:middle;
+        `;
+        badge.textContent = '⏹ stopped';
+        replyEl.appendChild(badge);
+      } else {
+        replyEl.innerHTML = `<span style="color:var(--text-muted);font-size:13px;font-style:italic;">Generation stopped.</span>`;
+      }
+
+      actionsEl.style.display = 'flex';
+      if (_accumulated) {
+        attachCopyEvent(actionsEl.querySelector('.copy-msg-btn'), _accumulated);
+      }
+      smoothScrollToBottom();
+    },
   };
 }
 
@@ -717,7 +728,6 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
   row.className = `message-row ${msg.role}`;
 
   if (msg.role === 'user') {
-    /* ── Action buttons (copy / edit / retry) ── */
     const actions = document.createElement('div');
     actions.className = 'message-actions user-actions';
 
@@ -740,7 +750,6 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
     actions.append(copyBtn, editBtn, retryBtn);
     row.appendChild(actions);
 
-    /* ── Bubble ── */
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
 
@@ -765,7 +774,6 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
 
     row.appendChild(bubble);
 
-    /* ── Edit handler ── */
     editBtn.addEventListener('click', () => {
       if (state.isTyping) return;
 
@@ -865,7 +873,6 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       });
     });
 
-    /* ── Retry handler ── */
     retryBtn.addEventListener('click', async () => {
       if (state.isTyping) return;
       const rows = Array.from(chatMessages.querySelectorAll('.message-row'));
@@ -878,7 +885,6 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
     });
 
   } else {
-    /* ── Assistant message ── */
     row.innerHTML = `
       ${assistantIcon()}
       <div class="content-wrapper" style="flex:1;min-width:0;">
@@ -906,7 +912,6 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
   chatMessages.appendChild(row);
   if (scroll) smoothScrollToBottom();
 
-  // Update timeline after a brief layout settle
   if (msg.role === 'user') {
     setTimeout(updateTimeline, 60);
   }
@@ -953,14 +958,11 @@ export function restoreWelcome() {
   welcome.style.removeProperty('transform');
   chatView.classList.remove('active');
 
-  // Toggling display restarts CSS animations on children — reset .welcome-greeting
-  // so it's immediately visible rather than starting at opacity:0 for 250ms.
   const greeting = welcome.querySelector('.welcome-greeting');
   if (greeting) {
     greeting.style.animation = 'none';
     greeting.style.opacity   = '1';
     greeting.style.transform = 'none';
-    // Re-enable the animation rule on the next frame so it still works on first load
     requestAnimationFrame(() => {
       greeting.style.removeProperty('animation');
       greeting.style.removeProperty('opacity');
@@ -1065,7 +1067,6 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
   const live = createLiveRow();
   live.push('Thinking…');
 
-  // ── Unified AI planning step ────────────────────────────────────────
   let plannedToolCalls = [];
 
   if (text) {
@@ -1086,22 +1087,30 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
   }
 
   try {
-    const { text: finalReply, usage, usedProvider, usedModel } = await agentLoop(state.messages, live, plannedToolCalls, state.systemPrompt);
+    _currentAbortController = new AbortController();
+    const { text: finalReply, usage, usedProvider, usedModel } = await agentLoop(
+      state.messages, live, plannedToolCalls, state.systemPrompt, _currentAbortController.signal,
+    ).finally(() => { _currentAbortController = null; });
+
     await trackUsage(usage, state.currentChatId, usedProvider, usedModel);
     state.messages.push({ role: 'assistant', content: finalReply, attachments: [] });
     saveCurrentChat();
     bumpScrollBadge();
-    // Re-calculate timeline after assistant response (scroll height changed)
     setTimeout(updateTimeline, 100);
 
-    // ── Auto-learning memory (background, non-blocking) ──────────────
     attemptMemoryUpdate().catch(() => {});
 
   } catch (err) {
-    const msg = `Something went wrong: ${err.message}`;
-    live.set(msg);
-    state.messages.push({ role: 'assistant', content: msg, attachments: [] });
-    console.error('[Chat] sendMessage error:', err);
+    _currentAbortController = null;
+    if (err.name === 'AbortError') {
+      live.setAborted();
+      // Don't push to state.messages — partial response discarded
+    } else {
+      const msg = `Something went wrong: ${err.message}`;
+      live.set(msg);
+      state.messages.push({ role: 'assistant', content: msg, attachments: [] });
+      console.error('[Chat] sendMessage error:', err);
+    }
   } finally {
     state.isTyping = false;
     _updateSendBtn();
@@ -1133,11 +1142,15 @@ export function startNewChat(extraCleanup = () => { }) {
   state.currentChatId = null;
   state.isTyping = false;
   _userMessagesSinceLastLearn = 0;
+  // Cancel any in-flight generation
+  if (_currentAbortController) {
+    _currentAbortController.abort();
+    _currentAbortController = null;
+  }
   document.getElementById('typing-row')?.remove();
   chatMessages.innerHTML = '';
   restoreWelcome();
   resetComposer();
-  // Hide timeline + scroll button
   const timeline = document.getElementById('chat-timeline');
   if (timeline) timeline.classList.remove('visible');
   const scrollBtn = document.getElementById('scroll-to-bottom');
@@ -1178,7 +1191,6 @@ export async function loadChat(chatId, { updateModelLabel, buildModelDropdown, n
     }
     notifyModelSelectionChanged();
     _updateSendBtn();
-    // Recalculate timeline after all messages are laid out
     setTimeout(updateTimeline, 150);
   } catch (err) { console.error('[Chat] Load error:', err); }
 }

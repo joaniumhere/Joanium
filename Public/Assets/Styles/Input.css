@@ -342,3 +342,23 @@
   width: 15px;
   height: 15px;
 }
+
+.send-btn.is-stop {
+  background: var(--accent);
+  box-shadow: 0 2px 12px var(--accent-glow);
+  transition:
+    background var(--transition-mid),
+    box-shadow var(--transition-mid),
+    transform var(--transition-fast);
+}
+
+.send-btn.is-stop:hover {
+  background: #e05a5a;
+  box-shadow: 0 4px 18px rgba(224, 90, 90, 0.38);
+  transform: scale(1.1);
+}
+
+.send-btn.is-stop:active {
+  transform: scale(0.94);
+  background: #c94949;
+}

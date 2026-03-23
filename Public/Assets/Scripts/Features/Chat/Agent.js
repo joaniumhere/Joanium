@@ -18,18 +18,11 @@ import { executeTool } from './Executors/Index.js';
 
 /* ══════════════════════════════════════════
    1. FAILOVER CANDIDATES
-   Returns an ordered list of { provider, modelId, note }
-   to try when the primary model fails.
-
-   Order:
-     a) Same provider — other models sorted best→worst (lower rank = better)
-     b) Other providers — best model from each, sorted by rank
 ══════════════════════════════════════════ */
 export function buildFailoverCandidates(selectedProvider, selectedModel) {
   if (!selectedProvider || !selectedModel) return [];
   const candidates = [];
 
-  // ── Same provider, other models ──────────────────────────────────────
   const sameProviderModels = Object.entries(selectedProvider.models ?? {})
     .filter(([id]) => id !== selectedModel)
     .sort(([, a], [, b]) => (a.rank ?? 999) - (b.rank ?? 999));
@@ -42,7 +35,6 @@ export function buildFailoverCandidates(selectedProvider, selectedModel) {
     });
   }
 
-  // ── Best model from every other provider ─────────────────────────────
   const otherBests = state.providers
     .filter(p => p.provider !== selectedProvider.provider)
     .map(p => {
@@ -69,20 +61,12 @@ export function buildFailoverCandidates(selectedProvider, selectedModel) {
 
 /* ══════════════════════════════════════════
    2. PLANNING STEP
-   One AI call reads all available skills and
-   tools and returns exactly:
-     • which skill docs to surface in the log
-     • which tool calls to make, WITH their params
-
-   The AI decides — no regex, no hardcoded rules.
-   Returns: { skills: string[], toolCalls: { name, params }[] }
 ══════════════════════════════════════════ */
 export async function planRequest(userText) {
   if (!state.selectedProvider || !state.selectedModel || !userText?.trim()) {
     return { skills: [], toolCalls: [] };
   }
 
-  // ── Load skill catalogue ──────────────────────────────────────────────
   let skills = [];
   try {
     const res = await window.electronAPI?.getSkills?.();
@@ -95,7 +79,6 @@ export async function planRequest(userText) {
     ).join('\n')
     : '  (none)';
 
-  // ── Build tool catalogue with required params ─────────────────────────
   const toolsCatalogue = TOOLS.length
     ? TOOLS.map(t => {
       const requiredParams = Object.entries(t.parameters ?? {})
@@ -106,7 +89,6 @@ export async function planRequest(userText) {
     }).join('\n')
     : '  (none)';
 
-  // ── Planning prompt ───────────────────────────────────────────────────
   const planPrompt = [
     'You are a planning assistant for an AI agent.',
     'Read the user request. Decide which skills and tools are needed,',
@@ -145,7 +127,6 @@ export async function planRequest(userText) {
 
     if (result.type !== 'text') return { skills: [], toolCalls: [] };
 
-    // Extract JSON by brace positions — no regex
     const start = result.text.indexOf('{');
     const end = result.text.lastIndexOf('}');
     if (start === -1 || end === -1) return { skills: [], toolCalls: [] };
@@ -155,7 +136,6 @@ export async function planRequest(userText) {
     const validSkillNames = new Set(skills.map(s => s.name));
     const validToolNames = new Set(TOOLS.map(t => t.name));
 
-    // Support both {name, params} objects and bare name strings
     const toolCalls = (parsed.toolCalls ?? parsed.tools ?? [])
       .map(entry => {
         if (typeof entry === 'string') return { name: entry, params: {} };
@@ -176,27 +156,16 @@ export async function planRequest(userText) {
 
 /* ══════════════════════════════════════════
    3. AGENTIC LOOP
-   Streams the response with:
-     • Retry (up to 3× on transient errors)
-     • Model failover (same-provider first, then cross-provider)
-     • Tool execution with result injection
-     • Call plan injected into system prompt on turn 0
-
-   Parameters:
-     messages        — full conversation history
-     live            — live bubble controller from Chat.js (push/stream/finalize/set)
-     plannedToolCalls — [{name, params}] from planRequest
-     systemPrompt    — base system prompt from state
-
-   Returns: { text, usage, usedProvider, usedModel }
+   signal param wires AbortController from Chat.js
+   through to fetchStreamingWithTools so the user
+   can cancel mid-stream via the stop button.
 ══════════════════════════════════════════ */
-export async function agentLoop(messages, live, plannedToolCalls, systemPrompt) {
+export async function agentLoop(messages, live, plannedToolCalls, systemPrompt, signal = null) {
   const loopMessages = [...messages];
   const MAX_TURNS = 10;
   let toolsUsed = false;
   const totalUsage = { inputTokens: 0, outputTokens: 0 };
 
-  // ── Candidate model list ──────────────────────────────────────────────
   const candidates = [
     { provider: state.selectedProvider, modelId: state.selectedModel, note: null },
     ...buildFailoverCandidates(state.selectedProvider, state.selectedModel),
@@ -205,17 +174,11 @@ export async function agentLoop(messages, live, plannedToolCalls, systemPrompt) 
   let usedProvider = state.selectedProvider;
   let usedModel = state.selectedModel;
 
-  // ── Tool subsets ──────────────────────────────────────────────────────
-  // Turn 0: only the tools the planner asked for (focused, avoids distractions)
-  // Turn 1+: all tools (AI can chain freely after first tool use)
   const plannedToolNames = [...new Set((plannedToolCalls ?? []).map(tc => tc.name))];
   const plannedTools = plannedToolNames.length
     ? TOOLS.filter(t => plannedToolNames.includes(t.name))
     : TOOLS;
 
-  // ── Call plan hint injected into system prompt on turn 0 ─────────────
-  // Tells the model exactly what to call and with what args,
-  // eliminating "missing required param" errors.
   const callPlanHint = plannedToolCalls?.length
     ? '\n\nCALL PLAN — execute these tool calls in order:\n' +
     plannedToolCalls.map((tc, i) => {
@@ -227,13 +190,9 @@ export async function agentLoop(messages, live, plannedToolCalls, systemPrompt) 
 
   const sysPromptWithPlan = systemPrompt + callPlanHint;
 
-  // ── Main loop ─────────────────────────────────────────────────────────
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const toolsThisTurn = toolsUsed ? TOOLS : (turn === 0 ? plannedTools : TOOLS);
 
-    // Keep the call plan in the system prompt for EVERY turn until all planned
-    // tools have been called. Without this the AI loses context of what to call
-    // next and just says "not available" instead of executing remaining tools.
     const calledCount = loopMessages.filter(m => m.role === 'assistant' && m.content.startsWith('I used the')).length;
     const allToolsDone = !plannedToolCalls?.length || calledCount >= plannedToolCalls.length;
     const sysPromptThisTurn = allToolsDone ? systemPrompt : sysPromptWithPlan;
@@ -246,7 +205,6 @@ export async function agentLoop(messages, live, plannedToolCalls, systemPrompt) 
       live.stream(chunk);
     };
 
-    // Try each candidate in order
     for (const { provider, modelId, note } of candidates) {
       if (!provider || !modelId) continue;
       if (note) live.push(note);
@@ -254,51 +212,48 @@ export async function agentLoop(messages, live, plannedToolCalls, systemPrompt) 
 
       try {
         result = await withRetry(async () => {
-          // Once streaming has started, do NOT retry — would duplicate visible tokens
           if (streamingStarted) {
             const e = new Error('Stream interrupted after start — not retrying');
             e.noRetry = true;
             throw e;
           }
           return fetchStreamingWithTools(
-            provider, modelId, loopMessages, sysPromptThisTurn, toolsThisTurn, onToken,
+            provider, modelId, loopMessages, sysPromptThisTurn, toolsThisTurn, onToken, signal,
           );
         }, 3, 600);
 
         usedProvider = provider;
         usedModel = modelId;
-        break; // success — stop trying candidates
+        break;
 
       } catch (err) {
         lastErr = err;
+        // Propagate abort immediately — don't try fallbacks
+        if (err.name === 'AbortError') throw err;
         if (streamingStarted) {
           live.push(`Stream error: ${err.message.slice(0, 60)}`);
-          break; // partial stream already visible — don't try another model
+          break;
         }
         live.push(`${err.message.slice(0, 55)} — trying fallback…`);
       }
     }
 
-    // All candidates exhausted with no result
     if (!result) {
       const msg = `API error: ${lastErr?.message ?? 'Unknown error'}`;
       live.set(msg);
       return { text: msg, usage: totalUsage, usedProvider, usedModel };
     }
 
-    // Accumulate usage across all turns
     if (result.usage) {
       totalUsage.inputTokens += result.usage.inputTokens ?? 0;
       totalUsage.outputTokens += result.usage.outputTokens ?? 0;
     }
 
-    // ── Text response → done ─────────────────────────────────────────
     if (result.type === 'text') {
       live.finalize(result.text, result.usage, usedProvider, usedModel);
       return { text: result.text, usage: totalUsage, usedProvider, usedModel };
     }
 
-    // ── Tool call → execute, inject result, loop ─────────────────────
     if (result.type === 'tool_call') {
       const { name, params } = result;
       toolsUsed = true;
@@ -318,21 +273,16 @@ export async function agentLoop(messages, live, plannedToolCalls, systemPrompt) 
         attachments: [],
       });
 
-      // How many planned tools are still outstanding?
       const calledSoFar = loopMessages.filter(m => m.role === 'assistant' && m.content.startsWith('I used the')).length;
       const totalPlanned = plannedToolCalls?.length ?? 0;
       const moreToolsLeft = totalPlanned > 0 && calledSoFar < totalPlanned;
-      // Note: sysPromptThisTurn will automatically include the call plan
-      // on the next turn because calledCount is re-evaluated at the top of the loop.
 
       loopMessages.push({
         role: 'user',
         content: moreToolsLeft
-          // Still have planned tools to run — tell the AI to keep going
           ? `Tool result for ${name}:\n${toolResult}\n\n` +
           `You still have ${totalPlanned - calledSoFar} more tool call(s) to make before writing the final response. ` +
           `Call the next tool now. Do not write a response yet.`
-          // All tools done — synthesize using persona/tone from the system prompt
           : `Tool result for ${name}:\n${toolResult}\n\n` +
           `All tool calls are complete. Now write your response to the user incorporating ALL the data gathered above. No raw JSON or code blocks.`,
         attachments: [],
@@ -340,7 +290,6 @@ export async function agentLoop(messages, live, plannedToolCalls, systemPrompt) 
     }
   }
 
-  // MAX_TURNS reached
   live.set('Done.');
   return { text: 'Done.', usage: totalUsage, usedProvider, usedModel };
 }

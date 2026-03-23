@@ -21,7 +21,7 @@ import { init as initModelSelector, loadProviders, updateModelLabel, buildModelD
 import { init as initComposer, syncCapabilities, addAttachments } from '../Features/Composer/Composer.js';
 import {
   sendMessage, startNewChat, loadChat,
-  setSendBtnUpdater,
+  setSendBtnUpdater, stopGeneration,
 } from '../Features/Chat/Chat.js';
 
 // Modal instances
@@ -56,8 +56,36 @@ window.addEventListener('ow:user-profile-updated', e => {
   sidebar.setUser(e.detail?.name ?? state.userName);
 });
 
-// Send button state
+/* ══════════════════════════════════════════
+   SEND / STOP BUTTON
+   When state.isTyping is true the button
+   becomes a stop button (square icon, red hover).
+   Clicking it calls stopGeneration() from Chat.js.
+══════════════════════════════════════════ */
+
+const SEND_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="15" height="15">
+  <path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+</svg>`;
+
+const STOP_ICON = `<svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+  <rect x="5" y="5" width="14" height="14" rx="3"/>
+</svg>`;
+
 function updateSendBtn() {
+  if (state.isTyping) {
+    // Switch to stop mode
+    sendBtn.innerHTML = STOP_ICON;
+    sendBtn.classList.add('ready', 'is-stop');
+    sendBtn.disabled = false;
+    sendBtn.title = 'Stop generating';
+    return;
+  }
+
+  // Back to send mode
+  sendBtn.innerHTML = SEND_ICON;
+  sendBtn.classList.remove('is-stop');
+  sendBtn.title = 'Send';
+
   const hasText = textarea.value.trim().length > 0;
   const hasAttachments = state.composerAttachments.length > 0;
   const hasUnsupported = state.composerAttachments.some(a => a.type === 'image') &&
@@ -98,7 +126,13 @@ document.addEventListener('click', e => {
 document.title = APP_NAME;
 
 initModelSelector();
+
+// Wire composer — stop generation if typing, otherwise send
 initComposer(() => {
+  if (state.isTyping) {
+    stopGeneration();
+    return;
+  }
   const text = textarea.value.trim();
   const attachments = state.composerAttachments.map(a => ({ ...a }));
   sendMessage({ text, attachments, sendBtnEl: sendBtn });
@@ -111,7 +145,6 @@ loadProviders().then(async () => {
   sidebar.setUser(user?.name ?? '');
   await refreshSystemPrompt();
 
-  // Load a chat that was selected from the library on another page
   const pendingChatId = localStorage.getItem('ow-pending-chat');
   if (pendingChatId) {
     localStorage.removeItem('ow-pending-chat');
@@ -126,16 +159,11 @@ loadProviders().then(async () => {
 console.log(`[${APP_NAME}] loaded`);
 
 // ─────────────────────────────────────────────
-//  ENHANCE BUTTON  — drop this block into Index.js
-//  after the "Send button state" section.
-//
-//  Requires: textarea, state, fetchWithTools
-//  already imported/defined in Index.js (they are).
+//  ENHANCE BUTTON
 // ─────────────────────────────────────────────
 
 const enhanceBtn = document.getElementById('enhance-btn');
 
-/** Sync the enhance button's active/inactive appearance */
 function updateEnhanceBtn() {
   if (!enhanceBtn) return;
   const hasText = textarea.value.trim().length > 0;
@@ -143,12 +171,10 @@ function updateEnhanceBtn() {
   enhanceBtn.disabled = !hasText || state.isTyping;
 }
 
-/** Call the AI and rewrite the user's prompt */
 async function handleEnhance() {
   const raw = textarea.value.trim();
   if (!raw || state.isTyping || !state.selectedProvider || !state.selectedModel) return;
 
-  // ── Loading state ─────────────────────────
   enhanceBtn.classList.remove('enhance-active');
   enhanceBtn.classList.add('enhance-loading');
   enhanceBtn.disabled = true;
@@ -171,28 +197,21 @@ async function handleEnhance() {
 
     if (result.type === 'text' && result.text && result.text !== '(empty response)') {
       textarea.value = result.text;
-      textarea.dispatchEvent(new Event('input')); // triggers auto-resize + send btn update
+      textarea.dispatchEvent(new Event('input'));
     }
   } catch (err) {
     console.warn('[Enhance] Failed:', err.message);
   } finally {
-    // ── Restore button ─────────────────────
     enhanceBtn.classList.remove('enhance-loading');
     if (labelEl) labelEl.textContent = 'Enhance';
     updateEnhanceBtn();
   }
 }
 
-// Wire events
 enhanceBtn?.addEventListener('click', handleEnhance);
-
-// Keep enhance button in sync with textarea content
 textarea.addEventListener('input', updateEnhanceBtn);
-
 updateEnhanceBtn();
 
-// Also update when isTyping changes (send btn updater already exists,
-// piggyback by wrapping the existing setSendBtnUpdater call):
 const _originalSendBtnUpdater = updateSendBtn;
 setSendBtnUpdater(() => {
   _originalSendBtnUpdater();
@@ -200,7 +219,7 @@ setSendBtnUpdater(() => {
 });
 
 // ─────────────────────────────────────────────
-// Drag and Drop support for context files
+//  DRAG AND DROP
 // ─────────────────────────────────────────────
 
 let dragCounter = 0;

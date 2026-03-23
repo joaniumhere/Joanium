@@ -133,10 +133,6 @@ function toGoogleTools(tools) {
 
 /* ══════════════════════════════════════════
    RETRY HELPERS
-   withRetry — exported, used by Chat.js agentLoop.
-   Respects err.noRetry flag to stop retrying when
-   a streaming response has already started delivering
-   tokens (re-trying would cause duplicate content).
 ══════════════════════════════════════════ */
 
 function isTransientError(err) {
@@ -155,15 +151,6 @@ function isTransientError(err) {
   );
 }
 
-/**
- * Retry `fn` up to `maxAttempts` times on transient errors.
- * If err.noRetry is set, re-throws immediately (used to abort
- * retry once streaming has already started).
- *
- * @param {() => Promise<any>} fn
- * @param {number} maxAttempts
- * @param {number} baseDelayMs   Base delay; doubles each retry + random jitter.
- */
 export async function withRetry(fn, maxAttempts = 3, baseDelayMs = 600) {
   let lastErr;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -171,9 +158,9 @@ export async function withRetry(fn, maxAttempts = 3, baseDelayMs = 600) {
       return await fn();
     } catch (err) {
       lastErr = err;
-      // Respect explicit no-retry flag (set when streaming has started)
       if (err.noRetry) throw err;
-      // Only retry transient errors, and not on the last attempt
+      // Don't retry AbortErrors
+      if (err.name === 'AbortError') throw err;
       if (!isTransientError(err) || attempt >= maxAttempts - 1) throw err;
       const delay = baseDelayMs * Math.pow(2, attempt) + Math.random() * 300;
       console.warn(
@@ -187,8 +174,6 @@ export async function withRetry(fn, maxAttempts = 3, baseDelayMs = 600) {
 
 /* ══════════════════════════════════════════
    SSE PARSER
-   Async generator that yields raw `data:` payloads
-   from a Server-Sent Events response body.
 ══════════════════════════════════════════ */
 
 async function* parseSSE(response) {
@@ -210,7 +195,6 @@ async function* parseSSE(response) {
         if (payload) yield payload;
       }
     }
-    // Flush remaining buffer
     if (buffer.startsWith('data: ')) {
       const payload = buffer.slice(6).trim();
       if (payload && payload !== '[DONE]') yield payload;
@@ -222,13 +206,8 @@ async function* parseSSE(response) {
 
 /* ══════════════════════════════════════════
    STREAMING FETCH — WITH NATIVE TOOL CALLING
-   onToken(chunk: string) is called for each streamed
-   text token. If the response is a tool call, onToken
-   is never called (the JSON accumulates internally).
-
-   Returns:
-     { type: 'text',      text, usage: {inputTokens, outputTokens} }
-     { type: 'tool_call', name, params, callId, usage: {...} }
+   signal param allows external AbortController
+   to cancel the fetch mid-stream.
 ══════════════════════════════════════════ */
 export async function fetchStreamingWithTools(
   provider,
@@ -237,6 +216,7 @@ export async function fetchStreamingWithTools(
   sysPrompt = '',
   tools = [],
   onToken = null,
+  signal = null,
 ) {
   const { provider: providerId, endpoint, api, auth_header, auth_prefix = '' } = provider;
   const _history = messages.slice(-20).map(normalizeMessage);
@@ -262,6 +242,7 @@ export async function fetchStreamingWithTools(
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(body),
+      signal,
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
@@ -320,7 +301,6 @@ export async function fetchStreamingWithTools(
 
   /* ── Google Gemini ── */
   if (providerId === 'google') {
-    // Switch to the streaming endpoint and request SSE format
     const streamUrl = endpoint
       .replace('{model}', modelId)
       .replace(':generateContent', ':streamGenerateContent') +
@@ -339,6 +319,7 @@ export async function fetchStreamingWithTools(
       method:  'POST',
       headers: { 'content-type': 'application/json' },
       body:    JSON.stringify(body),
+      signal,
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
@@ -393,8 +374,6 @@ export async function fetchStreamingWithTools(
     messages:   openAIMessages,
     stream:     true,
   };
-  // stream_options (usage in stream) is an OpenAI-native feature;
-  // other OpenAI-compatible APIs silently ignore unknown fields.
   if (providerId === 'openai') {
     body.stream_options = { include_usage: true };
   }
@@ -413,6 +392,7 @@ export async function fetchStreamingWithTools(
         : {}),
     },
     body: JSON.stringify(body),
+    signal,
   });
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));
@@ -430,7 +410,6 @@ export async function fetchStreamingWithTools(
     let ev;
     try { ev = JSON.parse(raw); } catch { continue; }
 
-    // Usage appears in the final chunk (openai stream_options)
     if (ev.usage) {
       inputTokens  = ev.usage.prompt_tokens     ?? inputTokens;
       outputTokens = ev.usage.completion_tokens ?? outputTokens;
@@ -462,11 +441,7 @@ export async function fetchStreamingWithTools(
 }
 
 /* ══════════════════════════════════════════
-   NON-STREAMING FETCH — kept for skill detection,
-   callAI, and callAIWithContext (legacy paths).
-   Returns:
-     { type: 'text',      text, usage }
-     { type: 'tool_call', name, params, callId, usage }
+   NON-STREAMING FETCH
 ══════════════════════════════════════════ */
 export async function fetchWithTools(provider, modelId, messages, sysPrompt = '', tools = []) {
   const { provider: providerId, endpoint, api, auth_header, auth_prefix = '' } = provider;
