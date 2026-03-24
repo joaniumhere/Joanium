@@ -81,6 +81,86 @@
         </div>
       </div>
 
+      <!-- Projects Modal -->
+      <div id="projects-modal-backdrop">
+        <div id="projects-panel" role="dialog" aria-modal="true" aria-labelledby="projects-modal-title">
+          <div class="settings-modal-header">
+            <div class="settings-modal-copy">
+              <h2 id="projects-modal-title">Projects</h2>
+              <p class="settings-modal-subtitle">Pin a local folder and the project context the AI should always remember.</p>
+            </div>
+            <button class="settings-modal-close" id="projects-close" type="button" aria-label="Close projects">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+              </svg>
+            </button>
+          </div>
+          <div class="settings-modal-body projects-modal-body">
+            <section class="project-create-card">
+              <div class="project-card-header">
+                <div>
+                  <h3>Create a project</h3>
+                  <p>Local directory is the default workspace for every chat in this project.</p>
+                </div>
+              </div>
+
+              <label class="project-field">
+                <span class="project-field-label">Project name</span>
+                <input id="project-name-input" type="text" placeholder="OpenWorld app" autocomplete="off" spellcheck="false" />
+              </label>
+
+              <div class="project-field">
+                <span class="project-field-label">Local directory</span>
+                <div class="project-path-row">
+                  <input id="project-path-input" type="text" placeholder="Choose a folder" readonly />
+                  <button id="project-path-btn" class="project-secondary-btn" type="button">Choose folder</button>
+                </div>
+              </div>
+
+              <label class="project-field">
+                <span class="project-field-label">Project info for the AI</span>
+                <textarea id="project-context-input" rows="5" placeholder="What should the AI keep in mind about this project, codebase, team, or goals?"></textarea>
+              </label>
+
+              <div class="project-create-footer">
+                <div id="project-create-status" class="project-status" aria-live="polite"></div>
+                <button id="project-create-btn" class="project-primary-btn" type="button">Create project</button>
+              </div>
+            </section>
+
+            <section class="project-list-card">
+              <div class="project-card-header">
+                <div>
+                  <h3>Saved projects</h3>
+                  <p>Select a project to open its workspace and keep its chats together.</p>
+                </div>
+              </div>
+
+              <div id="project-list" class="project-list"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <!-- Missing Project Folder Modal -->
+      <div id="project-missing-backdrop">
+        <div id="project-missing-dialog" role="dialog" aria-modal="true" aria-labelledby="project-missing-title">
+          <div class="project-missing-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M10 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-8l-2-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+              <path d="M12 11v4M12 18h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+            </svg>
+          </div>
+          <h3 id="project-missing-title">Project folder not found</h3>
+          <p id="project-missing-copy">This project's folder could not be found.</p>
+          <div class="project-missing-actions">
+            <button id="project-missing-cancel" class="project-secondary-btn" type="button">Cancel</button>
+            <button id="project-missing-remove" class="project-danger-btn" type="button">Remove project</button>
+            <button id="project-missing-locate" class="project-primary-btn" type="button">Locate folder</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Theme Panel -->
       <div id="theme-panel">
       </div>
@@ -125,6 +205,22 @@
 
       <!-- Main content -->
       <main id="main">
+        <section id="project-context-bar" hidden>
+          <div class="project-context-copy">
+            <div class="project-context-eyebrow">Project workspace</div>
+            <div class="project-context-head">
+              <div>
+                <h2 id="project-context-title">Project</h2>
+                <div id="project-context-path" class="project-context-path"></div>
+              </div>
+              <div class="project-context-actions">
+                <button id="project-open-folder-btn" class="project-secondary-btn" type="button">Open folder</button>
+                <button id="project-exit-btn" class="project-secondary-btn" type="button">Leave project</button>
+              </div>
+            </div>
+            <p id="project-context-info" class="project-context-info"></p>
+          </div>
+        </section>
 
         <!-- ── Right-rail message timeline navigator ── -->
         <div id="chat-timeline" class="chat-timeline" aria-hidden="true">

@@ -65,6 +65,29 @@ async function loadWorkspaceSummary() {
   }
 }
 
+function buildActiveProjectHint(mode = 'runtime') {
+  if (!state.activeProject) return '';
+
+  const lines = [
+    '[ACTIVE PROJECT]',
+    `Name: ${state.activeProject.name}`,
+    `Workspace: ${state.activeProject.rootPath}`,
+  ];
+
+  if (state.activeProject.context) {
+    lines.push('Project info to keep in mind:');
+    lines.push(state.activeProject.context);
+  }
+
+  if (mode === 'planning') {
+    lines.push('Treat this project folder as the default workspace for file, code, and terminal requests.');
+  } else {
+    lines.push('This project is currently open. Treat this workspace as the default directory unless the user asks for another one.');
+  }
+
+  return lines.join('\n');
+}
+
 function buildSkillsCatalogue(skills) {
   if (!skills.length) return '  (none)';
   return skills.map(skill =>
@@ -167,6 +190,7 @@ export async function planRequest(userText) {
     'If the same tool must be called multiple times with different parameters, list each call separately.',
     '',
     `User request: "${userText}"`,
+    state.activeProject ? `\n${buildActiveProjectHint('planning')}` : '',
     workspaceSummary ? `\n${buildWorkspaceHint(workspaceSummary, 'planning')}` : '',
     '',
     'Available skills:',
@@ -226,8 +250,9 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
   ]);
 
   const selectedSkillBlock = buildSelectedSkillsBlock(plannedSkills, allSkills);
+  const projectHint = buildActiveProjectHint('runtime');
   const workspaceHint = buildWorkspaceHint(workspaceSummary, 'runtime');
-  const basePrompt = [systemPrompt, selectedSkillBlock, workspaceHint].filter(Boolean).join('\n\n');
+  const basePrompt = [systemPrompt, selectedSkillBlock, projectHint, workspaceHint].filter(Boolean).join('\n\n');
 
   const candidates = [
     { provider: state.selectedProvider, modelId: state.selectedModel, note: null },

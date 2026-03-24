@@ -2,6 +2,7 @@
 export const textarea            = document.getElementById('chat-input');
 export const sendBtn             = document.getElementById('send-btn');
 export const attachmentBtn       = document.getElementById('attachment-btn');
+export const folderBtn           = document.getElementById('folder-btn');
 export const composerAttachments = document.getElementById('composer-attachments');
 export const composerHint        = document.getElementById('composer-hint');
 
@@ -10,6 +11,12 @@ export const welcome      = document.getElementById('welcome');
 export const chatView     = document.getElementById('chat-view');
 export const chatMessages = document.getElementById('chat-messages');
 export const chips        = document.querySelectorAll('.chip');
+export const projectContextBar    = document.getElementById('project-context-bar');
+export const projectContextTitle  = document.getElementById('project-context-title');
+export const projectContextPath   = document.getElementById('project-context-path');
+export const projectContextInfo   = document.getElementById('project-context-info');
+export const projectOpenFolderBtn = document.getElementById('project-open-folder-btn');
+export const projectExitBtn       = document.getElementById('project-exit-btn');
 
 // Sidebar
 export const sidebarBtns  = document.querySelectorAll('.sidebar-btn[data-view]');
@@ -45,7 +52,7 @@ export const settingsModalClose    = document.getElementById('settings-modal-clo
 // Call after opening or closing any overlay.
 export const syncModalOpenState = () => {
   const hasOpen = Boolean(
-    document.querySelector('#settings-modal-backdrop.open, #library-modal-backdrop.open'),
+    document.querySelector('#settings-modal-backdrop.open, #library-modal-backdrop.open, #projects-modal-backdrop.open'),
   );
   document.body.classList.toggle('modal-open', hasOpen);
 };

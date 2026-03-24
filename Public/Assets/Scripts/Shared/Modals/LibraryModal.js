@@ -1,3 +1,5 @@
+import { state } from '../State.js';
+
 // HTML TEMPLATE
 function buildHTML() {
   return /* html */`
@@ -58,6 +60,10 @@ function formatChatDate(date) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+function currentChatScope() {
+  return state.activeProject ? { projectId: state.activeProject.id } : {};
+}
+
 // MAIN EXPORT
 export function initLibraryModal({ onChatSelect = () => {} } = {}) {
 
@@ -71,8 +77,17 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
   // 2. Element refs (resolved after injection)
   const backdrop    = () => document.getElementById('library-modal-backdrop');
   const closeBtn    = () => document.getElementById('library-close');
+  const titleEl     = () => document.getElementById('library-modal-title');
   const searchInput = () => document.getElementById('library-search');
   const chatListEl  = () => document.getElementById('chat-list');
+
+  function syncHeader() {
+    const title = titleEl();
+    if (!title) return;
+    title.textContent = state.activeProject
+      ? `${state.activeProject.name} chats`
+      : 'Revisit your chats';
+  }
 
   // 3. Render
   function renderChatList(chats, filter = '') {
@@ -85,7 +100,11 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
 
     if (!filtered.length) {
       list.innerHTML = `<div class="lp-empty">${
-        query ? 'No matching chats' : 'No chats yet.<br>Start a conversation!'
+        query
+          ? 'No matching chats'
+          : state.activeProject
+            ? 'No chats for this project yet.<br>Start a conversation in this workspace.'
+            : 'No chats yet.<br>Start a conversation!'
       }</div>`;
       return;
     }
@@ -116,7 +135,7 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
 
       deleteBtn.addEventListener('click', async e => {
         e.stopPropagation();
-        await window.electronAPI?.deleteChat(chat.id);
+        await window.electronAPI?.deleteChat(chat.id, currentChatScope());
         await refreshChatList();
       });
 
@@ -128,7 +147,8 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
   async function refreshChatList() {
     const list = chatListEl();
     try {
-      const chats = (await window.electronAPI?.getChats()) ?? [];
+      syncHeader();
+      const chats = (await window.electronAPI?.getChats(currentChatScope())) ?? [];
       renderChatList(chats, searchInput()?.value ?? '');
       return chats;
     } catch {
@@ -146,8 +166,8 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
     });
 
     searchInput()?.addEventListener('input', async () => {
-      const chats = (await window.electronAPI?.getChats()) ?? [];
-      renderChatList(chats, searchInput().value);
+      const chats = (await window.electronAPI?.getChats(currentChatScope())) ?? [];
+      renderChatList(chats, searchInput()?.value ?? '');
     });
 
     chatListEl()?.addEventListener('click', e => {
@@ -161,6 +181,11 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && isOpen()) close();
     });
+
+    window.addEventListener('ow:project-changed', () => {
+      syncHeader();
+      if (isOpen()) refreshChatList();
+    });
   }
 
   wireEvents();
@@ -169,7 +194,7 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
   function syncBodyClass() {
     const hasOpen = Boolean(
       document.querySelector(
-        '#settings-modal-backdrop.open, #library-modal-backdrop.open'
+        '#settings-modal-backdrop.open, #library-modal-backdrop.open, #projects-modal-backdrop.open'
       )
     );
     document.body.classList.toggle('modal-open', hasOpen);
@@ -177,6 +202,7 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
 
   // 6. Public API
   async function open() {
+    syncHeader();
     document.querySelector('[data-view="library"]')?.classList.add('active');
     backdrop()?.classList.add('open');
     syncBodyClass();

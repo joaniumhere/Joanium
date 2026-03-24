@@ -7,7 +7,7 @@
 import { state }              from '../../Shared/State.js';
 import { generateId }         from '../../Shared/Utils.js';
 import {
-  textarea, sendBtn, attachmentBtn,
+  textarea, sendBtn, attachmentBtn, folderBtn,
   composerAttachments as composerAttachmentsEl,
   composerHint,
 }                             from '../../Shared/DOM.js';
@@ -220,6 +220,13 @@ function hideHint(force = false) {
 
 function clearCapabilityHint() {
   if (!hasUnsupportedImage()) hideHint(true);
+}
+
+function syncWorkspacePickerVisibility() {
+  if (!folderBtn) return;
+  const hidden = Boolean(state.activeProject);
+  folderBtn.hidden = hidden;
+  folderBtn.setAttribute('aria-hidden', hidden ? 'true' : 'false');
 }
 
 /* ── Auto-resize ── */
@@ -526,9 +533,9 @@ export function init(onSend) {
   });
 
   // Open Folder Button logic
-  const folderBtn = document.getElementById('folder-btn');
   if (folderBtn) {
     folderBtn.addEventListener('click', async () => {
+      if (state.activeProject) return;
       const result = await window.electronAPI?.selectDirectory?.();
       if (result && result.ok && result.path) {
         state.workspacePath = result.path;
@@ -539,6 +546,7 @@ export function init(onSend) {
     
     // Clear workspace state if user double clicks folder btn
     folderBtn.addEventListener('dblclick', () => {
+      if (state.activeProject) return;
       if (state.workspacePath) {
         state.workspacePath = null;
         showHint(`Workspace cleared.`, 'info');
@@ -548,6 +556,10 @@ export function init(onSend) {
 
   // Re-sync when model changes
   window.addEventListener('ow:model-selection-changed', syncCapabilities);
+  window.addEventListener('ow:project-changed', syncWorkspacePickerVisibility);
 
+  syncWorkspacePickerVisibility();
   autoResize();
 }
+
+export { syncWorkspacePickerVisibility };

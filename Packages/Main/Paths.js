@@ -23,6 +23,7 @@ export const Paths = {
   CUSTOM_INSTRUCTIONS_FILE: path.join(ROOT, 'Data', 'CustomInstructions.md'),
   MEMORY_FILE:              path.join(ROOT, 'Data', 'Memory.md'),
   CHATS_DIR:                path.join(ROOT, 'Data', 'Chats'),
+  PROJECTS_DIR:             path.join(ROOT, 'Data', 'Projects'),
   AUTOMATIONS_FILE:         path.join(ROOT, 'Data', 'Automations.json'),
   SKILLS_FILE:              path.join(ROOT, 'Data', 'Skills.json'),
   CONNECTORS_FILE:          path.join(ROOT, 'Data', 'Connectors.json'),

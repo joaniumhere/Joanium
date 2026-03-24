@@ -9,6 +9,11 @@ const ICON = {
               <path d="M4 4h4v16H4zM10 4h10v7H10zM10 15h10v5H10z" stroke-linejoin="round"/>
             </svg>`,
 
+  projects: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+               <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-linecap="round" stroke-linejoin="round"/>
+               <path d="M8 11h8M8 15h5" stroke-linecap="round"/>
+             </svg>`,
+
   automations: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z" stroke-linejoin="round"/>
                 </svg>`,
@@ -98,6 +103,7 @@ function buildSidebarHTML(activePage) {
   return `
     ${btn('chat',        ICON.newChat,     'New chat')}
     ${btn('library',     ICON.library,     'Library')}
+    ${btn('projects',    ICON.projects,    'Projects')}
     ${btn('automations', ICON.automations, 'Automations')}
     ${btn('agents',      ICON.agents,      'Agents')}
     ${btn('skills',      ICON.skills,      'Skills')}
@@ -163,9 +169,10 @@ function buildAvatarPanelHTML() {
  * Mount and wire the shared sidebar.
  *
  * @param {object} opts
- * @param {'chat'|'library'|'automations'|'agents'|'skills'|'personas'|'events'|'usage'} [opts.activePage='chat']
+ * @param {'chat'|'library'|'projects'|'automations'|'agents'|'skills'|'personas'|'events'|'usage'} [opts.activePage='chat']
  * @param {() => void} [opts.onNewChat]
  * @param {() => void} [opts.onLibrary]
+ * @param {() => void} [opts.onProjects]
  * @param {() => void} [opts.onAutomations]
  * @param {() => void} [opts.onAgents]
  * @param {() => void} [opts.onSkills]
@@ -179,6 +186,7 @@ export function initSidebar({
   activePage    = 'chat',
   onNewChat     = () => { },
   onLibrary     = () => { },
+  onProjects    = () => { },
   onAutomations = () => { },
   onAgents      = () => { },
   onSkills      = () => { },
@@ -219,6 +227,7 @@ export function initSidebar({
       const view = btn.dataset.view;
       if (view === 'chat')        { onNewChat();     return; }
       if (view === 'library')     { onLibrary();     return; }
+      if (view === 'projects')    { onProjects();    return; }
       if (view === 'automations') { onAutomations(); return; }
       if (view === 'agents')      { onAgents();      return; }
       if (view === 'skills')      { onSkills();      return; }

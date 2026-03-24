@@ -365,6 +365,10 @@ function generateChatId() {
   return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}_${p(now.getHours())}-${p(now.getMinutes())}-${p(now.getSeconds())}`;
 }
 
+function currentChatScope() {
+  return state.activeProject ? { projectId: state.activeProject.id } : {};
+}
+
 function normalizeMessage(msg) {
   return {
     role: msg?.role ?? 'user',
@@ -1163,8 +1167,12 @@ export async function saveCurrentChat() {
       updatedAt: new Date().toISOString(),
       provider: state.selectedProvider?.provider ?? null,
       model: state.selectedModel ?? null,
+      projectId: state.activeProject?.id ?? null,
+      projectName: state.activeProject?.name ?? null,
+      workspacePath: state.workspacePath ?? null,
+      projectContext: state.activeProject?.context ?? '',
       messages: state.messages,
-    });
+    }, currentChatScope());
   } catch (err) { console.warn('[Chat] Could not save chat:', err); }
 }
 
@@ -1191,7 +1199,7 @@ export function startNewChat(extraCleanup = () => { }) {
 
 export async function loadChat(chatId, { updateModelLabel, buildModelDropdown, notifyModelSelectionChanged }) {
   try {
-    const chat = await window.electronAPI?.loadChat(chatId);
+    const chat = await window.electronAPI?.loadChat(chatId, currentChatScope());
     if (!chat) return;
     state.messages = [];
     state.currentChatId = chat.id;

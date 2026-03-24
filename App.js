@@ -24,6 +24,7 @@ import * as SetupIPC      from './Packages/Main/IPC/SetupIPC.js';
 import * as UserIPC       from './Packages/Main/IPC/UserIPC.js';
 import * as SystemIPC     from './Packages/Main/IPC/SystemIPC.js';
 import * as ChatIPC       from './Packages/Main/IPC/ChatIPC.js';
+import * as ProjectIPC    from './Packages/Main/IPC/ProjectIPC.js';
 import * as AutomationIPC from './Packages/Main/IPC/AutomationIPC.js';
 import * as ConnectorIPC  from './Packages/Main/IPC/ConnectorIPC.js';
 import * as GmailIPC      from './Packages/Main/IPC/GmailIPC.js';
@@ -51,6 +52,7 @@ SetupIPC.register();
 UserIPC.register();
 SystemIPC.register(connectorEngine);
 ChatIPC.register();
+ProjectIPC.register();
 AutomationIPC.register(automationEngine);
 ConnectorIPC.register(connectorEngine);
 GmailIPC.register(connectorEngine);
@@ -70,6 +72,7 @@ app.whenReady().then(async () => {
   // Ensure required directories exist before anything else
   if (!fs.existsSync(Paths.DATA_DIR))  fs.mkdirSync(Paths.DATA_DIR,  { recursive: true });
   if (!fs.existsSync(Paths.CHATS_DIR)) fs.mkdirSync(Paths.CHATS_DIR, { recursive: true });
+  if (!fs.existsSync(Paths.PROJECTS_DIR)) fs.mkdirSync(Paths.PROJECTS_DIR, { recursive: true });
 
   await MCPIPC.autoConnect().catch(err => {
     console.warn('[App] MCP auto-connect failed:', err.message);

@@ -40,10 +40,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSystemPrompt: () => ipcRenderer.invoke('get-system-prompt'),
 
   // Chat storage
-  saveChat: (chatData) => ipcRenderer.invoke('save-chat', chatData),
-  getChats: () => ipcRenderer.invoke('get-chats'),
-  loadChat: (chatId) => ipcRenderer.invoke('load-chat', chatId),
-  deleteChat: (chatId) => ipcRenderer.invoke('delete-chat', chatId),
+  saveChat: (chatData, opts) => ipcRenderer.invoke('save-chat', chatData, opts),
+  getChats: (opts) => ipcRenderer.invoke('get-chats', opts),
+  loadChat: (chatId, opts) => ipcRenderer.invoke('load-chat', chatId, opts),
+  deleteChat: (chatId, opts) => ipcRenderer.invoke('delete-chat', chatId, opts),
+
+  // Projects
+  getProjects: () => ipcRenderer.invoke('get-projects'),
+  getProject: (projectId) => ipcRenderer.invoke('get-project', projectId),
+  createProject: (projectData) => ipcRenderer.invoke('create-project', projectData),
+  updateProject: (projectId, patch) => ipcRenderer.invoke('update-project', projectId, patch),
+  deleteProject: (projectId) => ipcRenderer.invoke('delete-project', projectId),
+  validateProject: (projectId) => ipcRenderer.invoke('validate-project', projectId),
 
   // Automations
   launchAutomations: () => ipcRenderer.invoke('launch-automations'),
@@ -132,7 +140,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   close: () => ipcRenderer.send('window-close'),
 
   // File System & Terminal
-  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  selectDirectory: (opts) => ipcRenderer.invoke('select-directory', opts),
   runShellCommand: (params) => ipcRenderer.invoke('run-shell-command', params),
   assessCommandRisk: (params) => ipcRenderer.invoke('assess-command-risk', params),
   readLocalFile: (params) => ipcRenderer.invoke('read-local-file', params),

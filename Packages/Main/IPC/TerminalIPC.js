@@ -336,10 +336,11 @@ async function runProjectChecks({ workingDir, includeLint, includeTest, includeB
 }
 
 export function register() {
-  ipcMain.handle('select-directory', async e => {
+  ipcMain.handle('select-directory', async (e, opts = {}) => {
     const window = BrowserWindow.fromWebContents(e.sender);
     const result = await dialog.showOpenDialog(window, {
       properties: ['openDirectory', 'createDirectory'],
+      defaultPath: opts.defaultPath?.trim() || undefined,
     });
     if (result.canceled || result.filePaths.length === 0) {
       return { ok: false };

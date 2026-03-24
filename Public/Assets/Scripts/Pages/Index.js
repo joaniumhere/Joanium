@@ -3,33 +3,192 @@ import { state } from '../Shared/State.js';
 import {
   textarea, sendBtn, chips,
   modelDropdown, modelSelectorBtn,
+  projectContextBar, projectContextTitle, projectContextPath, projectContextInfo,
+  projectOpenFolderBtn, projectExitBtn,
 } from '../Shared/DOM.js';
 
-// Window controls
 import '../Shared/WindowControls.js';
 
 import { fetchWithTools } from '../Features/AI/AIProvider.js';
 
-// Modals
 import { initSidebar } from '../Shared/Sidebar.js';
 import { initAboutModal } from '../Shared/Modals/AboutModal.js';
 import { initLibraryModal } from '../Shared/Modals/LibraryModal.js';
+import { initProjectsModal } from '../Shared/Modals/ProjectsModal.js';
 import { initSettingsModal } from '../Shared/Modals/SettingsModal.js';
 
-// Features
-import { init as initModelSelector, loadProviders, updateModelLabel, buildModelDropdown, notifyModelSelectionChanged } from '../Features/ModelSelector/ModelSelector.js';
-import { init as initComposer, syncCapabilities, addAttachments } from '../Features/Composer/Composer.js';
+import {
+  init as initModelSelector,
+  loadProviders,
+  updateModelLabel,
+  buildModelDropdown,
+  notifyModelSelectionChanged,
+} from '../Features/ModelSelector/ModelSelector.js';
+import {
+  init as initComposer,
+  syncCapabilities,
+  addAttachments,
+  syncWorkspacePickerVisibility,
+} from '../Features/Composer/Composer.js';
 import {
   sendMessage, startNewChat, loadChat,
   setSendBtnUpdater, stopGeneration,
 } from '../Features/Chat/Chat.js';
 import { initTerminalObserver } from '../Features/Chat/TerminalComponent.js';
 
-// Modal instances
 const about = initAboutModal();
 const settings = initSettingsModal();
 
-const library = initLibraryModal({
+let sidebar = null;
+let library = null;
+let projects = null;
+
+const missingProjectBackdrop = document.getElementById('project-missing-backdrop');
+const missingProjectCopy = document.getElementById('project-missing-copy');
+const missingProjectCancelBtn = document.getElementById('project-missing-cancel');
+const missingProjectRemoveBtn = document.getElementById('project-missing-remove');
+const missingProjectLocateBtn = document.getElementById('project-missing-locate');
+
+function activeSidebarPage() {
+  return state.activeProject ? 'projects' : 'chat';
+}
+
+function closeTransientPanels() {
+  library?.close();
+  projects?.close();
+  settings.close();
+}
+
+function emitProjectChanged() {
+  window.dispatchEvent(new CustomEvent('ow:project-changed', {
+    detail: { project: state.activeProject },
+  }));
+}
+
+function syncProjectUI() {
+  const project = state.activeProject;
+
+  if (projectContextBar) {
+    projectContextBar.hidden = !project;
+  }
+
+  if (project) {
+    if (projectContextTitle) projectContextTitle.textContent = project.name;
+    if (projectContextPath) projectContextPath.textContent = project.rootPath;
+    if (projectContextInfo) {
+      projectContextInfo.textContent = project.context?.trim()
+        || 'The AI will use this folder as the default workspace and can inspect files and folders here.';
+    }
+    textarea.placeholder = `Message ${project.name}`;
+  } else {
+    if (projectContextTitle) projectContextTitle.textContent = 'Project';
+    if (projectContextPath) projectContextPath.textContent = '';
+    if (projectContextInfo) projectContextInfo.textContent = '';
+    textarea.placeholder = 'How can I help you today?';
+  }
+
+  syncWorkspacePickerVisibility();
+  sidebar?.setActivePage(activeSidebarPage());
+}
+
+function resetConversationView() {
+  startNewChat(() => closeTransientPanels());
+  syncProjectUI();
+}
+
+async function leaveProject() {
+  state.activeProject = null;
+  state.workspacePath = null;
+  resetConversationView();
+  emitProjectChanged();
+}
+
+async function showMissingProjectDialog(project) {
+  if (!missingProjectBackdrop || !missingProjectCopy) return null;
+
+  missingProjectCopy.textContent =
+    `The folder for "${project.name}" is missing from ${project.rootPath}. ` +
+    'Locate the moved folder or remove the saved project.';
+
+  missingProjectBackdrop.classList.add('open');
+
+  return new Promise(resolve => {
+    const close = value => {
+      missingProjectBackdrop.classList.remove('open');
+      missingProjectCancelBtn.onclick = null;
+      missingProjectRemoveBtn.onclick = null;
+      missingProjectLocateBtn.onclick = null;
+      missingProjectBackdrop.onclick = null;
+      resolve(value);
+    };
+
+    missingProjectCancelBtn.onclick = () => close(null);
+
+    missingProjectRemoveBtn.onclick = async () => {
+      const result = await window.electronAPI?.deleteProject?.(project.id);
+      if (!result?.ok) {
+        close(null);
+        return;
+      }
+
+      if (state.activeProject?.id === project.id) {
+        await leaveProject();
+      }
+
+      await projects?.refreshProjects?.();
+      close('removed');
+    };
+
+    missingProjectLocateBtn.onclick = async () => {
+      const selected = await window.electronAPI?.selectDirectory?.({ defaultPath: project.rootPath });
+      if (!selected?.ok || !selected.path) return;
+
+      const updated = await window.electronAPI?.updateProject?.(project.id, {
+        rootPath: selected.path,
+        lastOpenedAt: new Date().toISOString(),
+      });
+
+      if (!updated?.ok || !updated.project) {
+        close(null);
+        return;
+      }
+
+      await projects?.refreshProjects?.();
+      close(updated.project);
+    };
+
+    missingProjectBackdrop.onclick = event => {
+      if (event.target === missingProjectBackdrop) close(null);
+    };
+  });
+}
+
+async function openProject(project) {
+  const validation = await window.electronAPI?.validateProject?.(project.id);
+  if (!validation?.ok || !validation.project) return false;
+
+  let nextProject = validation.project;
+
+  if (!validation.folderExists) {
+    const resolved = await showMissingProjectDialog(nextProject);
+    if (!resolved || resolved === 'removed') return false;
+    nextProject = resolved;
+  } else {
+    const touched = await window.electronAPI?.updateProject?.(nextProject.id, {
+      lastOpenedAt: new Date().toISOString(),
+    });
+    if (touched?.ok && touched.project) nextProject = touched.project;
+  }
+
+  state.activeProject = nextProject;
+  state.workspacePath = nextProject.rootPath;
+  resetConversationView();
+  emitProjectChanged();
+  await projects?.refreshProjects?.();
+  return true;
+}
+
+library = initLibraryModal({
   onChatSelect: chatId => loadChat(chatId, {
     updateModelLabel,
     buildModelDropdown,
@@ -37,11 +196,30 @@ const library = initLibraryModal({
   }),
 });
 
-// Sidebar
-const sidebar = initSidebar({
+projects = initProjectsModal({
+  onProjectOpen: openProject,
+  onProjectRemoved: async () => {
+    await leaveProject();
+  },
+  onClose: () => {
+    sidebar?.setActivePage(activeSidebarPage());
+  },
+});
+
+sidebar = initSidebar({
   activePage: 'chat',
-  onNewChat: () => startNewChat(() => { library.close(); settings.close(); }),
+  onNewChat: resetConversationView,
   onLibrary: () => library.isOpen() ? library.close() : library.open(),
+  onProjects: () => {
+    if (projects.isOpen()) {
+      projects.close();
+      sidebar.setActivePage(activeSidebarPage());
+      return;
+    }
+    closeTransientPanels();
+    projects.open();
+    sidebar.setActivePage('projects');
+  },
   onAutomations: () => window.electronAPI?.launchAutomations?.(),
   onAgents: () => window.electronAPI?.launchAgents?.(),
   onEvents: () => window.electronAPI?.launchEvents?.(),
@@ -52,17 +230,9 @@ const sidebar = initSidebar({
   onAbout: () => about.open(),
 });
 
-// Keep sidebar in sync whenever the user profile updates
-window.addEventListener('ow:user-profile-updated', e => {
-  sidebar.setUser(e.detail?.name ?? state.userName);
+window.addEventListener('ow:user-profile-updated', event => {
+  sidebar.setUser(event.detail?.name ?? state.userName);
 });
-
-/* ══════════════════════════════════════════
-   SEND / STOP BUTTON
-   When state.isTyping is true the button
-   becomes a stop button (square icon, red hover).
-   Clicking it calls stopGeneration() from Chat.js.
-══════════════════════════════════════════ */
 
 const SEND_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="15" height="15">
   <path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
@@ -74,7 +244,6 @@ const STOP_ICON = `<svg viewBox="0 0 24 24" fill="currentColor" width="13" heigh
 
 function updateSendBtn() {
   if (state.isTyping) {
-    // Switch to stop mode
     sendBtn.innerHTML = STOP_ICON;
     sendBtn.classList.add('ready', 'is-stop');
     sendBtn.disabled = false;
@@ -82,7 +251,6 @@ function updateSendBtn() {
     return;
   }
 
-  // Back to send mode
   sendBtn.innerHTML = SEND_ICON;
   sendBtn.classList.remove('is-stop');
   sendBtn.title = 'Send';
@@ -97,14 +265,12 @@ function updateSendBtn() {
 }
 setSendBtnUpdater(updateSendBtn);
 
-// System prompt
 async function refreshSystemPrompt() {
   try { state.systemPrompt = await window.electronAPI?.getSystemPrompt?.() ?? ''; }
   catch { state.systemPrompt = ''; }
 }
 window.addEventListener('ow:settings-saved', refreshSystemPrompt);
 
-// Chips
 chips.forEach(chip => {
   chip.addEventListener('click', () => {
     textarea.value = chip.getAttribute('data-prompt');
@@ -117,19 +283,25 @@ chips.forEach(chip => {
   });
 });
 
-// Close model dropdown on outside click
-document.addEventListener('click', e => {
-  if (modelDropdown && !modelDropdown.contains(e.target) && !modelSelectorBtn?.contains(e.target))
+document.addEventListener('click', event => {
+  if (modelDropdown && !modelDropdown.contains(event.target) && !modelSelectorBtn?.contains(event.target)) {
     modelDropdown.classList.remove('open');
+  }
 });
 
-// Init
+projectOpenFolderBtn?.addEventListener('click', async () => {
+  if (!state.activeProject?.rootPath) return;
+  await window.electronAPI?.openFolderOS?.({ dirPath: state.activeProject.rootPath });
+});
+
+projectExitBtn?.addEventListener('click', leaveProject);
+
 document.title = APP_NAME;
 
 initModelSelector();
 initTerminalObserver();
+syncProjectUI();
 
-// Wire composer — stop generation if typing, otherwise send
 initComposer(() => {
   if (state.isTyping) {
     stopGeneration();
@@ -140,7 +312,6 @@ initComposer(() => {
   sendMessage({ text, attachments, sendBtnEl: sendBtn });
 });
 
-// Load providers → sync capabilities → load user → refresh system prompt
 loadProviders().then(async () => {
   syncCapabilities();
   const user = await settings.loadUser();
@@ -160,10 +331,6 @@ loadProviders().then(async () => {
 
 console.log(`[${APP_NAME}] loaded`);
 
-// ─────────────────────────────────────────────
-//  ENHANCE BUTTON
-// ─────────────────────────────────────────────
-
 const enhanceBtn = document.getElementById('enhance-btn');
 
 function updateEnhanceBtn() {
@@ -181,7 +348,7 @@ async function handleEnhance() {
   enhanceBtn.classList.add('enhance-loading');
   enhanceBtn.disabled = true;
   const labelEl = enhanceBtn.querySelector('.enhance-btn-label');
-  if (labelEl) labelEl.textContent = 'Enhancing…';
+  if (labelEl) labelEl.textContent = 'Enhancing...';
 
   try {
     const result = await fetchWithTools(
@@ -192,7 +359,7 @@ async function handleEnhance() {
         'You are a prompt-enhancement assistant.',
         'Rewrite the user\'s message into a clearer, more specific, and more effective prompt.',
         'Keep the same intent and language style.',
-        'Return ONLY the enhanced prompt — no preamble, no quotes, no explanation.',
+        'Return ONLY the enhanced prompt - no preamble, no quotes, no explanation.',
       ].join(' '),
       [],
     );
@@ -214,15 +381,11 @@ enhanceBtn?.addEventListener('click', handleEnhance);
 textarea.addEventListener('input', updateEnhanceBtn);
 updateEnhanceBtn();
 
-const _originalSendBtnUpdater = updateSendBtn;
+const originalSendBtnUpdater = updateSendBtn;
 setSendBtnUpdater(() => {
-  _originalSendBtnUpdater();
+  originalSendBtnUpdater();
   updateEnhanceBtn();
 });
-
-// ─────────────────────────────────────────────
-//  DRAG AND DROP
-// ─────────────────────────────────────────────
 
 let dragCounter = 0;
 
@@ -237,46 +400,46 @@ Object.assign(dropOverlay.style, {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   zIndex: 9999, opacity: 0, pointerEvents: 'none',
   transition: 'opacity 0.2s ease, transform 0.2s ease',
-  transform: 'scale(1.02)'
+  transform: 'scale(1.02)',
 });
 Object.assign(dropOverlay.querySelector('.drop-overlay-content').style, {
   display: 'flex', flexDirection: 'column', alignItems: 'center',
-  color: 'white'
+  color: 'white',
 });
 
-document.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+document.addEventListener('dragover', event => {
+  event.preventDefault();
+  event.stopPropagation();
 });
 
-document.addEventListener('dragenter', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  dragCounter++;
+document.addEventListener('dragenter', event => {
+  event.preventDefault();
+  event.stopPropagation();
+  dragCounter += 1;
   if (dragCounter === 1) {
     dropOverlay.style.opacity = '1';
     dropOverlay.style.transform = 'scale(1)';
   }
 });
 
-document.addEventListener('dragleave', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  dragCounter--;
+document.addEventListener('dragleave', event => {
+  event.preventDefault();
+  event.stopPropagation();
+  dragCounter -= 1;
   if (dragCounter === 0) {
     dropOverlay.style.opacity = '0';
     dropOverlay.style.transform = 'scale(1.02)';
   }
 });
 
-document.addEventListener('drop', async (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+document.addEventListener('drop', async event => {
+  event.preventDefault();
+  event.stopPropagation();
   dragCounter = 0;
   dropOverlay.style.opacity = '0';
   dropOverlay.style.transform = 'scale(1.02)';
 
-  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-    await addAttachments(Array.from(e.dataTransfer.files));
+  if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+    await addAttachments(Array.from(event.dataTransfer.files));
   }
 });
