@@ -3,7 +3,7 @@ export const REPO_TOOLS = [
   {
     name: 'github_load_repo_context',
     description: 'Load an entire GitHub repository into context for deep codebase understanding. Fetches the file tree and the content of the most important source files. Ask questions like "how does auth work?", "where is X handled?", "what does this function do?" across the whole codebase.',
-    category: 'github',
+    category: 'github_repo',
     parameters: {
       owner:       { type: 'string', required: true,  description: 'GitHub owner / org' },
       repo:        { type: 'string', required: true,  description: 'Repository name' },
@@ -22,7 +22,7 @@ export const REPO_TOOLS = [
   {
     name: 'github_search_code',
     description: 'Search for a function, class, variable, or pattern across a GitHub repository. Returns matching file names and line snippets.',
-    category: 'github',
+    category: 'github_repo',
     parameters: {
       owner:   { type: 'string', required: true, description: 'GitHub owner / org' },
       repo:    { type: 'string', required: true, description: 'Repository name' },

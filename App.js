@@ -34,6 +34,7 @@ import * as PersonasIPC   from './Packages/Main/IPC/PersonasIPC.js';
 import * as UsageIPC      from './Packages/Main/IPC/UsageIPC.js';
 import * as AgentsIPC    from './Packages/Main/IPC/AgentsIPC.js';
 import * as TerminalIPC   from './Packages/Main/IPC/TerminalIPC.js';
+import * as MCPIPC        from './Packages/Main/IPC/MCPIPC.js';
 
 /* ══════════════════════════════════════════
    ENGINES  (singletons shared across IPC modules)
@@ -60,14 +61,19 @@ PersonasIPC.register();
 UsageIPC.register();
 AgentsIPC.register(agentsEngine, automationEngine);
 TerminalIPC.register();
+MCPIPC.register();
 
 /* ══════════════════════════════════════════
    APP LIFECYCLE
 ══════════════════════════════════════════ */
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Ensure required directories exist before anything else
   if (!fs.existsSync(Paths.DATA_DIR))  fs.mkdirSync(Paths.DATA_DIR,  { recursive: true });
   if (!fs.existsSync(Paths.CHATS_DIR)) fs.mkdirSync(Paths.CHATS_DIR, { recursive: true });
+
+  await MCPIPC.autoConnect().catch(err => {
+    console.warn('[App] MCP auto-connect failed:', err.message);
+  });
 
   automationEngine.start();
   agentsEngine.start();

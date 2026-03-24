@@ -102,7 +102,9 @@ export async function createIssue(credentials, owner, repo, title, body, labels 
 
 export async function searchCode(credentials, query, scope) {
   const q = scope ? `${query} repo:${scope}` : query;
-  return githubFetch(`/search/code?q=${encodeURIComponent(q)}`, credentials.token);
+  return githubFetch(`/search/code?q=${encodeURIComponent(q)}`, credentials.token, {
+    headers: { Accept: 'application/vnd.github.text-match+json' },
+  });
 }
 
 export async function getReadme(credentials, owner, repo) {
@@ -174,6 +176,39 @@ export async function listPRReviews(credentials, owner, repo, prNumber) {
 export async function getPRComments(credentials, owner, repo, prNumber) {
   return githubFetch(
     `/repos/${owner}/${repo}/pulls/${prNumber}/comments?per_page=100`,
+    credentials.token,
+  );
+}
+
+export async function getPRChecks(credentials, owner, repo, prNumber) {
+  const pr = await getPRDetails(credentials, owner, repo, prNumber);
+  const sha = pr?.head?.sha;
+  if (!sha) {
+    throw new Error(`PR #${prNumber} has no head SHA.`);
+  }
+
+  const [combinedStatus, checkRuns] = await Promise.all([
+    githubFetch(`/repos/${owner}/${repo}/commits/${sha}/status`, credentials.token).catch(() => null),
+    githubFetch(`/repos/${owner}/${repo}/commits/${sha}/check-runs`, credentials.token).catch(() => null),
+  ]);
+
+  return {
+    prNumber,
+    sha,
+    state: combinedStatus?.state ?? 'unknown',
+    statuses: combinedStatus?.statuses ?? [],
+    checkRuns: checkRuns?.check_runs ?? [],
+    totalCount: checkRuns?.total_count ?? 0,
+  };
+}
+
+export async function getWorkflowRuns(credentials, owner, repo, { branch = '', event = '', perPage = 20 } = {}) {
+  const qs = new URLSearchParams({ per_page: String(perPage || 20) });
+  if (branch) qs.set('branch', branch);
+  if (event) qs.set('event', event);
+
+  return githubFetch(
+    `/repos/${owner}/${repo}/actions/runs?${qs.toString()}`,
     credentials.token,
   );
 }

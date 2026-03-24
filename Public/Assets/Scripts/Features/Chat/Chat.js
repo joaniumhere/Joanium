@@ -461,11 +461,13 @@ async function doSendFromState() {
   live.push('Thinking…');
 
   const lastUserMsg = [...state.messages].reverse().find(m => m.role === 'user');
+  let plannedSkills = [];
   let plannedToolCalls = [];
 
   if (lastUserMsg?.content) {
     try {
       const plan = await planRequest(lastUserMsg.content);
+      plannedSkills = plan.skills ?? [];
       for (const skillName of (plan.skills ?? [])) {
         const handle = live.push(`[SKILL] ${skillName}`);
         await new Promise(r => setTimeout(r, 120));
@@ -483,7 +485,7 @@ async function doSendFromState() {
   try {
     _currentAbortController = new AbortController();
     const { text: finalReply, usage, usedProvider, usedModel } = await agentLoop(
-      state.messages, live, plannedToolCalls, state.systemPrompt, _currentAbortController.signal,
+      state.messages, live, plannedSkills, plannedToolCalls, state.systemPrompt, _currentAbortController.signal,
     ).finally(() => { _currentAbortController = null; });
 
     await trackUsage(usage, state.currentChatId, usedProvider, usedModel);
@@ -1094,11 +1096,13 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
   const live = createLiveRow();
   live.push('Thinking…');
 
+  let plannedSkills = [];
   let plannedToolCalls = [];
 
   if (text) {
     try {
       const plan = await planRequest(text);
+      plannedSkills = plan.skills ?? [];
 
       for (const skillName of (plan.skills ?? [])) {
         live.push(`[SKILL] ${skillName}`);
@@ -1116,7 +1120,7 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
   try {
     _currentAbortController = new AbortController();
     const { text: finalReply, usage, usedProvider, usedModel } = await agentLoop(
-      state.messages, live, plannedToolCalls, state.systemPrompt, _currentAbortController.signal,
+      state.messages, live, plannedSkills, plannedToolCalls, state.systemPrompt, _currentAbortController.signal,
     ).finally(() => { _currentAbortController = null; });
 
     await trackUsage(usage, state.currentChatId, usedProvider, usedModel);

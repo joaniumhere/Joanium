@@ -1,44 +1,345 @@
-// ─────────────────────────────────────────────
-//  openworld — Packages/Main/IPC/TerminalIPC.js
-//  Executes shell commands, reads files, and lists
-//  directories on behalf of the AI chat tool system.
-//  Runs in the Electron main process (full Node access).
-// ─────────────────────────────────────────────
+// openworld — Packages/Main/IPC/TerminalIPC.js
+// Executes shell commands, reads files, inspects workspaces, and exposes
+// local dev tooling on behalf of the chat tool system.
 
 import { ipcMain, dialog, BrowserWindow, shell } from 'electron';
-import { exec }     from 'child_process';
-import fs           from 'fs';
-import path         from 'path';
-import os           from 'os';
-import { spawn }    from 'child_process';
+import { exec, spawn } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
-// Keep track of active pseudo-terminals
 const activePtys = new Map();
 
-/* ── Helpers ─────────────────────────────────────── */
-
-const MAX_OUTPUT_BYTES  = 64_000;   // truncate large outputs to ~64 KB
-const DEFAULT_TIMEOUT   = 30_000;   // 30 s
-const MAX_TIMEOUT       = 120_000;  // 2 min hard cap
-const MAX_FILE_BYTES    = 512_000;  // 512 KB for read_local_file
+const MAX_OUTPUT_BYTES = 64_000;
+const DEFAULT_TIMEOUT = 30_000;
+const MAX_TIMEOUT = 120_000;
+const MAX_FILE_BYTES = 512_000;
 const MAX_LINES_DEFAULT = 200;
+const MAX_SEARCH_RESULTS = 40;
+const MAX_SEARCH_FILES = 4_000;
 
-/** Truncate a string to maxBytes and annotate if cut. */
+const WORKSPACE_SKIP_DIRS = new Set([
+  '.git', 'node_modules', 'dist', 'build', 'out', '.next', '.nuxt',
+  'coverage', '.cache', '.turbo', '.parcel-cache', '.vercel',
+  'target', 'bin', 'obj', 'vendor', '__pycache__', '.pytest_cache',
+  '.venv', 'venv', 'env', 'tmp', 'temp',
+]);
+
+const TEXT_EXTENSIONS = new Set([
+  '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.json', '.md', '.mdx',
+  '.txt', '.log', '.env', '.yml', '.yaml', '.toml', '.xml', '.html', '.css',
+  '.scss', '.less', '.sql', '.graphql', '.gql', '.sh', '.bash', '.zsh',
+  '.ps1', '.py', '.rb', '.go', '.rs', '.java', '.cs', '.c', '.cpp', '.h',
+  '.hpp', '.vue', '.svelte', '.astro',
+]);
+
+const COMMAND_RISK_RULES = [
+  { level: 'critical', pattern: /\brm\s+-rf\s+\/(?!\w)/i, reason: 'Deletes the filesystem root.' },
+  { level: 'critical', pattern: /\b(format|mkfs)\b/i, reason: 'Formats a disk or filesystem.' },
+  { level: 'critical', pattern: /\bdd\s+if=.*of=\/dev/i, reason: 'Writes raw data to a device.' },
+  { level: 'critical', pattern: /\b(shutdown|reboot|halt)\b/i, reason: 'Shuts down or reboots the machine.' },
+  { level: 'critical', pattern: /\b(del|erase)\b\s+\/(s|q)/i, reason: 'Bulk-deletes files via the shell.' },
+  { level: 'critical', pattern: /\bRemove-Item\b.*-Recurse.*-Force/i, reason: 'Force-removes files recursively.' },
+  { level: 'high', pattern: /\bgit\s+reset\s+--hard\b/i, reason: 'Discards Git changes permanently.' },
+  { level: 'high', pattern: /\bgit\s+clean\s+-f/i, reason: 'Deletes untracked files from the repository.' },
+  { level: 'high', pattern: /\bgit\s+push\b.*--force/i, reason: 'Rewrites remote Git history.' },
+  { level: 'high', pattern: /\b(terraform|terragrunt)\s+(apply|destroy)\b/i, reason: 'Mutates infrastructure state.' },
+  { level: 'high', pattern: /\bkubectl\s+(apply|delete|patch|scale|rollout)\b/i, reason: 'Mutates a Kubernetes cluster.' },
+  { level: 'high', pattern: /\bhelm\s+(install|upgrade|uninstall|rollback)\b/i, reason: 'Mutates a Helm release.' },
+  { level: 'high', pattern: /\bdocker\s+(system\s+prune|rm|rmi|compose\s+down)\b/i, reason: 'Deletes or mutates Docker resources.' },
+  { level: 'high', pattern: /\brm\s+-rf\b/i, reason: 'Recursively deletes files.' },
+  { level: 'medium', pattern: /\bgit\s+(push|merge|tag)\b/i, reason: 'Mutates Git history or the remote repository.' },
+  { level: 'medium', pattern: /\b(npm|pnpm|yarn|bun)\s+publish\b/i, reason: 'Publishes a package.' },
+];
+
 function truncate(str, maxBytes = MAX_OUTPUT_BYTES) {
   const buf = Buffer.from(str, 'utf-8');
   if (buf.length <= maxBytes) return str;
-  return buf.slice(0, maxBytes).toString('utf-8') + `\n\n…(truncated — ${buf.length} bytes total)`;
+  return `${buf.slice(0, maxBytes).toString('utf-8')}\n\n…(truncated — ${buf.length} bytes total)`;
 }
 
-/* ── IPC Registration ─────────────────────────────── */
+function resolveDir(inputPath) {
+  return path.resolve(inputPath?.trim() || os.homedir());
+}
+
+function normalizeBool(value) {
+  return value === true || value === 'true';
+}
+
+function isProbablyTextFile(filePath) {
+  const base = path.basename(filePath).toLowerCase();
+  if (base === 'dockerfile' || base === 'makefile' || base === '.gitignore') return true;
+  return TEXT_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
+function walkWorkspaceFiles(rootPath, maxFiles = MAX_SEARCH_FILES) {
+  const root = resolveDir(rootPath);
+  const files = [];
+  const stack = [root];
+
+  while (stack.length && files.length < maxFiles) {
+    const current = stack.pop();
+    let entries = [];
+
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (entry.name === '.' || entry.name === '..' || entry.isSymbolicLink?.()) continue;
+
+      const abs = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (!WORKSPACE_SKIP_DIRS.has(entry.name)) stack.push(abs);
+        continue;
+      }
+
+      if (entry.isFile()) files.push(abs);
+      if (files.length >= maxFiles) break;
+    }
+  }
+
+  return { root, files };
+}
+
+function readJsonIfExists(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    }
+  } catch { /* non-fatal */ }
+  return null;
+}
+
+function detectPackageManager(root, entries) {
+  const names = new Set(entries.map(entry => entry.name));
+  if (names.has('pnpm-lock.yaml')) return 'pnpm';
+  if (names.has('yarn.lock')) return 'yarn';
+  if (names.has('bun.lockb') || names.has('bun.lock')) return 'bun';
+  if (names.has('package-lock.json')) return 'npm';
+  if (fs.existsSync(path.join(root, 'package.json'))) return 'npm';
+  return '';
+}
+
+function buildPackageScriptCommand(packageManager, scriptName) {
+  if (!packageManager || !scriptName) return '';
+  if (packageManager === 'yarn') return `yarn ${scriptName}`;
+  if (packageManager === 'bun') return `bun run ${scriptName}`;
+  return `${packageManager} run ${scriptName}`;
+}
+
+function inspectWorkspace(rootPath) {
+  const root = resolveDir(rootPath);
+  const stat = fs.statSync(root);
+  if (!stat.isDirectory()) throw new Error(`"${root}" is not a directory.`);
+
+  const entries = fs.readdirSync(root, { withFileTypes: true })
+    .map(entry => ({
+      name: entry.name,
+      type: entry.isDirectory() ? 'dir' : entry.isFile() ? 'file' : 'other',
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const packageJson = readJsonIfExists(path.join(root, 'package.json'));
+  const packageManager = detectPackageManager(root, entries);
+  const ciDir = path.join(root, '.github', 'workflows');
+  const ciWorkflows = fs.existsSync(ciDir)
+    ? fs.readdirSync(ciDir).filter(name => /\.(ya?ml)$/i.test(name)).slice(0, 20)
+    : [];
+
+  const dockerFiles = entries
+    .map(entry => entry.name)
+    .filter(name => /^dockerfile/i.test(name) || /^docker-compose\.(ya?ml)$/i.test(name));
+
+  const envFiles = entries
+    .map(entry => entry.name)
+    .filter(name => name === '.env' || name.startsWith('.env.'));
+
+  const frameworks = new Set();
+  const languages = new Set();
+  const testing = new Set();
+  const infra = new Set();
+
+  const deps = {
+    ...(packageJson?.dependencies ?? {}),
+    ...(packageJson?.devDependencies ?? {}),
+  };
+
+  if (packageJson) languages.add('javascript');
+  if (fs.existsSync(path.join(root, 'tsconfig.json'))) languages.add('typescript');
+  if (fs.existsSync(path.join(root, 'pyproject.toml')) || fs.existsSync(path.join(root, 'requirements.txt'))) languages.add('python');
+  if (fs.existsSync(path.join(root, 'Cargo.toml'))) languages.add('rust');
+  if (fs.existsSync(path.join(root, 'go.mod'))) languages.add('go');
+
+  if (deps.react) frameworks.add('react');
+  if (deps.next) frameworks.add('nextjs');
+  if (deps.vue) frameworks.add('vue');
+  if (deps.svelte) frameworks.add('svelte');
+  if (deps.electron) frameworks.add('electron');
+  if (deps.express) frameworks.add('express');
+  if (deps.vite) frameworks.add('vite');
+
+  if (deps.jest) testing.add('jest');
+  if (deps.vitest) testing.add('vitest');
+  if (deps.playwright) testing.add('playwright');
+  if (deps.cypress) testing.add('cypress');
+  if (deps.mocha) testing.add('mocha');
+
+  if (dockerFiles.length) infra.add('docker');
+  if (entries.some(entry => entry.name === 'k8s' || entry.name === 'helm' || entry.name === 'charts')) infra.add('kubernetes');
+  if (entries.some(entry => /\.tf$/i.test(entry.name) || entry.name === 'terraform')) infra.add('terraform');
+  if (ciWorkflows.length) infra.add('github_actions');
+
+  const scripts = packageJson?.scripts ?? {};
+  const notes = [];
+  if (scripts.dev) notes.push('Has a dev/start workflow defined in package.json.');
+  if (scripts.lint || testing.size || scripts.test) notes.push('Has detectable QA/testing signals.');
+  if (infra.size) notes.push('Contains deployment or infrastructure-related files.');
+
+  return {
+    path: root,
+    packageManager,
+    topEntries: entries.slice(0, 80),
+    packageScripts: scripts,
+    frameworks: [...frameworks],
+    languages: [...languages],
+    testing: [...testing],
+    infra: [...infra],
+    dockerFiles,
+    envFiles,
+    ciWorkflows,
+    notes,
+  };
+}
+
+function severityRank(level) {
+  return { low: 0, medium: 1, high: 2, critical: 3 }[level] ?? 0;
+}
+
+function assessCommandRisk(command = '') {
+  const cmd = String(command || '').trim();
+  let level = 'low';
+  const reasons = [];
+
+  for (const rule of COMMAND_RISK_RULES) {
+    if (rule.pattern.test(cmd)) {
+      reasons.push(rule.reason);
+      if (severityRank(rule.level) > severityRank(level)) {
+        level = rule.level;
+      }
+    }
+  }
+
+  return {
+    command: cmd,
+    level,
+    reasons,
+    blocked: level === 'critical',
+    requiresOptIn: level === 'high',
+  };
+}
+
+function protectedDeleteReason(resolved) {
+  const parsed = path.parse(resolved);
+  if (resolved === parsed.root) return 'Refusing to delete the filesystem root.';
+  if (resolved === os.homedir()) return 'Refusing to delete the home directory.';
+  if (path.basename(resolved).toLowerCase() === '.git') return 'Refusing to delete a .git directory.';
+  return '';
+}
+
+function runCommandDetailed(command, { cwd, timeout = DEFAULT_TIMEOUT } = {}) {
+  const effectiveCwd = resolveDir(cwd);
+  const effectiveTimeout = Math.min(Number(timeout) || DEFAULT_TIMEOUT, MAX_TIMEOUT);
+
+  return new Promise(resolve => {
+    exec(
+      command,
+      {
+        cwd: effectiveCwd,
+        timeout: effectiveTimeout,
+        maxBuffer: MAX_OUTPUT_BYTES * 2,
+        shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
+      },
+      (err, stdout, stderr) => {
+        resolve({
+          ok: !err || err.killed === false,
+          stdout: truncate(stdout || ''),
+          stderr: truncate(stderr || ''),
+          exitCode: typeof err?.code === 'number' ? err.code : 0,
+          timedOut: Boolean(err?.killed),
+          cwd: effectiveCwd,
+        });
+      },
+    );
+  });
+}
+
+async function runProjectChecks({ workingDir, includeLint, includeTest, includeBuild }) {
+  const summary = inspectWorkspace(workingDir);
+  const commands = [];
+
+  if (summary.packageManager && Object.keys(summary.packageScripts).length) {
+    if (includeLint !== false && summary.packageScripts.lint) {
+      commands.push({ label: 'lint', command: buildPackageScriptCommand(summary.packageManager, 'lint') });
+    }
+    if (includeTest !== false && summary.packageScripts.test && !/no test specified/i.test(summary.packageScripts.test)) {
+      commands.push({ label: 'test', command: buildPackageScriptCommand(summary.packageManager, 'test') });
+    }
+    if (includeBuild !== false && summary.packageScripts.build) {
+      commands.push({ label: 'build', command: buildPackageScriptCommand(summary.packageManager, 'build') });
+    }
+  } else if (summary.languages.includes('python')) {
+    if (includeLint !== false && fs.existsSync(path.join(summary.path, 'pyproject.toml'))) {
+      commands.push({ label: 'lint', command: 'python -m ruff check .' });
+    }
+    if (includeTest !== false && (fs.existsSync(path.join(summary.path, 'tests')) || fs.existsSync(path.join(summary.path, 'pytest.ini')))) {
+      commands.push({ label: 'test', command: 'python -m pytest' });
+    }
+  } else if (summary.languages.includes('rust')) {
+    if (includeLint !== false) commands.push({ label: 'lint', command: 'cargo clippy --all-targets --all-features' });
+    if (includeTest !== false) commands.push({ label: 'test', command: 'cargo test' });
+    if (includeBuild !== false) commands.push({ label: 'build', command: 'cargo build' });
+  } else if (summary.languages.includes('go')) {
+    if (includeTest !== false) commands.push({ label: 'test', command: 'go test ./...' });
+    if (includeBuild !== false) commands.push({ label: 'build', command: 'go build ./...' });
+  }
+
+  if (!commands.length) {
+    return {
+      ok: false,
+      error: 'No runnable lint/test/build commands were detected for this workspace.',
+      summary,
+      commands: [],
+    };
+  }
+
+  const results = [];
+  for (const item of commands) {
+    const result = await runCommandDetailed(item.command, {
+      cwd: summary.path,
+      timeout: item.label === 'build' ? 120_000 : 90_000,
+    });
+    results.push({
+      ...item,
+      ...result,
+      passed: result.exitCode === 0 && !result.timedOut,
+    });
+  }
+
+  return {
+    ok: results.every(result => result.passed),
+    summary,
+    commands: results,
+  };
+}
 
 export function register() {
-
-  /* ── select-directory ──────────────────────────── */
-  ipcMain.handle('select-directory', async (e) => {
+  ipcMain.handle('select-directory', async e => {
     const window = BrowserWindow.fromWebContents(e.sender);
     const result = await dialog.showOpenDialog(window, {
-      properties: ['openDirectory', 'createDirectory']
+      properties: ['openDirectory', 'createDirectory'],
     });
     if (result.canceled || result.filePaths.length === 0) {
       return { ok: false };
@@ -46,25 +347,18 @@ export function register() {
     return { ok: true, path: result.filePaths[0] };
   });
 
-  /* ── PTY (Pseudo-Terminal) Handlers ────────────── */
   ipcMain.handle('pty-spawn', async (e, { command, cwd }) => {
-    const pid = Date.now().toString() + Math.random().toString(36).substring(2);
-    
-    // Fallback to simple spawn if node-pty isn't available
+    const pid = `${Date.now()}${Math.random().toString(36).slice(2)}`;
     const child = spawn(command, {
-      cwd: cwd || os.homedir(),
+      cwd: resolveDir(cwd),
       shell: true,
-      env: { ...process.env, FORCE_COLOR: '1' } // Try to get colored output
+      env: { ...process.env, FORCE_COLOR: '1' },
     });
 
     activePtys.set(pid, child);
 
-    child.stdout.on('data', data => {
-      e.sender.send('pty-data', pid, data.toString());
-    });
-    child.stderr.on('data', data => {
-      e.sender.send('pty-data', pid, data.toString());
-    });
+    child.stdout.on('data', data => e.sender.send('pty-data', pid, data.toString()));
+    child.stderr.on('data', data => e.sender.send('pty-data', pid, data.toString()));
     child.on('exit', code => {
       activePtys.delete(pid);
       e.sender.send('pty-exit', pid, code);
@@ -80,10 +374,7 @@ export function register() {
     return { ok: true };
   });
 
-  ipcMain.handle('pty-resize', async (_e, pid, cols, rows) => {
-    // Cannot resize plain child_process, ignored
-    return { ok: true };
-  });
+  ipcMain.handle('pty-resize', async () => ({ ok: true }));
 
   ipcMain.handle('pty-kill', async (_e, pid) => {
     const child = activePtys.get(pid);
@@ -93,56 +384,26 @@ export function register() {
     return { ok: true };
   });
 
-  /* ── run-shell-command ─────────────────────────── */
-  ipcMain.handle('run-shell-command', async (_e, { command, cwd, timeout }) => {
+  ipcMain.handle('assess-command-risk', async (_e, { command }) => {
     if (!command?.trim()) return { ok: false, error: 'No command provided.' };
-
-    const effectiveCwd     = cwd?.trim() || os.homedir();
-    const effectiveTimeout = Math.min(Number(timeout) || DEFAULT_TIMEOUT, MAX_TIMEOUT);
-
-    // Guard against obviously dangerous patterns the AI should never need
-    const BLOCKED = [
-      /rm\s+-rf\s+\/(?!\w)/,          // rm -rf /
-      /mkfs/,
-      /dd\s+if=.*of=\/dev/,
-      /shutdown|reboot|halt/,
-    ];
-    for (const rx of BLOCKED) {
-      if (rx.test(command)) {
-        return { ok: false, error: `Blocked: command matches a destructive pattern (${rx}).` };
-      }
-    }
-
-    return new Promise(resolve => {
-      const child = exec(
-        command,
-        {
-          cwd:     effectiveCwd,
-          timeout: effectiveTimeout,
-          maxBuffer: MAX_OUTPUT_BYTES * 2,
-          shell:   process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
-        },
-        (err, stdout, stderr) => {
-          const exitCode = err?.code ?? 0;
-          resolve({
-            ok:       !err || err.killed === false,
-            stdout:   truncate(stdout || ''),
-            stderr:   truncate(stderr || ''),
-            exitCode: typeof exitCode === 'number' ? exitCode : (err ? 1 : 0),
-            timedOut: err?.killed ?? false,
-            cwd:      effectiveCwd,
-          });
-        },
-      );
-
-      // Also capture exit code for commands that succeed but return non-zero
-      child.on('exit', (code) => {
-        // handled in callback above
-      });
-    });
+    return { ok: true, risk: assessCommandRisk(command) };
   });
 
-  /* ── read-local-file ──────────────────────────── */
+  ipcMain.handle('run-shell-command', async (_e, { command, cwd, timeout, allowRisky = false }) => {
+    if (!command?.trim()) return { ok: false, error: 'No command provided.' };
+
+    const risk = assessCommandRisk(command);
+    if (risk.blocked) {
+      return { ok: false, error: 'Blocked: command matches a critical destructive pattern.', risk };
+    }
+    if (risk.requiresOptIn && !allowRisky) {
+      return { ok: false, error: 'Command is high-risk. Re-run with allow_risky=true only if the user explicitly asked for it.', risk };
+    }
+
+    const result = await runCommandDetailed(command, { cwd, timeout });
+    return { ...result, risk };
+  });
+
   ipcMain.handle('read-local-file', async (_e, { filePath, maxLines }) => {
     if (!filePath?.trim()) return { ok: false, error: 'No file path provided.' };
 
@@ -151,30 +412,50 @@ export function register() {
       const stat = fs.statSync(resolved);
       if (!stat.isFile()) return { ok: false, error: `"${resolved}" is not a file.` };
       if (stat.size > MAX_FILE_BYTES) {
-        return { ok: false, error: `File too large (${(stat.size / 1024).toFixed(0)} KB > 512 KB limit). Use run-shell-command with head/tail instead.` };
+        return { ok: false, error: `File too large (${(stat.size / 1024).toFixed(0)} KB > 512 KB limit). Use read-file-chunk or search-workspace instead.` };
       }
 
-      const raw   = fs.readFileSync(resolved, 'utf-8');
+      const raw = fs.readFileSync(resolved, 'utf-8');
       const lines = raw.split('\n');
-      const limit = Math.min(Number(maxLines) || MAX_LINES_DEFAULT, 2000);
+      const limit = Math.min(Number(maxLines) || MAX_LINES_DEFAULT, 2_000);
       const sliced = lines.slice(0, limit);
-      const note   = lines.length > limit
-        ? `\n… (showing ${limit} of ${lines.length} lines)`
-        : '';
+      const note = lines.length > limit ? `\n… (showing ${limit} of ${lines.length} lines)` : '';
 
       return {
-        ok:        true,
-        content:   sliced.join('\n') + note,
+        ok: true,
+        content: sliced.join('\n') + note,
         totalLines: lines.length,
         sizeBytes: stat.size,
-        path:      resolved,
+        path: resolved,
       };
     } catch (err) {
       return { ok: false, error: err.message };
     }
   });
 
-  /* ── list-directory ───────────────────────────── */
+  ipcMain.handle('read-file-chunk', async (_e, { filePath, startLine = 1, lineCount = 120 }) => {
+    if (!filePath?.trim()) return { ok: false, error: 'No file path provided.' };
+
+    const resolved = path.resolve(filePath);
+    try {
+      const raw = fs.readFileSync(resolved, 'utf-8');
+      const lines = raw.split('\n');
+      const start = Math.max(1, Number(startLine) || 1);
+      const count = Math.min(Math.max(1, Number(lineCount) || 120), 500);
+      const slice = lines.slice(start - 1, start - 1 + count);
+      return {
+        ok: true,
+        path: resolved,
+        startLine: start,
+        endLine: start + slice.length - 1,
+        totalLines: lines.length,
+        content: slice.join('\n'),
+      };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('list-directory', async (_e, { dirPath }) => {
     if (!dirPath?.trim()) return { ok: false, error: 'No directory path provided.' };
 
@@ -184,10 +465,13 @@ export function register() {
       if (!stat.isDirectory()) return { ok: false, error: `"${resolved}" is not a directory.` };
 
       const entries = fs.readdirSync(resolved, { withFileTypes: true });
-      const items   = entries.map(e => ({
-        name:  e.name,
-        type:  e.isDirectory() ? 'dir' : e.isFile() ? 'file' : 'other',
-        size:  e.isFile() ? (() => { try { return fs.statSync(path.join(resolved, e.name)).size; } catch { return 0; } })() : null,
+      const items = entries.map(entry => ({
+        name: entry.name,
+        type: entry.isDirectory() ? 'dir' : entry.isFile() ? 'file' : 'other',
+        size: entry.isFile() ? (() => {
+          try { return fs.statSync(path.join(resolved, entry.name)).size; }
+          catch { return 0; }
+        })() : null,
       })).sort((a, b) => {
         if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
         return a.name.localeCompare(b.name);
@@ -199,7 +483,60 @@ export function register() {
     }
   });
 
-  /* ── write-local-file (AI-assisted code saving) ── */
+  ipcMain.handle('search-workspace', async (_e, { rootPath, query, maxResults = MAX_SEARCH_RESULTS }) => {
+    if (!rootPath?.trim()) return { ok: false, error: 'No workspace path provided.' };
+    if (!query?.trim()) return { ok: false, error: 'No search query provided.' };
+
+    try {
+      const { root, files } = walkWorkspaceFiles(rootPath);
+      const limit = Math.min(Math.max(1, Number(maxResults) || MAX_SEARCH_RESULTS), 100);
+      const matches = [];
+      const isRegex = /^\/.*\/[gimsuy]*$/.test(query.trim());
+      const matcher = isRegex
+        ? new RegExp(query.trim().slice(1, query.trim().lastIndexOf('/')), query.trim().slice(query.trim().lastIndexOf('/') + 1))
+        : null;
+      const needle = query.toLowerCase();
+
+      for (const file of files) {
+        if (matches.length >= limit) break;
+        if (!isProbablyTextFile(file)) continue;
+
+        let stat;
+        try {
+          stat = fs.statSync(file);
+        } catch {
+          continue;
+        }
+        if (stat.size > MAX_FILE_BYTES) continue;
+
+        let raw = '';
+        try {
+          raw = fs.readFileSync(file, 'utf-8');
+        } catch {
+          continue;
+        }
+
+        const lines = raw.split('\n');
+        for (let index = 0; index < lines.length; index++) {
+          const line = lines[index];
+          if (matcher) matcher.lastIndex = 0;
+          const matched = matcher ? matcher.test(line) : line.toLowerCase().includes(needle);
+          if (!matched) continue;
+          matches.push({
+            path: path.relative(root, file),
+            lineNumber: index + 1,
+            line: line.trim().slice(0, 240),
+          });
+          if (matches.length >= limit) break;
+        }
+      }
+
+      return { ok: true, root, matches };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('write-ai-file', async (_e, { filePath, content, append = false }) => {
     if (!filePath?.trim()) return { ok: false, error: 'No file path provided.' };
     const resolved = path.resolve(filePath);
@@ -207,14 +544,39 @@ export function register() {
       const dir = path.dirname(resolved);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       if (append) fs.appendFileSync(resolved, content ?? '', 'utf-8');
-      else        fs.writeFileSync(resolved, content ?? '', 'utf-8');
+      else fs.writeFileSync(resolved, content ?? '', 'utf-8');
       return { ok: true, path: resolved, bytes: Buffer.byteLength(content ?? '', 'utf-8') };
     } catch (err) {
       return { ok: false, error: err.message };
     }
   });
 
-  /* ── create-directory ───────────────────────────── */
+  ipcMain.handle('apply-file-patch', async (_e, { filePath, search, replace, replaceAll = false }) => {
+    if (!filePath?.trim()) return { ok: false, error: 'No file path provided.' };
+    if (typeof search !== 'string' || search.length === 0) return { ok: false, error: 'No search text provided.' };
+    if (typeof replace !== 'string') return { ok: false, error: 'No replacement text provided.' };
+
+    const resolved = path.resolve(filePath);
+    try {
+      const original = fs.readFileSync(resolved, 'utf-8');
+      if (!original.includes(search)) {
+        return { ok: false, error: 'Search text was not found in the file.' };
+      }
+
+      const occurrences = original.split(search).length - 1;
+      const next = replaceAll ? original.split(search).join(replace) : original.replace(search, replace);
+      fs.writeFileSync(resolved, next, 'utf-8');
+
+      return {
+        ok: true,
+        path: resolved,
+        replacements: replaceAll ? occurrences : 1,
+      };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('create-directory', async (_e, { dirPath }) => {
     if (!dirPath?.trim()) return { ok: false, error: 'No directory path provided.' };
     const resolved = path.resolve(dirPath);
@@ -226,7 +588,58 @@ export function register() {
     }
   });
 
-  /* ── open-folder-os ───────────────────────────── */
+  ipcMain.handle('inspect-workspace', async (_e, { rootPath }) => {
+    if (!rootPath?.trim()) return { ok: false, error: 'No workspace path provided.' };
+    try {
+      return { ok: true, summary: inspectWorkspace(rootPath) };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('git-status', async (_e, { workingDir }) => {
+    if (!workingDir?.trim()) return { ok: false, error: 'No working directory provided.' };
+    const result = await runCommandDetailed('git status --short --branch', { cwd: workingDir, timeout: 20_000 });
+    return { ok: true, ...result };
+  });
+
+  ipcMain.handle('git-diff', async (_e, { workingDir, staged = false }) => {
+    if (!workingDir?.trim()) return { ok: false, error: 'No working directory provided.' };
+    const flag = normalizeBool(staged) ? '--cached ' : '';
+    const result = await runCommandDetailed(`git diff ${flag}--stat --patch --minimal --color=never`, {
+      cwd: workingDir,
+      timeout: 30_000,
+    });
+    return { ok: true, ...result };
+  });
+
+  ipcMain.handle('git-create-branch', async (_e, { workingDir, branchName, checkout = true }) => {
+    if (!workingDir?.trim()) return { ok: false, error: 'No working directory provided.' };
+    if (!branchName?.trim()) return { ok: false, error: 'No branch name provided.' };
+
+    const command = normalizeBool(checkout)
+      ? `git checkout -b "${branchName}"`
+      : `git branch "${branchName}"`;
+
+    const result = await runCommandDetailed(command, { cwd: workingDir, timeout: 20_000 });
+    return { ok: true, branchName, ...result };
+  });
+
+  ipcMain.handle('run-project-checks', async (_e, params = {}) => {
+    const workingDir = params.workingDir || params.working_directory;
+    if (!workingDir?.trim()) return { ok: false, error: 'No working directory provided.' };
+    try {
+      return await runProjectChecks({
+        workingDir,
+        includeLint: params.includeLint ?? params.include_lint,
+        includeTest: params.includeTest ?? params.include_test,
+        includeBuild: params.includeBuild ?? params.include_build,
+      });
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('open-folder-os', async (_e, { dirPath }) => {
     if (!dirPath?.trim()) return { ok: false, error: 'No directory path provided.' };
     const resolved = path.resolve(dirPath);
@@ -239,11 +652,12 @@ export function register() {
     }
   });
 
-  /* ── delete-item ───────────────────────────── */
   ipcMain.handle('delete-item', async (_e, { itemPath }) => {
     if (!itemPath?.trim()) return { ok: false, error: 'No path provided to delete.' };
     const resolved = path.resolve(itemPath);
     try {
+      const reason = protectedDeleteReason(resolved);
+      if (reason) return { ok: false, error: reason };
       if (fs.existsSync(resolved)) {
         fs.rmSync(resolved, { recursive: true, force: true });
         return { ok: true, path: resolved };

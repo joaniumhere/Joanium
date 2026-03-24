@@ -1,8 +1,5 @@
 // openworld — Features/Chat/Executors/Index.js
-// Main dispatcher — routes each tool name to the correct executor module.
-// Normalizes tool names (trim + lowercase) before matching so minor
-// model-output variations (extra spaces, case differences) don't cause
-// "Unknown tool" errors.
+// Main dispatcher that routes each tool name to the correct executor module.
 
 import * as GmailExecutor      from './GmailExecutor.js';
 import * as GithubExecutor     from './GithubExecutor.js';
@@ -20,6 +17,9 @@ import * as AstronomyExecutor  from './AstronomyExecutor.js';
 import * as HackerNewsExecutor from './HackerNewsExecutor.js';
 import * as UrlExecutor        from './UrlExecutor.js';
 import * as TerminalExecutor   from './TerminalExecutor.js';
+import * as RepoExecutor       from './RepoExecutor.js';
+import * as ReviewExecutor     from './ReviewExecutor.js';
+import * as MCPExecutor        from './MCPExecutor.js';
 
 const EXECUTORS = [
   GmailExecutor,
@@ -38,15 +38,11 @@ const EXECUTORS = [
   HackerNewsExecutor,
   UrlExecutor,
   TerminalExecutor,
+  RepoExecutor,
+  ReviewExecutor,
+  MCPExecutor,
 ];
 
-/**
- * Normalize a tool name coming from the AI:
- *   - trim whitespace
- *   - lowercase
- *   - collapse multiple spaces / hyphens to underscores
- * This makes matching robust against minor model-output variations.
- */
 function normalizeName(name) {
   return String(name ?? '')
     .trim()
@@ -54,29 +50,24 @@ function normalizeName(name) {
     .replace(/[\s\-]+/g, '_');
 }
 
-/**
- * Execute a single tool call.
- * Tries exact match first, then normalized match, so well-formed names
- * hit the fast path and slightly malformed names still resolve correctly.
- *
- * @param {string}   toolName
- * @param {object}   params
- * @param {function} onStage  — callback(message) to update UI during execution
- * @returns {Promise<string>} — plain-text result to feed back to the AI
- */
+async function executorHandles(executor, toolName) {
+  if (typeof executor.handles !== 'function') return false;
+  const result = executor.handles(toolName);
+  if (result && typeof result.then === 'function') return Boolean(await result);
+  return Boolean(result);
+}
+
 export async function executeTool(toolName, params, onStage = () => {}) {
-  // ── Fast path: exact match ────────────────────────────────────────────
   for (const executor of EXECUTORS) {
-    if (executor.handles(toolName)) {
+    if (await executorHandles(executor, toolName)) {
       return executor.execute(toolName, params, onStage);
     }
   }
 
-  // ── Fallback: normalized match ───────────────────────────────────────
   const normalized = normalizeName(toolName);
   for (const executor of EXECUTORS) {
-    if (executor.handles(normalized)) {
-      console.warn(`[Executors] Normalized tool name "${toolName}" → "${normalized}"`);
+    if (await executorHandles(executor, normalized)) {
+      console.warn(`[Executors] Normalized tool name "${toolName}" -> "${normalized}"`);
       return executor.execute(normalized, params, onStage);
     }
   }

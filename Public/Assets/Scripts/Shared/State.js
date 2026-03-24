@@ -17,6 +17,7 @@ export const state = {
 
   // System
   systemPrompt: '', // built by main process; refreshed after settings save
+  workspacePath: null,
 
   // UI
   theme: localStorage.getItem('ow-theme') || 'dark',

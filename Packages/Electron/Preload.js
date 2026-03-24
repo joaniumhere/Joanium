@@ -78,6 +78,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   githubGetPRs: (owner, repo, state) => ipcRenderer.invoke('github-get-prs', owner, repo, state),
   githubGetNotifications: () => ipcRenderer.invoke('github-get-notifications'),
   githubGetCommits: (owner, repo) => ipcRenderer.invoke('github-get-commits', owner, repo),
+  githubSearchCode: (owner, repo, query) => ipcRenderer.invoke('github-search-code', owner, repo, query),
+  githubGetPRDiff: (owner, repo, prNumber) => ipcRenderer.invoke('github-get-pr-diff', owner, repo, prNumber),
+  githubGetPRDetails: (owner, repo, prNumber) => ipcRenderer.invoke('github-get-pr-details', owner, repo, prNumber),
+  githubCreatePRReview: (owner, repo, prNumber, review) => ipcRenderer.invoke('github-create-pr-review', owner, repo, prNumber, review),
+  githubGetPRChecks: (owner, repo, prNumber) => ipcRenderer.invoke('github-get-pr-checks', owner, repo, prNumber),
+  githubGetWorkflowRuns: (owner, repo, branch, event, perPage) => ipcRenderer.invoke('github-get-workflow-runs', owner, repo, branch, event, perPage),
+  githubGetPRComments: (owner, repo, prNumber) => ipcRenderer.invoke('github-get-pr-comments', owner, repo, prNumber),
 
   // Skills
   getSkills: () => ipcRenderer.invoke('get-skills'),
@@ -105,6 +112,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   runAgentNow: (agentId) => ipcRenderer.invoke('run-agent-now', agentId),
   launchAgents: () => ipcRenderer.invoke('launch-agents'),
 
+  // MCP
+  mcpListServers: () => ipcRenderer.invoke('mcp-list-servers'),
+  mcpSaveServer: (serverConfig) => ipcRenderer.invoke('mcp-save-server', serverConfig),
+  mcpRemoveServer: (serverId) => ipcRenderer.invoke('mcp-remove-server', serverId),
+  mcpConnectServer: (serverId) => ipcRenderer.invoke('mcp-connect-server', serverId),
+  mcpDisconnectServer: (serverId) => ipcRenderer.invoke('mcp-disconnect-server', serverId),
+  mcpGetTools: () => ipcRenderer.invoke('mcp-get-tools'),
+  mcpCallTool: (payload) => ipcRenderer.invoke('mcp-call-tool', payload),
+
   // Events
   launchEvents: () => ipcRenderer.invoke('launch-events'),
   getRunningJobs: () => ipcRenderer.invoke('get-running-jobs'),
@@ -118,10 +134,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // File System & Terminal
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   runShellCommand: (params) => ipcRenderer.invoke('run-shell-command', params),
+  assessCommandRisk: (params) => ipcRenderer.invoke('assess-command-risk', params),
   readLocalFile: (params) => ipcRenderer.invoke('read-local-file', params),
+  readFileChunk: (params) => ipcRenderer.invoke('read-file-chunk', params),
   listDirectory: (params) => ipcRenderer.invoke('list-directory', params),
   writeAIFile: (params) => ipcRenderer.invoke('write-ai-file', params),
+  applyFilePatch: (params) => ipcRenderer.invoke('apply-file-patch', params),
   createDirectory: (params) => ipcRenderer.invoke('create-directory', params),
+  inspectWorkspace: (params) => ipcRenderer.invoke('inspect-workspace', params),
+  searchWorkspace: (params) => ipcRenderer.invoke('search-workspace', params),
+  gitStatus: (params) => ipcRenderer.invoke('git-status', params),
+  gitDiff: (params) => ipcRenderer.invoke('git-diff', params),
+  gitCreateBranch: (params) => ipcRenderer.invoke('git-create-branch', params),
+  runProjectChecks: (params) => ipcRenderer.invoke('run-project-checks', params),
   openFolderOS: (params) => ipcRenderer.invoke('open-folder-os', params),
   openTerminalOS: (params) => ipcRenderer.invoke('open-terminal-os', params),
   deleteItem: (params) => ipcRenderer.invoke('delete-item', params),
