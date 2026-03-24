@@ -585,6 +585,7 @@ function createLiveRow() {
     <div class="content-wrapper" style="flex:1;min-width:0;">
       <div class="content">
         <div class="agent-log"></div>
+        <div class="agent-tool-output"></div>
         <div class="agent-reply"></div>
       </div>
       <div class="message-actions assistant-actions" style="display:none;">
@@ -597,6 +598,7 @@ function createLiveRow() {
   smoothScrollToBottom();
 
   const logEl = row.querySelector('.agent-log');
+  const toolOutputEl = row.querySelector('.agent-tool-output');
   const replyEl = row.querySelector('.agent-reply');
   const actionsEl = row.querySelector('.message-actions');
 
@@ -628,6 +630,14 @@ function createLiveRow() {
           }
         }
       };
+    },
+
+    showToolOutput(markdown) {
+      const block = document.createElement('div');
+      block.className = 'agent-tool-output-block';
+      block.innerHTML = renderMarkdown(markdown);
+      toolOutputEl.appendChild(block);
+      smoothScrollToBottom();
     },
 
     stream(chunk) {

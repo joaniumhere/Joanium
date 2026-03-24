@@ -1,5 +1,22 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+const ptyDataListeners = new Set();
+const ptyExitListeners = new Set();
+
+ipcRenderer.on('pty-data', (_e, pid, data) => {
+  for (const callback of ptyDataListeners) {
+    try { callback(pid, data); }
+    catch (err) { console.warn('[Preload] PTY data listener failed:', err); }
+  }
+});
+
+ipcRenderer.on('pty-exit', (_e, pid, exitCode) => {
+  for (const callback of ptyExitListeners) {
+    try { callback(pid, exitCode); }
+    catch (err) { console.warn('[Preload] PTY exit listener failed:', err); }
+  }
+});
+
 contextBridge.exposeInMainWorld('electronAPI', {
 
   // Setup
@@ -115,13 +132,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   resizePty: (pid, cols, rows) => ipcRenderer.invoke('pty-resize', pid, cols, rows),
   killPty: (pid) => ipcRenderer.invoke('pty-kill', pid),
   onPtyData: (callback) => {
-    // Only register once
-    ipcRenderer.removeAllListeners('pty-data');
-    ipcRenderer.on('pty-data', (_e, pid, data) => callback(pid, data));
+    if (typeof callback === 'function') ptyDataListeners.add(callback);
   },
+  offPtyData: (callback) => ptyDataListeners.delete(callback),
   onPtyExit: (callback) => {
-    ipcRenderer.removeAllListeners('pty-exit');
-    ipcRenderer.on('pty-exit', (_e, pid, exitCode) => callback(pid, exitCode));
+    if (typeof callback === 'function') ptyExitListeners.add(callback);
   },
+  offPtyExit: (callback) => ptyExitListeners.delete(callback),
 
 });

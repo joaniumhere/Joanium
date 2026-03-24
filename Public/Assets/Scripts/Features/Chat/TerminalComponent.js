@@ -1,45 +1,79 @@
 // openworld — Features/Chat/TerminalComponent.js
-import { state } from '../../Shared/State.js';
 
-let xtermCssLoaded = false;
-let xtermScriptLoaded = false;
-let fitAddonScriptLoaded = false;
+let dependencyPromise = null;
 
-async function loadDependencies() {
-    if (!xtermCssLoaded) {
+function assetUrl(relativePath) {
+    return new URL(relativePath, window.location.href).toString();
+}
+
+function loadStylesheet(href) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`link[data-ow-href="${href}"]`);
+        if (existing) {
+            resolve();
+            return;
+        }
+
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = '../../../../node_modules/xterm/css/xterm.css';
+        link.href = href;
+        link.dataset.owHref = href;
+        link.onload = resolve;
+        link.onerror = () => reject(new Error(`Failed to load stylesheet: ${href}`));
         document.head.appendChild(link);
-        xtermCssLoaded = true;
+    });
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[data-ow-src="${src}"]`);
+        if (existing) {
+            if (existing.dataset.loaded === 'true') {
+                resolve();
+                return;
+            }
+            existing.addEventListener('load', resolve, { once: true });
+            existing.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), { once: true });
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = src;
+        script.dataset.owSrc = src;
+        script.onload = () => {
+            script.dataset.loaded = 'true';
+            resolve();
+        };
+        script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+        document.head.appendChild(script);
+    });
+}
+
+async function loadDependencies() {
+    if (!dependencyPromise) {
+        dependencyPromise = (async () => {
+            await loadStylesheet(assetUrl('../node_modules/xterm/css/xterm.css'));
+            await loadScript(assetUrl('../node_modules/xterm/lib/xterm.js'));
+            await loadScript(assetUrl('../node_modules/xterm-addon-fit/lib/xterm-addon-fit.js'));
+        })().catch(err => {
+            dependencyPromise = null;
+            throw err;
+        });
     }
 
-    if (!xtermScriptLoaded) {
-        await new Promise((resolve) => {
-            const script = document.createElement('script');
-            script.src = '../../../../node_modules/xterm/lib/xterm.js';
-            script.onload = resolve;
-            document.head.appendChild(script);
-        });
-        xtermScriptLoaded = true;
-    }
-
-    if (!fitAddonScriptLoaded) {
-        await new Promise((resolve) => {
-            const script = document.createElement('script');
-            script.src = '../../../../node_modules/xterm-addon-fit/lib/xterm-addon-fit.js';
-            script.onload = resolve;
-            document.head.appendChild(script);
-        });
-        fitAddonScriptLoaded = true;
-    }
+    return dependencyPromise;
 }
 
 export async function mountTerminal(containerId, pid) {
     const el = document.getElementById(containerId);
     if (!el) return;
 
-    await loadDependencies();
+    try {
+        await loadDependencies();
+    } catch (err) {
+        el.innerHTML = `<div style="padding:12px;color:#fca5a5;font:13px monospace;">Embedded terminal failed to load: ${err.message}</div>`;
+        return;
+    }
 
     const term = new window.Terminal({
         theme: {
@@ -63,9 +97,10 @@ export async function mountTerminal(containerId, pid) {
     ro.observe(el);
 
     // Write data to terminal when IPC receives it
-    window.electronAPI?.onPtyData?.((incomingPid, data) => {
+    const handleData = (incomingPid, data) => {
         if (incomingPid === pid) term.write(data);
-    });
+    };
+    window.electronAPI?.onPtyData?.(handleData);
 
     // Write input to PTY
     term.onData(data => {
@@ -73,12 +108,15 @@ export async function mountTerminal(containerId, pid) {
     });
 
     // Cleanup on exit
-    window.electronAPI?.onPtyExit?.((incomingPid, code) => {
+    const handleExit = (incomingPid, code) => {
         if (incomingPid === pid) {
             term.write(`\n\r[Process exited with code ${code}]`);
-            // Optionally could disable input or visually dim the terminal here
+            ro.disconnect();
+            window.electronAPI?.offPtyData?.(handleData);
+            window.electronAPI?.offPtyExit?.(handleExit);
         }
-    });
+    };
+    window.electronAPI?.onPtyExit?.(handleExit);
 }
 
 // Global observer to automatically mount terminals
