@@ -6,6 +6,7 @@ import { state } from '../../../Shared/State.js';
 const HANDLED = new Set([
   'inspect_workspace',
   'search_workspace',
+  'find_file_by_name',
   'run_shell_command',
   'assess_shell_command',
   'read_local_file',
@@ -139,6 +140,27 @@ export async function execute(toolName, params, onStage = () => {}) {
         `Matches for "${params.query}" in ${result.root}:`,
         '',
         ...result.matches.map(match => `- ${match.path}:${match.lineNumber} — ${match.line}`),
+      ].join('\n');
+    }
+
+    case 'find_file_by_name': {
+      const rootPath = resolveWorkingDirectory(params.path);
+      if (!rootPath) throw new Error('No workspace is open. Set a workspace or provide a path.');
+      if (!params.name?.trim()) throw new Error('Missing required param: name');
+
+      onStage(`🔎 Finding file "${params.name}"`);
+      const result = await window.electronAPI?.findFileByName?.({
+        rootPath,
+        name: params.name,
+        maxResults: params.max_results,
+      });
+      if (!result?.ok) throw new Error(result?.error ?? 'Find file failed');
+      if (!result.matches?.length) return `No files matching "${params.name}" found in ${rootPath}.`;
+
+      return [
+        `Files matching "${params.name}" in ${result.root}:`,
+        '',
+        ...result.matches.map(match => `- ${match.path}`),
       ].join('\n');
     }
 

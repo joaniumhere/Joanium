@@ -35,6 +35,28 @@ export const TERMINAL_TOOLS = [
     },
   },
   {
+    name: 'find_file_by_name',
+    description: 'Find files in a local workspace by filename (case-insensitive substring match). Use this to locate a file when you do not know its exact directory path.',
+    category: 'terminal',
+    parameters: {
+      name: {
+        type: 'string',
+        required: true,
+        description: 'The filename or partial filename to search for.',
+      },
+      path: {
+        type: 'string',
+        required: false,
+        description: 'Absolute workspace path. Defaults to the currently opened workspace.',
+      },
+      max_results: {
+        type: 'number',
+        required: false,
+        description: 'Maximum number of matches to return (default: 40).',
+      },
+    },
+  },
+  {
     name: 'run_shell_command',
     description: 'Execute a short-lived shell command and return stdout/stderr. Use for builds, git, scripts, or diagnostics. For high-risk commands, set allow_risky only if the user explicitly asked for it.',
     category: 'terminal',
