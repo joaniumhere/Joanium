@@ -49,5 +49,28 @@ export function create(page) {
 /** Return the current window instance (may be null before create()). */
 export function get() { return _win; }
 
-/** Navigate the existing window to a different HTML page. */
-export function loadPage(page) { _win?.loadFile(page); }
+/**
+ * Navigate the existing window.
+ * Setup + shell pages still load real HTML files.
+ * All other app pages route inside the SPA renderer.
+ */
+export function loadPage(page) {
+  if (page === Paths.SETUP_PAGE || page === Paths.INDEX_PAGE) {
+    _win?.loadFile(page);
+    return;
+  }
+
+  const pageKey = resolvePageKey(page);
+  if (pageKey) _win?.webContents.send('navigate', pageKey);
+}
+
+function resolvePageKey(filePath) {
+  if (filePath?.includes('Automations')) return 'automations';
+  if (filePath?.includes('Agents')) return 'agents';
+  if (filePath?.includes('Events')) return 'events';
+  if (filePath?.includes('Skills')) return 'skills';
+  if (filePath?.includes('Personas')) return 'personas';
+  if (filePath?.includes('Usage')) return 'usage';
+  if (filePath?.includes('Chat')) return 'chat';
+  return null;
+}

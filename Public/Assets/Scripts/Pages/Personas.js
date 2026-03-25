@@ -1,56 +1,60 @@
-// Window controls
-import '../Shared/WindowControls.js';
+let activeBanner = null;
+let activeNameEl = null;
+let personasGrid = null;
+let searchInput = null;
+let searchClearBtn = null;
+let countEl = null;
+let _navigate = null;
 
-// Modals
-import { initSidebar } from '../Shared/Sidebar.js';
-import { initAboutModal } from '../Shared/Modals/AboutModal.js';
-import { initLibraryModal } from '../Shared/Modals/LibraryModal.js';
-import { initSettingsModal } from '../Shared/Modals/SettingsModal.js';
-
-const about = initAboutModal();
-const settings = initSettingsModal();
-
-const library = initLibraryModal({
-  onChatSelect: (chatId) => {
-    if (chatId) localStorage.setItem('ow-pending-chat', chatId);
-    window.electronAPI?.launchMain();
-  },
-});
-
-const sidebar = initSidebar({
-  activePage: 'personas',
-  onNewChat: () => window.electronAPI?.launchMain(),
-  onLibrary: () => library.isOpen() ? library.close() : library.open(),
-  onAutomations: () => window.electronAPI?.launchAutomations?.(),
-  onAgents: () => window.electronAPI?.launchAgents?.(),
-  onEvents: () => window.electronAPI?.launchEvents?.(),
-  onSkills: () => window.electronAPI?.launchSkills?.(),
-  onPersonas: () => { /* already here */ },
-  onUsage: () => window.electronAPI?.launchUsage?.(),
-  onSettings: () => settings.open(),
-  onAbout: () => about.open(),
-});
-
-window.addEventListener('ow:user-profile-updated', e => sidebar.setUser(e.detail?.name ?? ''));
-settings.loadUser().then(user => sidebar.setUser(user?.name ?? ''));
-
-// ── DOM refs ─────────────────────────────────────────────────────────────
-const activeBanner = document.getElementById('personas-active-banner');
-const activeNameEl = document.getElementById('personas-active-name');
-const personasGrid = document.getElementById('personas-grid');
-const searchWrapper = document.getElementById('personas-search-wrapper');
-const searchInput = document.getElementById('personas-search');
-const countEl = document.getElementById('personas-count');
-
-// ── State ─────────────────────────────────────────────────────────────────
 let _activePersona = null;
 let _allPersonas = [];
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+function getHTML() {
+  return /* html */`
+<main id="main" class="personas-main">
+  <div class="personas-scroll">
+    <div class="personas-page-header">
+      <div class="personas-page-header-copy">
+        <h2>Personas</h2>
+        <p>Choose a personality for your AI - the active persona shapes every conversation</p>
+      </div>
+      <span class="page-count" id="personas-count"></span>
+    </div>
 
-function escapeHtml(v) {
-  return String(v ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    <div id="personas-active-banner" class="personas-active-banner" hidden>
+      <div class="personas-active-banner-dot"></div>
+      <div class="personas-active-banner-text">
+        Active persona: <strong id="personas-active-name">Default Assistant</strong>
+      </div>
+    </div>
+
+    <div id="personas-search-wrapper" class="page-search-wrapper">
+      <div class="page-search-box">
+        <svg class="page-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M16.5 16.5L21 21" stroke-linecap="round" />
+        </svg>
+        <input id="personas-search" type="text" class="page-search-input" placeholder="Search by name, personality, description..." autocomplete="off" spellcheck="false" />
+        <button class="page-search-clear" id="personas-search-clear" type="button" aria-label="Clear search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="personas-grid" class="personas-grid"></div>
+  </div>
+</main>
+`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function getAvatarInitials(name) {
@@ -69,12 +73,12 @@ function isDefaultActive() {
 
 function matchesSearch(persona, query) {
   if (!query) return true;
-  const q = query.toLowerCase();
+  const lowerQuery = query.toLowerCase();
   return [persona.name, persona.personality, persona.description, persona.instructions, persona.filename]
-    .join(' ').toLowerCase().includes(q);
+    .join(' ')
+    .toLowerCase()
+    .includes(lowerQuery);
 }
-
-// ── Banner ────────────────────────────────────────────────────────────────
 
 function updateBanner() {
   if (!activeBanner || !activeNameEl) return;
@@ -82,7 +86,9 @@ function updateBanner() {
   activeNameEl.textContent = _activePersona ? _activePersona.name : 'Default Assistant';
 }
 
-// ── Default persona card ──────────────────────────────────────────────────
+function navigateToChat() {
+  return _navigate?.('chat');
+}
 
 function buildDefaultCard() {
   const active = isDefaultActive();
@@ -98,7 +104,7 @@ function buildDefaultCard() {
     </div>
     <div class="persona-info">
       <div class="persona-name">Default Assistant</div>
-      <div class="persona-description">The standard Evelina AI — helpful, accurate, and contextually aware of your system, repos, and email.</div>
+      <div class="persona-description">The standard Evelina AI - helpful, accurate, and contextually aware of your system, repos, and email.</div>
     </div>
     <div class="persona-personality">
       <span class="persona-tag">helpful</span>
@@ -108,8 +114,7 @@ function buildDefaultCard() {
     <div class="persona-card-footer">
       ${active
       ? `<button class="persona-status-btn" disabled>Currently active</button>`
-      : `<button class="persona-activate-btn" type="button">Set active</button>`
-    }
+      : `<button class="persona-activate-btn" type="button">Set active</button>`}
       <button class="persona-chat-btn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -118,23 +123,22 @@ function buildDefaultCard() {
       </button>
     </div>`;
 
-  card.querySelector('.persona-activate-btn')?.addEventListener('click', async e => {
-    e.stopPropagation();
+  card.querySelector('.persona-activate-btn')?.addEventListener('click', async event => {
+    event.stopPropagation();
     await window.electronAPI?.resetActivePersona?.();
     _activePersona = null;
     render(searchInput?.value?.trim() ?? '');
   });
 
-  card.querySelector('.persona-chat-btn')?.addEventListener('click', async e => {
-    e.stopPropagation();
+  card.querySelector('.persona-chat-btn')?.addEventListener('click', async event => {
+    event.stopPropagation();
     await window.electronAPI?.resetActivePersona?.();
-    window.electronAPI?.launchMain();
+    _activePersona = null;
+    await navigateToChat();
   });
 
   return card;
 }
-
-// ── Custom persona card ───────────────────────────────────────────────────
 
 function buildPersonaCard(persona) {
   const active = isActiveCustom(persona);
@@ -142,8 +146,12 @@ function buildPersonaCard(persona) {
   card.className = `persona-card${active ? ' is-active' : ''}`;
 
   const tags = (persona.personality || '')
-    .split(',').map(t => t.trim()).filter(Boolean).slice(0, 5)
-    .map(t => `<span class="persona-tag">${escapeHtml(t)}</span>`).join('');
+    .split(',')
+    .map(tag => tag.trim())
+    .filter(Boolean)
+    .slice(0, 5)
+    .map(tag => `<span class="persona-tag">${escapeHtml(tag)}</span>`)
+    .join('');
 
   card.innerHTML = `
     ${active ? `<div class="persona-active-badge"><div class="persona-active-badge-dot"></div>Active</div>` : ''}
@@ -156,8 +164,7 @@ function buildPersonaCard(persona) {
     <div class="persona-card-footer">
       ${active
       ? `<button class="persona-deactivate-btn" type="button">Deactivate</button>`
-      : `<button class="persona-activate-btn" type="button">Activate</button>`
-    }
+      : `<button class="persona-activate-btn" type="button">Activate</button>`}
       <button class="persona-chat-btn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -166,29 +173,33 @@ function buildPersonaCard(persona) {
       </button>
     </div>`;
 
-  card.querySelector('.persona-activate-btn')?.addEventListener('click', async e => {
-    e.stopPropagation();
-    const res = await window.electronAPI?.setActivePersona?.(persona);
-    if (res?.ok !== false) { _activePersona = persona; render(searchInput?.value?.trim() ?? ''); }
+  card.querySelector('.persona-activate-btn')?.addEventListener('click', async event => {
+    event.stopPropagation();
+    const result = await window.electronAPI?.setActivePersona?.(persona);
+    if (result?.ok !== false) {
+      _activePersona = persona;
+      render(searchInput?.value?.trim() ?? '');
+    }
   });
 
-  card.querySelector('.persona-deactivate-btn')?.addEventListener('click', async e => {
-    e.stopPropagation();
+  card.querySelector('.persona-deactivate-btn')?.addEventListener('click', async event => {
+    event.stopPropagation();
     await window.electronAPI?.resetActivePersona?.();
     _activePersona = null;
     render(searchInput?.value?.trim() ?? '');
   });
 
-  card.querySelector('.persona-chat-btn')?.addEventListener('click', async e => {
-    e.stopPropagation();
-    await window.electronAPI?.setActivePersona?.(persona);
-    window.electronAPI?.launchMain();
+  card.querySelector('.persona-chat-btn')?.addEventListener('click', async event => {
+    event.stopPropagation();
+    const result = await window.electronAPI?.setActivePersona?.(persona);
+    if (result?.ok !== false) {
+      _activePersona = persona;
+      await navigateToChat();
+    }
   });
 
   return card;
 }
-
-// ── Full render ───────────────────────────────────────────────────────────
 
 function render(query = '') {
   updateBanner();
@@ -199,62 +210,85 @@ function render(query = '') {
   if (!personasGrid) return;
   personasGrid.innerHTML = '';
 
-  const defaultKeywords = 'default assistant helpful accurate contextual romelson standard';
-  const showDefault = !query || defaultKeywords.includes(query.toLowerCase()) ||
-    'default assistant'.includes(query.toLowerCase());
+  const defaultKeywords = 'default assistant helpful accurate contextual standard';
+  const lowerQuery = query.toLowerCase();
+  const showDefault = !query || defaultKeywords.includes(lowerQuery) || 'default assistant'.includes(lowerQuery);
 
-  const filteredCustom = _allPersonas.filter(p => matchesSearch(p, query));
-  const showItems = [];
-  if (showDefault) showItems.push({ _isDefault: true });
-  showItems.push(...filteredCustom);
+  const filteredCustom = _allPersonas.filter(persona => matchesSearch(persona, query));
+  const visibleItems = [];
+  if (showDefault) visibleItems.push({ _isDefault: true });
+  visibleItems.push(...filteredCustom);
 
-  if (showItems.length === 0) {
-    const nope = document.createElement('div');
-    nope.className = 'personas-no-results';
-    nope.textContent = `No personas match "${query}"`;
-    personasGrid.appendChild(nope);
+  if (visibleItems.length === 0) {
+    const noResults = document.createElement('div');
+    noResults.className = 'personas-no-results';
+    noResults.textContent = `No personas match "${query}"`;
+    personasGrid.appendChild(noResults);
     return;
   }
 
-  showItems.forEach(item => {
-    if (item._isDefault) {
-      personasGrid.appendChild(buildDefaultCard());
-    } else {
-      personasGrid.appendChild(buildPersonaCard(item));
-    }
+  visibleItems.forEach(item => {
+    personasGrid.appendChild(item._isDefault ? buildDefaultCard() : buildPersonaCard(item));
   });
 }
 
-// ── Search wiring ─────────────────────────────────────────────────────────
-
-const personasClearBtn = document.getElementById('personas-search-clear');
-
-searchInput?.addEventListener('input', () => {
-  render(searchInput.value.trim());
-  if (personasClearBtn) personasClearBtn.classList.toggle('visible', searchInput.value.length > 0);
-});
-
-personasClearBtn?.addEventListener('click', () => {
-  if (searchInput) searchInput.value = '';
-  personasClearBtn.classList.remove('visible');
-  render('');
-  searchInput?.focus();
-});
-
-// ── Boot ──────────────────────────────────────────────────────────────────
-
 async function load() {
   try {
-    const [personasRes, activeRes] = await Promise.all([
+    const [personasResult, activeResult] = await Promise.all([
       window.electronAPI?.getPersonas?.(),
       window.electronAPI?.getActivePersona?.(),
     ]);
-    _allPersonas = personasRes?.personas ?? [];
-    _activePersona = activeRes?.persona ?? null;
-  } catch (err) {
-    console.error('[Personas] Load error:', err);
+    _allPersonas = personasResult?.personas ?? [];
+    _activePersona = activeResult?.persona ?? null;
+  } catch (error) {
+    console.error('[Personas] Load error:', error);
+    _allPersonas = [];
+    _activePersona = null;
   }
-  render();
+
+  render(searchInput?.value?.trim() ?? '');
 }
 
-load();
+export function mount(outlet, { navigate }) {
+  outlet.innerHTML = getHTML();
+
+  activeBanner = document.getElementById('personas-active-banner');
+  activeNameEl = document.getElementById('personas-active-name');
+  personasGrid = document.getElementById('personas-grid');
+  searchInput = document.getElementById('personas-search');
+  searchClearBtn = document.getElementById('personas-search-clear');
+  countEl = document.getElementById('personas-count');
+  _navigate = navigate;
+
+  _activePersona = null;
+  _allPersonas = [];
+
+  const onSearchInput = () => {
+    render(searchInput?.value.trim() ?? '');
+    searchClearBtn?.classList.toggle('visible', (searchInput?.value.length ?? 0) > 0);
+  };
+  const onSearchClear = () => {
+    if (searchInput) searchInput.value = '';
+    searchClearBtn?.classList.remove('visible');
+    render('');
+    searchInput?.focus();
+  };
+
+  searchInput?.addEventListener('input', onSearchInput);
+  searchClearBtn?.addEventListener('click', onSearchClear);
+
+  load();
+
+  return function cleanup() {
+    searchInput?.removeEventListener('input', onSearchInput);
+    searchClearBtn?.removeEventListener('click', onSearchClear);
+
+    activeBanner = null;
+    activeNameEl = null;
+    personasGrid = null;
+    searchInput = null;
+    searchClearBtn = null;
+    countEl = null;
+    _navigate = null;
+  };
+}

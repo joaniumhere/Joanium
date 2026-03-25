@@ -3,18 +3,15 @@
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
-import { loadPage } from '../Window.js';
-import Paths from '../Paths.js';
-
 export function register(agentsEngine, automationEngine = null) {
 
-  ipcMain.handle('launch-agents', () => {
-    loadPage(Paths.AGENTS_PAGE);
+  ipcMain.handle('launch-agents', (event) => {
+    event.sender.send('navigate', 'agents');
     return { ok: true };
   });
 
-  ipcMain.handle('launch-events', () => {
-    loadPage(Paths.EVENTS_PAGE);
+  ipcMain.handle('launch-events', (event) => {
+    event.sender.send('navigate', 'events');
     return { ok: true };
   });
 

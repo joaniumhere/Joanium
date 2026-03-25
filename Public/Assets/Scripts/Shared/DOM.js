@@ -1,58 +1,124 @@
-// Composer
-export const textarea            = document.getElementById('chat-input');
-export const sendBtn             = document.getElementById('send-btn');
-export const attachmentBtn       = document.getElementById('attachment-btn');
-export const folderBtn           = document.getElementById('folder-btn');
-export const composerAttachments = document.getElementById('composer-attachments');
-export const composerHint        = document.getElementById('composer-hint');
+// ─────────────────────────────────────────────
+//  Evelina — Public/Assets/Scripts/Shared/DOM.js
+//
+//  WHY export let + initDOM()?
+//  ES modules have LIVE BINDINGS: when we reassign
+//  `textarea = getElementById(...)` in initDOM(),
+//  every importer that already imported `{ textarea }`
+//  immediately sees the new value — no re-import needed.
+//
+//  This lets Chat.js import these at module level
+//  (so the imports are hoisted and resolved), then
+//  call initDOM() after injecting the Chat HTML,
+//  at which point all references become valid.
+// ─────────────────────────────────────────────
 
-// Chat view
-export const welcome      = document.getElementById('welcome');
-export const chatView     = document.getElementById('chat-view');
-export const chatMessages = document.getElementById('chat-messages');
-export const chips        = document.querySelectorAll('.chip');
-export const projectContextBar    = document.getElementById('project-context-bar');
-export const projectContextTitle  = document.getElementById('project-context-title');
-export const projectContextPath   = document.getElementById('project-context-path');
-export const projectContextInfo   = document.getElementById('project-context-info');
-export const projectOpenFolderBtn = document.getElementById('project-open-folder-btn');
-export const projectExitBtn       = document.getElementById('project-exit-btn');
+// ── Composer ────────────────────────────────
+export let textarea            = null;
+export let sendBtn             = null;
+export let attachmentBtn       = null;
+export let folderBtn           = null;
+export let composerAttachments = null;
+export let composerHint        = null;
 
-// Sidebar
-export const sidebarBtns  = document.querySelectorAll('.sidebar-btn[data-view]');
-export const themeBtn     = document.getElementById('theme-toggle-btn');
-export const themePanel   = document.getElementById('theme-panel');
-export const themeOptions = document.querySelectorAll('.theme-option');
+// ── Chat view ────────────────────────────────
+export let welcome      = null;
+export let chatView     = null;
+export let chatMessages = null;
+export let chips        = [];  // NodeList → start empty, not null, so .forEach works
+export let projectContextBar    = null;
+export let projectContextTitle  = null;
+export let projectContextPath   = null;
+export let projectContextInfo   = null;
+export let projectOpenFolderBtn = null;
+export let projectExitBtn       = null;
 
-// Model selector
-export const modelSelectorBtn = document.getElementById('model-selector-btn');
-export const modelDropdown    = document.getElementById('model-dropdown');
-export const modelLabel       = document.getElementById('model-label');
+// ── Sidebar ───────────────────────────────────
+export let sidebarBtns  = [];
+export let themeBtn     = null;
+export let themePanel   = null;
+export let themeOptions = [];
 
-// Chat library
-export const libraryBackdrop = document.getElementById('library-modal-backdrop');
-export const libraryPanel    = document.getElementById('library-panel');
-export const libraryClose    = document.getElementById('library-close');
-export const librarySearch   = document.getElementById('library-search');
-export const chatList        = document.getElementById('chat-list');
+// ── Model selector ────────────────────────────
+export let modelSelectorBtn = null;
+export let modelDropdown    = null;
+export let modelLabel       = null;
 
-// Avatar panel
-export const avatarBtn         = document.getElementById('sidebar-avatar-btn');
-export const avatarPanel       = document.getElementById('avatar-panel');
-export const avatarPanelName   = document.getElementById('avatar-panel-name');
-export const avatarPanelBadge  = document.getElementById('avatar-panel-badge');
-export const avatarSettingsBtn = document.getElementById('avatar-settings-btn');
+// ── Library ───────────────────────────────────
+export let libraryBackdrop = null;
+export let libraryPanel    = null;
+export let libraryClose    = null;
+export let librarySearch   = null;
+export let chatList        = null;
 
-// Settings modal
-export const settingsModalBackdrop = document.getElementById('settings-modal-backdrop');
-export const settingsModal         = document.getElementById('settings-modal');
-export const settingsModalClose    = document.getElementById('settings-modal-close');
+// ── Avatar panel ──────────────────────────────
+export let avatarBtn         = null;
+export let avatarPanel       = null;
+export let avatarPanelName   = null;
+export let avatarPanelBadge  = null;
+export let avatarSettingsBtn = null;
 
-// Keep body.modal-open in sync with whether any modal is open.
-// Call after opening or closing any overlay.
+// ── Settings modal ────────────────────────────
+export let settingsModalBackdrop = null;
+export let settingsModal         = null;
+export let settingsModalClose    = null;
+
+/**
+ * Call this inside the Chat page's mount() function,
+ * AFTER injecting the Chat HTML into the outlet.
+ * All imported bindings will update immediately.
+ */
+export function initDOM() {
+  textarea            = document.getElementById('chat-input');
+  sendBtn             = document.getElementById('send-btn');
+  attachmentBtn       = document.getElementById('attachment-btn');
+  folderBtn           = document.getElementById('folder-btn');
+  composerAttachments = document.getElementById('composer-attachments');
+  composerHint        = document.getElementById('composer-hint');
+
+  welcome             = document.getElementById('welcome');
+  chatView            = document.getElementById('chat-view');
+  chatMessages        = document.getElementById('chat-messages');
+  chips               = Array.from(document.querySelectorAll('.chip'));
+  projectContextBar    = document.getElementById('project-context-bar');
+  projectContextTitle  = document.getElementById('project-context-title');
+  projectContextPath   = document.getElementById('project-context-path');
+  projectContextInfo   = document.getElementById('project-context-info');
+  projectOpenFolderBtn = document.getElementById('project-open-folder-btn');
+  projectExitBtn       = document.getElementById('project-exit-btn');
+
+  sidebarBtns  = Array.from(document.querySelectorAll('.sidebar-btn[data-view]'));
+  themeBtn     = document.getElementById('theme-toggle-btn');
+  themePanel   = document.getElementById('theme-panel');
+  themeOptions = Array.from(document.querySelectorAll('.theme-option'));
+
+  modelSelectorBtn = document.getElementById('model-selector-btn');
+  modelDropdown    = document.getElementById('model-dropdown');
+  modelLabel       = document.getElementById('model-label');
+
+  libraryBackdrop = document.getElementById('library-modal-backdrop');
+  libraryPanel    = document.getElementById('library-panel');
+  libraryClose    = document.getElementById('library-close');
+  librarySearch   = document.getElementById('library-search');
+  chatList        = document.getElementById('chat-list');
+
+  avatarBtn         = document.getElementById('sidebar-avatar-btn');
+  avatarPanel       = document.getElementById('avatar-panel');
+  avatarPanelName   = document.getElementById('avatar-panel-name');
+  avatarPanelBadge  = document.getElementById('avatar-panel-badge');
+  avatarSettingsBtn = document.getElementById('avatar-settings-btn');
+
+  settingsModalBackdrop = document.getElementById('settings-modal-backdrop');
+  settingsModal         = document.getElementById('settings-modal');
+  settingsModalClose    = document.getElementById('settings-modal-close');
+}
+
+/** Keep body.modal-open in sync with whether any modal is open. */
 export const syncModalOpenState = () => {
   const hasOpen = Boolean(
-    document.querySelector('#settings-modal-backdrop.open, #library-modal-backdrop.open, #projects-modal-backdrop.open, #global-confirm-backdrop.open, #edit-project-backdrop.open'),
+    document.querySelector(
+      '#settings-modal-backdrop.open, #library-modal-backdrop.open, #projects-modal-backdrop.open, #global-confirm-backdrop.open, #edit-project-backdrop.open'
+    )
   );
   document.body.classList.toggle('modal-open', hasOpen);
 };

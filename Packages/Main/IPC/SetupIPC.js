@@ -25,17 +25,17 @@ export function register() {
   // ── Page navigation ────────────────────────────────────────────────
 
   ipcMain.handle('launch-main', () => {
-    loadPage(Paths.CHAT_PAGE);
+    loadPage(Paths.INDEX_PAGE);
     return { ok: true };
   });
 
-  ipcMain.handle('launch-skills', () => {
-    loadPage(Paths.SKILLS_PAGE);
+  ipcMain.handle('launch-skills', (event) => {
+    event.sender.send('navigate', 'skills');
     return { ok: true };
   });
 
-  ipcMain.handle('launch-personas', () => {
-    loadPage(Paths.PERSONAS_PAGE);
+  ipcMain.handle('launch-personas', (event) => {
+    event.sender.send('navigate', 'personas');
     return { ok: true };
   });
 }

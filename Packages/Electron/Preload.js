@@ -18,6 +18,10 @@ ipcRenderer.on('pty-exit', (_e, pid, exitCode) => {
 });
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  onNavigate: (callback) => {
+    if (typeof callback !== 'function') return;
+    ipcRenderer.on('navigate', (_e, page) => callback(page));
+  },
 
   // Setup
   saveUser: (userData) => ipcRenderer.invoke('save-user', userData),

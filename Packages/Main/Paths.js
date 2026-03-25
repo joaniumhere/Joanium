@@ -39,7 +39,7 @@ export const Paths = {
   // Electron
   PRELOAD: path.join(ROOT, 'Packages', 'Electron', 'Preload.js'),
   SETUP_PAGE: path.join(ROOT, 'Public', 'Setup.html'),
-  CHAT_PAGE: path.join(ROOT, 'Public', 'Chat.html'),
+  INDEX_PAGE: path.join(ROOT, 'Public', 'index.html'),
   AUTOMATIONS_PAGE: path.join(ROOT, 'Public', 'Automations.html'),
   SKILLS_PAGE: path.join(ROOT, 'Public', 'Skills.html'),
   PERSONAS_PAGE: path.join(ROOT, 'Public', 'Personas.html'),

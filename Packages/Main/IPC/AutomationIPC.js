@@ -4,15 +4,12 @@
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
-import { loadPage } from '../Window.js';
-import Paths from '../Paths.js';
-
 /**
  * @param {AutomationEngine} automationEngine
  */
 export function register(automationEngine) {
-  ipcMain.handle('launch-automations', () => {
-    loadPage(Paths.AUTOMATIONS_PAGE);
+  ipcMain.handle('launch-automations', (event) => {
+    event.sender.send('navigate', 'automations');
     return { ok: true };
   });
 

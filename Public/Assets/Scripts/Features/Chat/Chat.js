@@ -87,7 +87,7 @@ function retryIcon() {
   return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>`;
 }
 
-chatMessages.addEventListener('click', async (e) => {
+async function onChatMessagesClick(e) {
   const copyCodeBtn = e.target.closest('.copy-code-btn');
   if (copyCodeBtn) {
     const wrapper = copyCodeBtn.closest('.code-wrapper');
@@ -130,7 +130,7 @@ chatMessages.addEventListener('click', async (e) => {
       setTimeout(() => { dlCodeBtn.innerHTML = orig; dlCodeBtn.style.color = ''; }, 2000);
     } catch (err) { console.error('Failed to download code:', err); }
   }
-});
+}
 
 function attachCopyEvent(btn, textToCopy) {
   if (!btn) return;
@@ -204,7 +204,9 @@ let _newMsgsSinceScrolled = 0;
 
 function setupScrollFeatures() {
   const btn = document.getElementById('scroll-to-bottom');
-  if (!btn) return;
+  if (!btn || !chatMessages) return;
+  if (btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
 
   chatMessages.addEventListener('scroll', () => {
     const distFromBottom =
@@ -242,7 +244,14 @@ function bumpScrollBadge() {
   badge.textContent = _newMsgsSinceScrolled > 9 ? '9+' : String(_newMsgsSinceScrolled);
 }
 
-setupScrollFeatures();
+export function initChatUI() {
+  if (chatMessages && chatMessages.dataset.bound !== '1') {
+    chatMessages.dataset.bound = '1';
+    chatMessages.addEventListener('click', onChatMessagesClick);
+  }
+  setupScrollFeatures();
+  updateTimeline();
+}
 
 /* ══════════════════════════════════════════
    AUTO-LEARNING MEMORY

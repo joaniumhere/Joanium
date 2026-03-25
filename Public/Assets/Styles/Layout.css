@@ -21,6 +21,20 @@
   animation: fadeScaleIn 0.5s var(--motion-decelerate);
 }
 
+#page-outlet {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+#page-outlet > #main {
+  min-width: 0;
+  min-height: 0;
+}
+
 #main {
   flex: 1;
   display: flex;
