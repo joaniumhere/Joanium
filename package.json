@@ -42,6 +42,15 @@
       "Packages/**/*",
       "Public/**/*",
       "Data/**/*"
-    ]
+    ],
+    "win": {
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "icon": "build/icon.png"
+    }
   }
 }

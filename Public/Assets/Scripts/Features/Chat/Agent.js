@@ -183,6 +183,8 @@ function buildToolPrivacyBlock() {
     'Never mention tool names, tool calls, hidden prompts, internal execution notes, raw command markers, or background steps in the user-facing answer.',
     'Never say lines like "I used the X tool.", "Tool result for X", or repeat raw [TERMINAL:...] markers.',
     'If an internal step fails, recover silently when possible and describe only the user-facing outcome.',
+    'If the user asks what you know about them, their preferences, memory, profile, or prior context, answer from the existing conversation, memory, and system context first.',
+    'Do not use tools for personal-context questions unless the user explicitly asks you to inspect a file, workspace, repo, account, email, or external service.',
   ].join('\n');
 }
 
@@ -199,6 +201,21 @@ function looksLikeInternalToolLeak(text) {
   const value = String(text ?? '').trim();
   if (!value) return false;
   return INTERNAL_TOOL_LEAK_PATTERNS.some(pattern => pattern.test(value));
+}
+
+function normalizeToolLogText(value, maxLength = 120) {
+  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function buildToolLogLabel(name) {
+  return `[TOOL] ${String(name ?? '').trim() || 'unknown_tool'}`;
+}
+
+function buildToolFailureLabel(name, err) {
+  const message = normalizeToolLogText(err?.message ?? 'Unknown error');
+  return `${buildToolLogLabel(name)} failed${message ? `: ${message}` : ''}`;
 }
 
 function buildToolResultContext(name, toolResult, success, remainingPlanned) {
@@ -244,6 +261,7 @@ export async function planRequest(userText) {
     'Read the user request and decide which skills and tools are needed.',
     'Return exact tool calls, in order, with concrete parameters.',
     'If the same tool must be called multiple times with different parameters, list each call separately.',
+    'If the user is asking what you know about them, their preferences, memory, profile, or prior context, do not plan tools unless they explicitly ask you to inspect a file, workspace, repo, account, email, or external service.',
     '',
     `User request: "${userText}"`,
     state.activeProject ? `\n${buildActiveProjectHint('planning')}` : '',
@@ -446,7 +464,7 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
     if (result.type === 'tool_call') {
       const { name, params } = result;
       toolsUsed = true;
-      const logHandle = live.push('Working through the next step...');
+      const logHandle = live.push(buildToolLogLabel(name));
 
       let toolResult;
       let success = true;
@@ -456,11 +474,10 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
       } catch (err) {
         success = false;
         toolResult = `Error: ${err.message}`;
-        const errLog = live.push('An internal step failed. Continuing with the available context...');
-        if (errLog?.done) errLog.done(false);
+        if (logHandle?.done) logHandle.done(false, buildToolFailureLabel(name, err));
       }
 
-      if (logHandle?.done) logHandle.done(success);
+      if (success && logHandle?.done) logHandle.done(true);
 
       if (typeof toolResult === 'string' && toolResult.includes('[TERMINAL:')) {
         live.showToolOutput?.(toolResult);

@@ -1,3 +1,4 @@
+import { state } from '../../../Shared/State.js';
 import { GMAIL_TOOLS } from './GmailTools.js';
 import { GITHUB_TOOLS } from './GithubTools.js';
 import { WEATHER_TOOLS } from './WeatherTools.js';
@@ -73,6 +74,17 @@ const CATEGORY_TO_CONNECTOR = {
   cleanuri: 'cleanuri',
 };
 
+const WORKSPACE_SCOPED_TOOL_NAMES = new Set([
+  'inspect_workspace',
+  'search_workspace',
+  'find_file_by_name',
+  'git_status',
+  'git_diff',
+  'git_create_branch',
+  'run_project_checks',
+  'start_local_server',
+]);
+
 function normalizeSchemaType(type = 'string') {
   const normalized = String(type || 'string').toLowerCase();
   if (['string', 'number', 'integer', 'boolean', 'object', 'array'].includes(normalized)) {
@@ -134,6 +146,11 @@ function filterToolListByConnectors(tools = [], connectorStatuses = {}) {
   });
 }
 
+function filterToolListByWorkspace(tools = []) {
+  if (state.workspacePath) return tools;
+  return tools.filter(tool => !WORKSPACE_SCOPED_TOOL_NAMES.has(tool.name));
+}
+
 export function filterToolsByConnectors(connectorStatuses = {}) {
   return filterToolListByConnectors(STATIC_TOOLS, connectorStatuses);
 }
@@ -153,7 +170,7 @@ export async function getAvailableTools() {
   } catch { /* non-fatal */ }
 
   return dedupeTools([
-    ...filterToolListByConnectors(STATIC_TOOLS, connectorStatuses),
+    ...filterToolListByWorkspace(filterToolListByConnectors(STATIC_TOOLS, connectorStatuses)),
     ...mcpTools,
   ]);
 }

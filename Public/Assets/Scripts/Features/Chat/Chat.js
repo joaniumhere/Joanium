@@ -557,6 +557,10 @@ function buildLogItem(rawLine) {
   let iconHtml = '';
   let displayText = rawLine;
 
+  if (String(displayText ?? '').trim().startsWith('Thinking')) {
+    displayText = 'Understanding the request...';
+  }
+
   if (rawLine.startsWith('[GMAIL]')) {
     displayText = rawLine.slice(7).trim();
     iconHtml = `<img src="Assets/Icons/Gmail.png" alt="Gmail"
@@ -619,8 +623,23 @@ function createLiveRow() {
     ${assistantIcon()}
     <div class="content-wrapper" style="flex:1;min-width:0;">
       <div class="content">
-        <div class="agent-log"></div>
-        <div class="agent-tool-output"></div>
+        <div class="agent-thinking-shell agent-thinking-shell--working">
+          <button type="button" class="agent-thinking-toggle" aria-expanded="false">
+            <span class="agent-thinking-summary">
+              <span class="agent-thinking-dot"></span>
+              <span class="agent-thinking-label">Thinking</span>
+            </span>
+            <span class="agent-thinking-caret" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8l4 4 4-4"></path>
+              </svg>
+            </span>
+          </button>
+          <div class="agent-thinking-body" hidden>
+            <div class="agent-log"></div>
+            <div class="agent-tool-output"></div>
+          </div>
+        </div>
         <div class="agent-reply"></div>
       </div>
       <div class="message-actions assistant-actions" style="display:none;">
@@ -636,11 +655,36 @@ function createLiveRow() {
   const toolOutputEl = row.querySelector('.agent-tool-output');
   const replyEl = row.querySelector('.agent-reply');
   const actionsEl = row.querySelector('.message-actions');
+  const thinkingShellEl = row.querySelector('.agent-thinking-shell');
+  const thinkingToggleEl = row.querySelector('.agent-thinking-toggle');
+  const thinkingBodyEl = row.querySelector('.agent-thinking-body');
 
   let _streamActive = false;
   let _accumulated = '';
   let _lastRenderAt = 0;
   let _cursorEl = null;
+  let _thinkingState = 'working';
+
+  function setThinkingOpen(open) {
+    thinkingToggleEl?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (thinkingBodyEl) thinkingBodyEl.hidden = !open;
+  }
+
+  function setThinkingState(nextState) {
+    _thinkingState = nextState;
+    if (!thinkingShellEl) return;
+    thinkingShellEl.classList.remove(
+      'agent-thinking-shell--working',
+      'agent-thinking-shell--complete',
+      'agent-thinking-shell--error',
+    );
+    thinkingShellEl.classList.add(`agent-thinking-shell--${nextState}`);
+  }
+
+  thinkingToggleEl?.addEventListener('click', () => {
+    const isOpen = thinkingToggleEl.getAttribute('aria-expanded') === 'true';
+    setThinkingOpen(!isOpen);
+  });
 
   return {
     row,
@@ -651,7 +695,7 @@ function createLiveRow() {
       requestAnimationFrame(() => item.classList.add('agent-log-item--in'));
       smoothScrollToBottom();
       return {
-        done: (success = true) => {
+        done: (success = true, nextLine = '') => {
           const dot = item.querySelector('.agent-log-dot');
           if (dot) {
             dot.className = success ? 'agent-log-icon-success' : 'agent-log-icon-error';
@@ -661,8 +705,10 @@ function createLiveRow() {
           }
           const text = item.querySelector('.agent-log-text');
           if (text) {
+            if (nextLine) text.textContent = nextLine;
             text.style.color = success ? 'var(--text-secondary)' : '#ef4444';
           }
+          if (!success) setThinkingState('error');
         }
       };
     },
@@ -678,9 +724,6 @@ function createLiveRow() {
     stream(chunk) {
       if (!_streamActive) {
         _streamActive = true;
-        logEl.style.transition = 'opacity 0.15s ease';
-        logEl.style.opacity = '0';
-        setTimeout(() => { logEl.style.display = 'none'; }, 150);
         replyEl.classList.add('is-streaming');
         _cursorEl = document.createElement('span');
         _cursorEl.className = 'stream-cursor';
@@ -703,7 +746,7 @@ function createLiveRow() {
       _cursorEl?.remove();
       _cursorEl = null;
       replyEl.classList.remove('is-streaming');
-      logEl.style.display = 'none';
+      if (_thinkingState !== 'error') setThinkingState('complete');
       replyEl.innerHTML = renderMarkdown(markdown);
       actionsEl.style.display = 'flex';
       attachCopyEvent(actionsEl.querySelector('.copy-msg-btn'), markdown);
@@ -733,16 +776,11 @@ function createLiveRow() {
       _cursorEl?.remove();
       _cursorEl = null;
       replyEl.classList.remove('is-streaming');
-      logEl.style.opacity = '0';
-      logEl.style.transition = 'opacity 0.2s ease';
-      setTimeout(() => {
-        logEl.innerHTML = '';
-        logEl.style.display = 'none';
-        replyEl.innerHTML = renderMarkdown(markdown);
-        actionsEl.style.display = 'flex';
-        attachCopyEvent(actionsEl.querySelector('.copy-msg-btn'), markdown);
-        smoothScrollToBottom();
-      }, 200);
+      if (_thinkingState !== 'error') setThinkingState('complete');
+      replyEl.innerHTML = renderMarkdown(markdown);
+      actionsEl.style.display = 'flex';
+      attachCopyEvent(actionsEl.querySelector('.copy-msg-btn'), markdown);
+      smoothScrollToBottom();
     },
 
     /** Called when the user clicks stop mid-stream */
@@ -750,7 +788,7 @@ function createLiveRow() {
       _cursorEl?.remove();
       _cursorEl = null;
       replyEl.classList.remove('is-streaming');
-      logEl.style.display = 'none';
+      if (_thinkingState !== 'error') setThinkingState('complete');
 
       // Render whatever streamed so far, with a stopped indicator
       if (_accumulated) {

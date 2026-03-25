@@ -4,10 +4,9 @@ import { initAboutModal }     from './Shared/Modals/AboutModal.js';
 import { initLibraryModal }   from './Shared/Modals/LibraryModal.js';
 import { initProjectsModal }  from './Shared/Modals/ProjectsModal.js';
 import { initSettingsModal }  from './Shared/Modals/SettingsModal.js';
-import { syncModalOpenState } from './Shared/DOM.js';
 
 const PAGES = {
-  chat:        () => import('./Pages/index.js'),
+  chat:        () => import('./Pages/Chat.js'),
   automations: () => import('./Pages/Automations.js'),
   agents:      () => import('./Pages/Agents.js'),
   events:      () => import('./Pages/Events.js'),
@@ -34,10 +33,17 @@ let _about          = null;
    so page modules can call it without circular
    imports.
 ══════════════════════════════════════════ */
-export async function navigate(page) {
+export async function navigate(page, options = {}) {
+  const { startFreshChat = false, pendingChatId = null } = options;
+
   if (!PAGES[page]) {
     console.warn('[App] Unknown page:', page);
     return;
+  }
+
+  if (page === 'chat') {
+    window._pendingChatId = pendingChatId;
+    window._startFreshChat = Boolean(startFreshChat);
   }
 
   // Run previous page's cleanup (cancel intervals, remove listeners, etc.)
@@ -81,6 +87,10 @@ export async function navigate(page) {
   }
 }
 
+async function openFreshChat() {
+  await navigate('chat', { startFreshChat: true });
+}
+
 /* ══════════════════════════════════════════
    PROJECT HELPERS
    Shared across Chat and Sidebar project flows.
@@ -105,7 +115,7 @@ async function openProject(project) {
   state.workspacePath  = nextProject.rootPath;
 
   // Navigate to chat with the project active
-  await navigate('chat');
+  await openFreshChat();
   window.dispatchEvent(new CustomEvent('ow:project-changed', { detail: { project: state.activeProject } }));
   await _projects?.refreshProjects?.();
   return true;
@@ -114,7 +124,7 @@ async function openProject(project) {
 async function leaveProject() {
   state.activeProject = null;
   state.workspacePath = null;
-  await navigate('chat');
+  await openFreshChat();
   window.dispatchEvent(new CustomEvent('ow:project-changed', { detail: { project: null } }));
 }
 
@@ -131,22 +141,21 @@ async function init() {
 
   // ── Self-injecting shared modals ────────────────────────────────────
   // These inject their own HTML on first call, so they don't need
-  // entries in index.html. Order matters: settings before sidebar
-  // so settings.loadUser() can hydrate the sidebar avatar.
+  // hardcoded entries in index.html. Order matters: settings before
+  // sidebar so settings.loadUser() can hydrate the sidebar avatar.
   _settings = initSettingsModal();
   _about    = initAboutModal();
 
   // Library needs to know which chat scope to use (project or global)
   _library = initLibraryModal({
     onChatSelect: async (chatId) => {
-      if (chatId) window._pendingChatId = chatId;
       _library.close();
-      await navigate('chat');
+      await navigate('chat', { pendingChatId: chatId });
     },
   });
 
-  // Projects modal reads its HTML from index.html (not self-injecting).
-  // It MUST be initialised here so it's available on every page.
+  // Projects is self-injecting too, but it still needs to be
+  // initialised here so the shared modal is available on every page.
   _projects = initProjectsModal({
     onProjectOpen:    openProject,
     onProjectRemoved: leaveProject,
@@ -158,7 +167,7 @@ async function init() {
   // so pages don't need to import App.js (which would create circular deps).
   _sidebar = initSidebar({
     activePage: 'chat',
-    onNewChat:     () => navigate('chat'),
+    onNewChat:     () => openFreshChat(),
     onLibrary:     () => _library.isOpen() ? _library.close() : _library.open(),
     onProjects:    () => _projects.isOpen() ? _projects.close() : _projects.open(),
     onAutomations: () => navigate('automations'),
@@ -202,7 +211,7 @@ async function init() {
   }
 
   // ── Initial page ─────────────────────────────────────────────────────
-  await navigate('chat');
+  await openFreshChat();
 
   // SPA navigation now uses in-memory pending chat ids.
   // Clear any stale value left over from the old multipage flow so

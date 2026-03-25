@@ -86,7 +86,7 @@ function updateBanner() {
 }
 
 function navigateToChat() {
-  return _navigate?.('chat');
+  return _navigate?.('chat', { startFreshChat: true });
 }
 
 function buildDefaultCard() {

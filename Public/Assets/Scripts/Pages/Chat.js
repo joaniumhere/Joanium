@@ -23,11 +23,18 @@ import {
 } from '../Features/Composer/Composer.js';
 import {
   sendMessage, startNewChat, loadChat,
+  appendMessage, showChatView,
   setSendBtnUpdater, stopGeneration, initChatUI,
 } from '../Features/Chat/Chat.js';
 import { initTerminalObserver } from '../Features/Chat/TerminalComponent.js';
 
 // ── Page HTML ────────────────────────────────────────────────────────────────
+function getWelcomeTitleText() {
+  const rawName = String(state.userName ?? '').trim();
+  const firstName = rawName.split(/\s+/)[0];
+  return firstName ? `Welcome, ${firstName}` : 'Welcome';
+}
+
 function getHTML() {
   return /* html */`
 <main id="main">
@@ -62,6 +69,15 @@ function getHTML() {
         <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.4"/>
       </svg>
       <h1 class="welcome-title">Welcome</h1>
+    </div>
+    <p class="welcome-subtitle">
+      I am your new friend in town
+    </p>
+    <div class="chips welcome-chips" aria-label="Starter prompts">
+      <button class="chip" type="button" data-prompt="Summarize this project and point out the top 3 things I should improve next.">Review this project</button>
+      <button class="chip" type="button" data-prompt="Help me debug an issue in this app. Ask for the files you need and guide me step by step.">Debug this app</button>
+      <button class="chip" type="button" data-prompt="Plan the next feature for this project with milestones, risks, and a clean implementation order.">Plan a feature</button>
+      <button class="chip" type="button" data-prompt="Write a focused to-do list for what I should work on next based on this project.">What should I build?</button>
     </div>
   </section>
 
@@ -131,6 +147,19 @@ function ensureDropOverlay() {
   document.body.appendChild(_dropOverlay);
 }
 
+function syncWelcomeTitle() {
+  const welcomeTitle = document.querySelector('.welcome-title');
+  if (welcomeTitle) welcomeTitle.textContent = getWelcomeTitleText();
+}
+
+function restoreChatFromState() {
+  if (!state.messages.length) return;
+  showChatView();
+  state.messages.forEach(message => {
+    appendMessage(message.role, message.content, false, false, message.attachments ?? []);
+  });
+}
+
 // ── mount ────────────────────────────────────────────────────────────────────
 export function mount(outlet, { settings, navigate }) {
   outlet.innerHTML = getHTML();
@@ -139,6 +168,7 @@ export function mount(outlet, { settings, navigate }) {
   // It reassigns all the live-binding exports in DOM.js so Chat.js
   // and its sub-modules see real elements instead of null.
   initDOM();
+  syncWelcomeTitle();
 
   const APP_NAME = 'Evelina';
   document.title = APP_NAME;
@@ -222,7 +252,9 @@ export function mount(outlet, { settings, navigate }) {
     catch { state.systemPrompt = ''; }
   }
   const onSettingsSaved = () => refreshSystemPrompt();
+  const onUserProfileUpdated = () => syncWelcomeTitle();
   window.addEventListener('ow:settings-saved', onSettingsSaved);
+  window.addEventListener('ow:user-profile-updated', onUserProfileUpdated);
 
   // Enhance button
   const enhanceBtn = document.getElementById('enhance-btn');
@@ -290,11 +322,23 @@ export function mount(outlet, { settings, navigate }) {
     syncCapabilities();
     await refreshSystemPrompt();
 
-    // Handle pending chat from library click
     const pendingId = window._pendingChatId;
+    const shouldStartFresh = window._startFreshChat === true;
+    window._pendingChatId = null;
+    window._startFreshChat = false;
+
     if (pendingId) {
-      window._pendingChatId = null;
       await loadChat(pendingId, { updateModelLabel, buildModelDropdown, notifyModelSelectionChanged });
+      return;
+    }
+
+    if (shouldStartFresh) {
+      startNewChat();
+      return;
+    }
+
+    if (state.messages.length > 0) {
+      restoreChatFromState();
     }
   });
 
@@ -306,6 +350,7 @@ export function mount(outlet, { settings, navigate }) {
     document.removeEventListener('dragleave', onDragLeave);
     document.removeEventListener('drop', onDrop);
     window.removeEventListener('ow:settings-saved', onSettingsSaved);
+    window.removeEventListener('ow:user-profile-updated', onUserProfileUpdated);
     stopGeneration();
     if (_dropOverlay) { _dropOverlay.style.opacity = '0'; }
   };
