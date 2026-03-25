@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/IPC/UserIPC.js
+//  Evelina — Packages/Main/IPC/UserIPC.js
 //  Handlers for user profile, model list, API keys,
 //  custom instructions, and memory.
 // ─────────────────────────────────────────────

@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────
-//  Romelson — Public/Assets/Scripts/Features/ModelSelector/ModelSelector.js
+//  Evelina — Public/Assets/Scripts/Features/ModelSelector/ModelSelector.js
 //  Loads available models, renders the dropdown sorted by rank,
 //  and fires a custom event whenever the active model changes.
 // ─────────────────────────────────────────────
 
-import { state }                          from '../../Shared/State.js';
+import { state } from '../../Shared/State.js';
 import { modelLabel, modelDropdown, modelSelectorBtn } from '../../Shared/DOM.js';
 
 /* ══════════════════════════════════════════
@@ -12,10 +12,10 @@ import { modelLabel, modelDropdown, modelSelectorBtn } from '../../Shared/DOM.js
 ══════════════════════════════════════════ */
 function normalizeInputs(inputs = {}) {
   return {
-    text:  inputs.text  !== false,
+    text: inputs.text !== false,
     image: Boolean(inputs.image),
-    pdf:   Boolean(inputs.pdf),
-    docx:  Boolean(inputs.docx),
+    pdf: Boolean(inputs.pdf),
+    docx: Boolean(inputs.docx),
   };
 }
 
@@ -33,16 +33,16 @@ function sortedModelEntries(models = {}) {
  */
 function findBestModel(providers) {
   let bestProvider = null;
-  let bestModelId  = null;
-  let bestRank     = Infinity;
+  let bestModelId = null;
+  let bestRank = Infinity;
 
   for (const provider of providers) {
     for (const [modelId, info] of Object.entries(provider.models ?? {})) {
       const rank = info.rank ?? 999;
       if (rank < bestRank) {
-        bestRank     = rank;
+        bestRank = rank;
         bestProvider = provider;
-        bestModelId  = modelId;
+        bestModelId = modelId;
       }
     }
   }
@@ -59,7 +59,7 @@ export function getSelectedModelInfo() {
 
 export function getModelInputs(
   provider = state.selectedProvider,
-  modelId  = state.selectedModel,
+  modelId = state.selectedModel,
 ) {
   return normalizeInputs(provider?.models?.[modelId]?.inputs);
 }
@@ -75,9 +75,9 @@ export function notifyModelSelectionChanged() {
   window.dispatchEvent(new CustomEvent('ow:model-selection-changed', {
     detail: {
       provider: state.selectedProvider,
-      modelId:  state.selectedModel,
-      model:    getSelectedModelInfo(),
-      inputs:   getModelInputs(),
+      modelId: state.selectedModel,
+      model: getSelectedModelInfo(),
+      inputs: getModelInputs(),
     },
   }));
 }
@@ -107,13 +107,13 @@ export function buildModelDropdown() {
     section.className = 'model-group';
 
     const header = document.createElement('div');
-    header.className   = 'model-group-header';
+    header.className = 'model-group-header';
     header.textContent = provider.label;
     section.appendChild(header);
 
     // Sort models by rank before rendering
     sortedModelEntries(provider.models).forEach(([modelId, info]) => {
-      const item     = document.createElement('button');
+      const item = document.createElement('button');
       item.className = 'model-item';
       const isActive =
         state.selectedProvider?.provider === provider.provider &&
@@ -126,7 +126,7 @@ export function buildModelDropdown() {
 
       item.addEventListener('click', () => {
         state.selectedProvider = provider;
-        state.selectedModel    = modelId;
+        state.selectedModel = modelId;
         updateModelLabel();
         buildModelDropdown();
         modelDropdown.classList.remove('open');
@@ -148,14 +148,14 @@ export async function loadProviders() {
     const all = await window.electronAPI?.getModels() ?? [];
 
     const prevProviderId = state.selectedProvider?.provider ?? null;
-    const prevModelId    = state.selectedModel ?? null;
+    const prevModelId = state.selectedModel ?? null;
 
     state.allProviders = all;
-    state.providers    = all.filter(p => p.api && p.api.trim() !== '');
+    state.providers = all.filter(p => p.api && p.api.trim() !== '');
 
     if (state.providers.length === 0) {
       state.selectedProvider = null;
-      state.selectedModel    = null;
+      state.selectedModel = null;
       if (modelLabel) modelLabel.textContent = 'No API keys set';
       if (modelDropdown) modelDropdown.innerHTML = '';
       notifyModelSelectionChanged();
@@ -163,19 +163,19 @@ export async function loadProviders() {
     }
 
     // Restore the previous selection if it's still valid
-    const prevProvider    = state.providers.find(p => p.provider === prevProviderId);
-    const prevModelValid  = prevProvider && prevModelId && prevProvider.models?.[prevModelId];
+    const prevProvider = state.providers.find(p => p.provider === prevProviderId);
+    const prevModelValid = prevProvider && prevModelId && prevProvider.models?.[prevModelId];
 
     if (prevModelValid) {
       state.selectedProvider = prevProvider;
-      state.selectedModel    = prevModelId;
+      state.selectedModel = prevModelId;
     } else {
       // No valid prior selection — pick the globally best model.
       // Provider array order (anthropic → openai → google → …) acts as the
       // tie-breaker when two models share the same rank value.
       const { bestProvider, bestModelId } = findBestModel(state.providers);
       state.selectedProvider = bestProvider ?? state.providers[0];
-      state.selectedModel    = bestModelId  ?? sortedModelEntries(state.selectedProvider.models)[0]?.[0];
+      state.selectedModel = bestModelId ?? sortedModelEntries(state.selectedProvider.models)[0]?.[0];
     }
 
     updateModelLabel();
@@ -183,11 +183,11 @@ export async function loadProviders() {
     notifyModelSelectionChanged();
   } catch (err) {
     console.warn('[ModelSelector] Could not load models:', err);
-    state.allProviders     = [];
-    state.providers        = [];
+    state.allProviders = [];
+    state.providers = [];
     state.selectedProvider = null;
-    state.selectedModel    = null;
-    if (modelLabel)    modelLabel.textContent = 'Romelson';
+    state.selectedModel = null;
+    if (modelLabel) modelLabel.textContent = 'Evelina';
     if (modelDropdown) modelDropdown.innerHTML = '';
     notifyModelSelectionChanged();
   }

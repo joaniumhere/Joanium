@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Executors/QuoteExecutor.js
+// Evelina — Features/Chat/Executors/QuoteExecutor.js
 import { safeJson } from './utils.js';
 
 const HANDLED = new Set(['get_quote']);

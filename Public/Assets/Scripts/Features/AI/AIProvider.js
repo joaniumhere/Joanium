@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  Romelson — Public/Assets/Scripts/Features/AI/AIProvider.js
+//  Evelina — Public/Assets/Scripts/Features/AI/AIProvider.js
 //  Provider adapters with NATIVE function/tool calling support.
 //  Supports streaming (SSE) for all providers, with retry helper.
 //  Returns token usage alongside responses for analytics.
@@ -11,8 +11,8 @@ function extractBase64(dataUrl) {
 
 function normalizeMessage(msg) {
   return {
-    role:        msg?.role ?? 'user',
-    content:     String(msg?.content ?? ''),
+    role: msg?.role ?? 'user',
+    content: String(msg?.content ?? ''),
     attachments: Array.isArray(msg?.attachments)
       ? msg.attachments.filter(a => (a?.type === 'image' || a?.type === 'file') && (typeof a.dataUrl === 'string' || typeof a.textContent === 'string'))
       : [],
@@ -23,12 +23,12 @@ function embedFileAttachments(messages) {
   return messages.map(m => {
     const fileAttachments = m.attachments ? m.attachments.filter(a => a.type === 'file') : [];
     const imageAttachments = m.attachments ? m.attachments.filter(a => a.type === 'image') : [];
-    
+
     let newContent = String(m.content || '');
     for (const f of fileAttachments) {
       newContent += `\n\nFile: ${f.name}\n\`\`\`\n${f.textContent}\n\`\`\``;
     }
-    
+
     return {
       ...m,
       content: newContent,
@@ -71,10 +71,10 @@ function buildOpenAIContent(msg) {
 
 function toAnthropicTools(tools) {
   return tools.map(t => ({
-    name:        t.name,
+    name: t.name,
     description: t.description,
     input_schema: {
-      type:       'object',
+      type: 'object',
       properties: Object.fromEntries(
         Object.entries(t.parameters).map(([key, p]) => [
           key,
@@ -92,10 +92,10 @@ function toOpenAITools(tools) {
   return tools.map(t => ({
     type: 'function',
     function: {
-      name:        t.name,
+      name: t.name,
       description: t.description,
       parameters: {
-        type:       'object',
+        type: 'object',
         properties: Object.fromEntries(
           Object.entries(t.parameters).map(([key, p]) => [
             key,
@@ -113,10 +113,10 @@ function toOpenAITools(tools) {
 function toGoogleTools(tools) {
   return [{
     functionDeclarations: tools.map(t => ({
-      name:        t.name,
+      name: t.name,
       description: t.description,
       parameters: {
-        type:       'object',
+        type: 'object',
         properties: Object.fromEntries(
           Object.entries(t.parameters).map(([key, p]) => [
             key,
@@ -138,14 +138,14 @@ function toGoogleTools(tools) {
 function isTransientError(err) {
   const msg = String(err?.message ?? '').toLowerCase();
   return (
-    msg.includes('429')        ||
-    msg.includes('500')        ||
-    msg.includes('502')        ||
-    msg.includes('503')        ||
-    msg.includes('504')        ||
+    msg.includes('429') ||
+    msg.includes('500') ||
+    msg.includes('502') ||
+    msg.includes('503') ||
+    msg.includes('504') ||
     msg.includes('overloaded') ||
     msg.includes('rate limit') ||
-    msg.includes('etimedout')  ||
+    msg.includes('etimedout') ||
     msg.includes('econnreset') ||
     msg.includes('network')
   );
@@ -226,19 +226,19 @@ export async function fetchStreamingWithTools(
   if (providerId === 'anthropic') {
     const maxTokens = provider.models?.[modelId]?.max_output ?? 4096;
     const body = {
-      model:      modelId,
+      model: modelId,
       max_tokens: maxTokens,
-      stream:     true,
-      messages:   history.map(m => ({ role: m.role, content: buildAnthropicContent(m) })),
+      stream: true,
+      messages: history.map(m => ({ role: m.role, content: buildAnthropicContent(m) })),
     };
     if (sysPrompt) body.system = sysPrompt;
     if (tools.length) body.tools = toAnthropicTools(tools);
 
     const res = await fetch(endpoint, {
-      method:  'POST',
+      method: 'POST',
       headers: {
-        'content-type':      'application/json',
-        'x-api-key':         api,
+        'content-type': 'application/json',
+        'x-api-key': api,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(body),
@@ -249,11 +249,11 @@ export async function fetchStreamingWithTools(
       throw new Error(e?.error?.message ?? `HTTP ${res.status}`);
     }
 
-    let fullText     = '';
-    let toolName     = null;
-    let toolId       = null;
+    let fullText = '';
+    let toolName = null;
+    let toolId = null;
     let toolInputJson = '';
-    let inputTokens  = 0;
+    let inputTokens = 0;
     let outputTokens = 0;
 
     for await (const raw of parseSSE(res)) {
@@ -268,7 +268,7 @@ export async function fetchStreamingWithTools(
         case 'content_block_start':
           if (ev.content_block?.type === 'tool_use') {
             toolName = ev.content_block.name;
-            toolId   = ev.content_block.id;
+            toolId = ev.content_block.id;
             toolInputJson = '';
           }
           break;
@@ -308,7 +308,7 @@ export async function fetchStreamingWithTools(
 
     const body = {
       contents: history.map(m => ({
-        role:  m.role === 'assistant' ? 'model' : 'user',
+        role: m.role === 'assistant' ? 'model' : 'user',
         parts: buildGoogleParts(m),
       })),
     };
@@ -316,9 +316,9 @@ export async function fetchStreamingWithTools(
     if (tools.length) body.tools = toGoogleTools(tools);
 
     const res = await fetch(streamUrl, {
-      method:  'POST',
+      method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body:    JSON.stringify(body),
+      body: JSON.stringify(body),
       signal,
     });
     if (!res.ok) {
@@ -326,9 +326,9 @@ export async function fetchStreamingWithTools(
       throw new Error(e?.error?.message ?? `HTTP ${res.status}`);
     }
 
-    let fullText    = '';
-    let fnCall      = null;
-    let inputTokens  = 0;
+    let fullText = '';
+    let fnCall = null;
+    let inputTokens = 0;
     let outputTokens = 0;
 
     for await (const raw of parseSSE(res)) {
@@ -343,7 +343,7 @@ export async function fetchStreamingWithTools(
         fnCall = part.functionCall;
       }
       if (ev.usageMetadata) {
-        inputTokens  = ev.usageMetadata.promptTokenCount     ?? inputTokens;
+        inputTokens = ev.usageMetadata.promptTokenCount ?? inputTokens;
         outputTokens = ev.usageMetadata.candidatesTokenCount ?? outputTokens;
       }
     }
@@ -351,8 +351,8 @@ export async function fetchStreamingWithTools(
     const usage = { inputTokens, outputTokens };
     if (fnCall) {
       return {
-        type:   'tool_call',
-        name:   fnCall.name,
+        type: 'tool_call',
+        name: fnCall.name,
         params: fnCall.args ?? {},
         callId: null,
         usage,
@@ -369,26 +369,26 @@ export async function fetchStreamingWithTools(
 
   const maxTokens = provider.models?.[modelId]?.max_output ?? 4096;
   const body = {
-    model:      modelId,
+    model: modelId,
     max_tokens: maxTokens,
-    messages:   openAIMessages,
-    stream:     true,
+    messages: openAIMessages,
+    stream: true,
   };
   if (providerId === 'openai') {
     body.stream_options = { include_usage: true };
   }
   if (tools.length) {
-    body.tools       = toOpenAITools(tools);
+    body.tools = toOpenAITools(tools);
     body.tool_choice = 'auto';
   }
 
   const res = await fetch(endpoint, {
-    method:  'POST',
+    method: 'POST',
     headers: {
       'content-type': 'application/json',
-      [auth_header]:  `${auth_prefix}${api}`,
+      [auth_header]: `${auth_prefix}${api}`,
       ...(providerId === 'openrouter'
-        ? { 'HTTP-Referer': 'https://romelson.app', 'X-Title': 'Romelson' }
+        ? { 'HTTP-Referer': 'https://romelson.app', 'X-Title': 'Evelina' }
         : {}),
     },
     body: JSON.stringify(body),
@@ -399,11 +399,11 @@ export async function fetchStreamingWithTools(
     throw new Error(e?.error?.message ?? `HTTP ${res.status}`);
   }
 
-  let fullText     = '';
-  let toolName     = null;
-  let toolId       = null;
+  let fullText = '';
+  let toolName = null;
+  let toolId = null;
   let toolArgsJson = '';
-  let inputTokens  = 0;
+  let inputTokens = 0;
   let outputTokens = 0;
 
   for await (const raw of parseSSE(res)) {
@@ -411,7 +411,7 @@ export async function fetchStreamingWithTools(
     try { ev = JSON.parse(raw); } catch { continue; }
 
     if (ev.usage) {
-      inputTokens  = ev.usage.prompt_tokens     ?? inputTokens;
+      inputTokens = ev.usage.prompt_tokens ?? inputTokens;
       outputTokens = ev.usage.completion_tokens ?? outputTokens;
     }
 
@@ -425,8 +425,8 @@ export async function fetchStreamingWithTools(
 
     const tc = delta.tool_calls?.[0];
     if (tc) {
-      if (tc.id)                  toolId        = tc.id;
-      if (tc.function?.name)      toolName      = tc.function.name;
+      if (tc.id) toolId = tc.id;
+      if (tc.function?.name) toolName = tc.function.name;
       if (tc.function?.arguments) toolArgsJson += tc.function.arguments;
     }
   }
@@ -452,35 +452,35 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
   if (providerId === 'anthropic') {
     const maxTokens = provider.models?.[modelId]?.max_output ?? 4096;
     const body = {
-      model:      modelId,
+      model: modelId,
       max_tokens: maxTokens,
-      messages:   history.map(m => ({ role: m.role, content: buildAnthropicContent(m) })),
+      messages: history.map(m => ({ role: m.role, content: buildAnthropicContent(m) })),
     };
     if (sysPrompt) body.system = sysPrompt;
     if (tools.length) body.tools = toAnthropicTools(tools);
 
     const res = await fetch(endpoint, {
-      method:  'POST',
+      method: 'POST',
       headers: {
-        'content-type':      'application/json',
-        'x-api-key':         api,
+        'content-type': 'application/json',
+        'x-api-key': api,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(body),
     });
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
 
-    const data  = await res.json();
+    const data = await res.json();
     const usage = {
-      inputTokens:  data.usage?.input_tokens  ?? 0,
+      inputTokens: data.usage?.input_tokens ?? 0,
       outputTokens: data.usage?.output_tokens ?? 0,
     };
 
     const toolUseBlock = data.content?.find(b => b.type === 'tool_use');
     if (toolUseBlock) {
       return {
-        type:   'tool_call',
-        name:   toolUseBlock.name,
+        type: 'tool_call',
+        name: toolUseBlock.name,
         params: toolUseBlock.input ?? {},
         callId: toolUseBlock.id,
         usage,
@@ -491,10 +491,10 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
 
   /* ── Google Gemini ── */
   if (providerId === 'google') {
-    const url  = endpoint.replace('{model}', modelId) + `?key=${api}`;
+    const url = endpoint.replace('{model}', modelId) + `?key=${api}`;
     const body = {
       contents: history.map(m => ({
-        role:  m.role === 'assistant' ? 'model' : 'user',
+        role: m.role === 'assistant' ? 'model' : 'user',
         parts: buildGoogleParts(m),
       })),
     };
@@ -502,23 +502,23 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
     if (tools.length) body.tools = toGoogleTools(tools);
 
     const res = await fetch(url, {
-      method:  'POST',
+      method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body:    JSON.stringify(body),
+      body: JSON.stringify(body),
     });
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
 
-    const data  = await res.json();
+    const data = await res.json();
     const usage = {
-      inputTokens:  data.usageMetadata?.promptTokenCount     ?? 0,
+      inputTokens: data.usageMetadata?.promptTokenCount ?? 0,
       outputTokens: data.usageMetadata?.candidatesTokenCount ?? 0,
     };
     const part = data.candidates?.[0]?.content?.parts?.[0];
 
     if (part?.functionCall) {
       return {
-        type:   'tool_call',
-        name:   part.functionCall.name,
+        type: 'tool_call',
+        name: part.functionCall.name,
         params: part.functionCall.args ?? {},
         callId: null,
         usage,
@@ -536,26 +536,26 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
   const maxTokensNS = provider.models?.[modelId]?.max_output ?? 4096;
   const body = { model: modelId, max_tokens: maxTokensNS, messages: openAIMessages };
   if (tools.length) {
-    body.tools       = toOpenAITools(tools);
+    body.tools = toOpenAITools(tools);
     body.tool_choice = 'auto';
   }
 
   const res = await fetch(endpoint, {
-    method:  'POST',
+    method: 'POST',
     headers: {
       'content-type': 'application/json',
-      [auth_header]:  `${auth_prefix}${api}`,
+      [auth_header]: `${auth_prefix}${api}`,
       ...(providerId === 'openrouter'
-        ? { 'HTTP-Referer': 'https://romelson.app', 'X-Title': 'Romelson' }
+        ? { 'HTTP-Referer': 'https://romelson.app', 'X-Title': 'Evelina' }
         : {}),
     },
     body: JSON.stringify(body),
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message ?? `HTTP ${res.status}`); }
 
-  const data    = await res.json();
+  const data = await res.json();
   const usage = {
-    inputTokens:  data.usage?.prompt_tokens     ?? 0,
+    inputTokens: data.usage?.prompt_tokens ?? 0,
     outputTokens: data.usage?.completion_tokens ?? 0,
   };
   const message = data.choices?.[0]?.message;
@@ -563,8 +563,8 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
   if (message?.tool_calls?.length) {
     const tc = message.tool_calls[0];
     return {
-      type:   'tool_call',
-      name:   tc.function.name,
+      type: 'tool_call',
+      name: tc.function.name,
       params: JSON.parse(tc.function.arguments ?? '{}'),
       callId: tc.id,
       usage,

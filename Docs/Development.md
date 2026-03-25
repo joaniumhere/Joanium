@@ -1,6 +1,6 @@
 # Development Guide
 
-Everything you need to add features, fix bugs, and extend Romelson.
+Everything you need to add features, fix bugs, and extend Evelina.
 
 ---
 
@@ -8,8 +8,8 @@ Everything you need to add features, fix bugs, and extend Romelson.
 
 ```bash
 # Prerequisites: Node.js 18+, npm
-git clone https://github.com/withinJoel/Romelson
-cd Romelson
+git clone https://github.com/withinJoel/Evelina
+cd Evelina
 npm install
 npm start
 ```

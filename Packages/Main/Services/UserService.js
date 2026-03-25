@@ -1,24 +1,24 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/Services/UserService.js
+//  Evelina — Packages/Main/Services/UserService.js
 //  All user data, model data, and plain-text file I/O.
 //  No Electron imports — pure Node.js, easily testable.
 // ─────────────────────────────────────────────
 
-import fs   from 'fs';
+import fs from 'fs';
 import Paths from '../Paths.js';
 
 /* ══════════════════════════════════════════
    DEFAULTS
 ══════════════════════════════════════════ */
 const DEFAULT_USER = {
-  name:           '',
+  name: '',
   setup_complete: false,
-  created_at:     null,
-  api_keys:       {},
+  created_at: null,
+  api_keys: {},
   preferences: {
-    theme:            'dark',
+    theme: 'dark',
     default_provider: null,
-    default_model:    null,
+    default_model: null,
   },
 };
 
@@ -37,13 +37,13 @@ function merge(existing = {}, updates = {}) {
     ...updates,
     api_keys: {
       ...DEFAULT_USER.api_keys,
-      ...(existing.api_keys  ?? {}),
-      ...(updates.api_keys   ?? {}),
+      ...(existing.api_keys ?? {}),
+      ...(updates.api_keys ?? {}),
     },
     preferences: {
       ...DEFAULT_USER.preferences,
       ...(existing.preferences ?? {}),
-      ...(updates.preferences  ?? {}),
+      ...(updates.preferences ?? {}),
     },
   };
 }
@@ -52,7 +52,7 @@ function merge(existing = {}, updates = {}) {
    USER JSON
 ══════════════════════════════════════════ */
 export function readUser() {
-  try   { return merge(JSON.parse(fs.readFileSync(Paths.USER_FILE, 'utf-8'))); }
+  try { return merge(JSON.parse(fs.readFileSync(Paths.USER_FILE, 'utf-8'))); }
   catch { return merge(); }
 }
 
@@ -64,7 +64,7 @@ export function writeUser(updates = {}) {
 }
 
 export function isFirstRun() {
-  try   { return readUser().setup_complete !== true; }
+  try { return readUser().setup_complete !== true; }
   catch { return true; }
 }
 
@@ -76,7 +76,7 @@ export function readModels() {
 }
 
 export function readModelsWithKeys() {
-  const models  = readModels();
+  const models = readModels();
   const apiKeys = readUser().api_keys ?? {};
   return models.map(p => ({ ...p, api: apiKeys[p.provider] ?? null }));
 }
@@ -88,7 +88,7 @@ export function readModelsWithKeys() {
    We bypass merge entirely for the api_keys field and write it directly.
 ══════════════════════════════════════════ */
 export function saveApiKeys(keysMap) {
-  const user     = readUser();
+  const user = readUser();
   const nextKeys = { ...(user.api_keys ?? {}) };
 
   Object.entries(keysMap ?? {}).forEach(([id, key]) => {
@@ -117,7 +117,7 @@ export function saveApiKeys(keysMap) {
    TEXT FILES (custom instructions, memory)
 ══════════════════════════════════════════ */
 export function readText(filePath) {
-  try   { return fs.readFileSync(filePath, 'utf-8'); }
+  try { return fs.readFileSync(filePath, 'utf-8'); }
   catch { return ''; }
 }
 

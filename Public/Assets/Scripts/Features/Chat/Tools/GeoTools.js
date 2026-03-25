@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Tools/GeoTools.js
+// Evelina — Features/Chat/Tools/GeoTools.js
 export const GEO_TOOLS = [
     {
         name: 'get_ip_info',

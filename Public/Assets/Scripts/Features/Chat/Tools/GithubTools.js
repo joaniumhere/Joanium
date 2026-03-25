@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Tools/GithubTools.js
+// Evelina — Features/Chat/Tools/GithubTools.js
 export const GITHUB_TOOLS = [
   {
     name: 'github_list_repos',
@@ -12,7 +12,7 @@ export const GITHUB_TOOLS = [
     category: 'github',
     parameters: {
       owner: { type: 'string', required: true, description: 'GitHub username or organization' },
-      repo:  { type: 'string', required: true, description: 'Repository name' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
     },
   },
   {
@@ -21,7 +21,7 @@ export const GITHUB_TOOLS = [
     category: 'github',
     parameters: {
       owner: { type: 'string', required: true, description: 'GitHub username or organization' },
-      repo:  { type: 'string', required: true, description: 'Repository name' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
     },
   },
   {
@@ -29,8 +29,8 @@ export const GITHUB_TOOLS = [
     description: 'Load the contents of a specific file from a GitHub repository.',
     category: 'github',
     parameters: {
-      owner:    { type: 'string', required: true, description: 'GitHub username or organization' },
-      repo:     { type: 'string', required: true, description: 'Repository name' },
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
       filePath: { type: 'string', required: true, description: 'Path to the file within the repo (e.g. "src/index.js")' },
     },
   },
@@ -40,7 +40,7 @@ export const GITHUB_TOOLS = [
     category: 'github',
     parameters: {
       owner: { type: 'string', required: true, description: 'GitHub username or organization' },
-      repo:  { type: 'string', required: true, description: 'Repository name' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
     },
   },
   {

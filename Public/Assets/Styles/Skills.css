@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Romelson — Skills page styles
+   Evelina — Skills page styles
 ══════════════════════════════════════════ */
 
 /* ── Page layout ── */
@@ -84,10 +84,10 @@
   cursor: pointer;
   white-space: nowrap;
   transition:
-    background   var(--transition-fast),
-    color        var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast),
     border-color var(--transition-fast),
-    transform    var(--transition-fast);
+    transform var(--transition-fast);
 }
 
 .skills-bulk-btn:hover:not(:disabled) {
@@ -160,7 +160,10 @@
   box-shadow: 0 0 28px var(--accent-glow);
 }
 
-.page-empty-icon svg { width: 26px; height: 26px; }
+.page-empty-icon svg {
+  width: 26px;
+  height: 26px;
+}
 
 .page-empty h3 {
   font-size: 17px;
@@ -207,9 +210,9 @@
   position: relative;
   transition:
     border-color var(--transition-fast),
-    transform    var(--transition-fast),
-    box-shadow   var(--transition-mid),
-    opacity      var(--transition-mid);
+    transform var(--transition-fast),
+    box-shadow var(--transition-mid),
+    opacity var(--transition-mid);
   animation: messageIn 0.35s var(--ease-out-expo) both;
 }
 
@@ -261,7 +264,10 @@
   box-shadow: 0 0 14px var(--accent-glow);
 }
 
-.skill-icon svg { width: 20px; height: 20px; }
+.skill-icon svg {
+  width: 20px;
+  height: 20px;
+}
 
 .skill-card-title-group {
   flex: 1;
@@ -337,12 +343,12 @@
   transition: transform 0.22s var(--ease-spring), background 0.22s;
 }
 
-.skill-toggle-input:checked + .skill-toggle-track {
+.skill-toggle-input:checked+.skill-toggle-track {
   background: var(--accent);
   border-color: var(--accent);
 }
 
-.skill-toggle-input:checked + .skill-toggle-track::after {
+.skill-toggle-input:checked+.skill-toggle-track::after {
   transform: translateY(-50%) translateX(18px);
   background: #fff;
 }
@@ -405,13 +411,16 @@
   font-weight: 500;
   cursor: pointer;
   transition:
-    background     var(--transition-fast),
-    color          var(--transition-fast),
-    border-color   var(--transition-fast),
-    transform      var(--transition-fast);
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
-.skill-read-btn svg { width: 13px; height: 13px; }
+.skill-read-btn svg {
+  width: 13px;
+  height: 13px;
+}
 
 .skill-read-btn:hover {
   background: var(--accent-dim);
@@ -492,7 +501,10 @@
   flex-shrink: 0;
 }
 
-.skill-modal-icon svg { width: 17px; height: 17px; }
+.skill-modal-icon svg {
+  width: 17px;
+  height: 17px;
+}
 
 .skill-modal-name {
   font-size: 18px;
@@ -518,14 +530,48 @@
   color: var(--text-primary);
 }
 
-.skill-modal-content h1 { font-size: 20px; font-weight: 600; margin: 0 0 12px; }
-.skill-modal-content h2 { font-size: 16px; font-weight: 600; margin: 20px 0 8px; }
-.skill-modal-content h3 { font-size: 14px; font-weight: 600; margin: 16px 0 6px; color: var(--text-secondary); }
-.skill-modal-content p  { margin-bottom: 12px; color: var(--text-secondary); }
-.skill-modal-content p:last-child { margin-bottom: 0; }
-.skill-modal-content li { margin: 4px 0 4px 20px; color: var(--text-secondary); }
-.skill-modal-content strong { color: var(--text-primary); font-weight: 600; }
-.skill-modal-content em { font-style: italic; color: var(--text-muted); }
+.skill-modal-content h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.skill-modal-content h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 20px 0 8px;
+}
+
+.skill-modal-content h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 16px 0 6px;
+  color: var(--text-secondary);
+}
+
+.skill-modal-content p {
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+}
+
+.skill-modal-content p:last-child {
+  margin-bottom: 0;
+}
+
+.skill-modal-content li {
+  margin: 4px 0 4px 20px;
+  color: var(--text-secondary);
+}
+
+.skill-modal-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.skill-modal-content em {
+  font-style: italic;
+  color: var(--text-muted);
+}
 
 .skill-modal-content code {
   font-family: var(--font-mono);
@@ -554,7 +600,28 @@
 }
 
 /* ── Keyframes ── */
-@keyframes fadeIn    { from { opacity: 0; }                                          to { opacity: 1; } }
-@keyframes messageIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
 
-[hidden] { display: none !important; }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[hidden] {
+  display: none !important;
+}

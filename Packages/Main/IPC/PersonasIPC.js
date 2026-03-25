@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/IPC/PersonasIPC.js
+//  Evelina — Packages/Main/IPC/PersonasIPC.js
 //  Reads persona .md files from Personas/ directory.
 //  Manages active persona persistence in Data/ActivePersona.json
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
-import fs   from 'fs';
+import fs from 'fs';
 import path from 'path';
 import Paths from '../Paths.js';
 import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
@@ -37,9 +37,9 @@ export function register() {
           const { meta, body } = parseFrontmatter(raw);
           return {
             filename,
-            name:         meta.name         || filename.replace('.md', ''),
-            personality:  meta.personality  || '',
-            description:  meta.description  || '',
+            name: meta.name || filename.replace('.md', ''),
+            personality: meta.personality || '',
+            description: meta.description || '',
             instructions: body,
           };
         } catch { return null; }

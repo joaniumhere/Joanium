@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Executors/HackerNewsExecutor.js
+// Evelina — Features/Chat/Executors/HackerNewsExecutor.js
 import { safeJson } from './utils.js';
 
 const HANDLED = new Set(['get_hacker_news']);

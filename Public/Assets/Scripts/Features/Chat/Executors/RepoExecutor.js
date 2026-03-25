@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Executors/RepoExecutor.js
+// Evelina — Features/Chat/Executors/RepoExecutor.js
 // Smart repo context loader: fetches file tree + selects & loads the most
 // relevant source files for codebase-level Q&A.
 
@@ -78,7 +78,7 @@ function scoreFile(filePath) {
   return score;
 }
 
-export async function execute(toolName, params, onStage = () => {}) {
+export async function execute(toolName, params, onStage = () => { }) {
   switch (toolName) {
 
     case 'github_load_repo_context': {

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════
-   main.css  —  Romelson stylesheet entry point
+   main.css  —  Evelina stylesheet entry point
    Import order matters: tokens → structure → components
    ═══════════════════════════════════════════════════ */
 
@@ -55,25 +55,25 @@
 @import './Footer.css';
 
 /* 18. About modal */
-@import  './About.css';
+@import './About.css';
 
 /* 19. Themes */
-@import  './Themes.css';
+@import './Themes.css';
 
 /* 20. Root */
-@import  './Root.css';
+@import './Root.css';
 
 /* 21. Connectors */
-@import  './Connectors.css';
+@import './Connectors.css';
 
 /* 22. Memory */
-@import  './Memory.css';
+@import './Memory.css';
 
 /* 23. Agent Log */
-@import  './AgentLog.css';
+@import './AgentLog.css';
 
 /* 24. Automations */
-@import  './Automations.css';
+@import './Automations.css';
 
 /* 25. Free API Connectors */
-@import  './FreeConnectors.css';
+@import './FreeConnectors.css';

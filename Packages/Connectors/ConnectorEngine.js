@@ -1,77 +1,77 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Connectors/ConnectorEngine.js
+//  Evelina — Packages/Connectors/ConnectorEngine.js
 //  Manages connector credentials stored in Data/Connectors.json
 //  Runs in the Electron main process.
 // ─────────────────────────────────────────────
 
-import fs   from 'fs';
+import fs from 'fs';
 import path from 'path';
 
 const DEFAULT_STATE = {
   connectors: {
     // ── Service connectors (need credentials) ──────────────────────────
     gmail: {
-      enabled:     false,
-      isFree:      false,
+      enabled: false,
+      isFree: false,
       credentials: {},
       connectedAt: null,
     },
     github: {
-      enabled:     false,
-      isFree:      false,
+      enabled: false,
+      isFree: false,
       credentials: {},
       connectedAt: null,
     },
 
     // ── Free APIs — no key required, enabled by default ────────────────
     open_meteo: {
-      enabled:     true,
-      isFree:      true,
-      noKey:       true,
+      enabled: true,
+      isFree: true,
+      noKey: true,
       credentials: {},
       connectedAt: null,
     },
     coingecko: {
-      enabled:     true,
-      isFree:      true,
-      noKey:       true,
+      enabled: true,
+      isFree: true,
+      noKey: true,
       credentials: {},
       connectedAt: null,
     },
     exchange_rate: {
-      enabled:     true,
-      isFree:      true,
-      noKey:       true,
+      enabled: true,
+      isFree: true,
+      noKey: true,
       credentials: {},
       connectedAt: null,
     },
     treasury: {
-      enabled:     true,
-      isFree:      true,
-      noKey:       true,
+      enabled: true,
+      isFree: true,
+      noKey: true,
       credentials: {},
       connectedAt: null,
     },
 
     // ── Free APIs with optional/required keys ──────────────────────────
     fred: {
-      enabled:     true,
-      isFree:      true,
-      noKey:       false,
+      enabled: true,
+      isFree: true,
+      noKey: false,
       credentials: { apiKey: '' },
       connectedAt: null,
     },
     openweathermap: {
-      enabled:     false,
-      isFree:      true,
-      noKey:       false,
+      enabled: false,
+      isFree: true,
+      noKey: false,
       credentials: { apiKey: '' },
       connectedAt: null,
     },
     unsplash: {
-      enabled:     false,
-      isFree:      true,
-      noKey:       false,
+      enabled: false,
+      isFree: true,
+      noKey: false,
       credentials: { apiKey: '' },
       connectedAt: null,
     },
@@ -84,7 +84,7 @@ export class ConnectorEngine {
    */
   constructor(filePath) {
     this.filePath = filePath;
-    this._data    = null;
+    this._data = null;
   }
 
   /* ── Private helpers ────────────────────── */
@@ -92,7 +92,7 @@ export class ConnectorEngine {
   _load() {
     try {
       if (fs.existsSync(this.filePath)) {
-        const raw  = fs.readFileSync(this.filePath, 'utf-8');
+        const raw = fs.readFileSync(this.filePath, 'utf-8');
         this._data = JSON.parse(raw);
       } else {
         this._data = JSON.parse(JSON.stringify(DEFAULT_STATE));
@@ -109,7 +109,7 @@ export class ConnectorEngine {
       } else {
         // Preserve isFree / noKey flags from defaults
         this._data.connectors[key].isFree = val.isFree ?? false;
-        this._data.connectors[key].noKey  = val.noKey  ?? false;
+        this._data.connectors[key].noKey = val.noKey ?? false;
       }
     }
 
@@ -137,10 +137,10 @@ export class ConnectorEngine {
       Object.entries(data.connectors).map(([name, c]) => [
         name,
         {
-          enabled:     c.enabled,
+          enabled: c.enabled,
           connectedAt: c.connectedAt,
-          isFree:      c.isFree  ?? false,
-          noKey:       c.noKey   ?? false,
+          isFree: c.isFree ?? false,
+          noKey: c.noKey ?? false,
         },
       ]),
     );
@@ -170,9 +170,9 @@ export class ConnectorEngine {
     const c = this._load().connectors[name];
     if (!c) return null;
     return {
-      enabled:     c.enabled,
-      isFree:      c.isFree  ?? false,
-      noKey:       c.noKey   ?? false,
+      enabled: c.enabled,
+      isFree: c.isFree ?? false,
+      noKey: c.noKey ?? false,
       credentials: c.credentials ?? {},
     };
   }
@@ -207,8 +207,8 @@ export class ConnectorEngine {
   saveConnector(name, credentials) {
     this._load();
     this._data.connectors[name] = {
-      enabled:     true,
-      isFree:      false,
+      enabled: true,
+      isFree: false,
       credentials: {
         ...(this._data.connectors[name]?.credentials ?? {}),
         ...credentials,
@@ -227,8 +227,8 @@ export class ConnectorEngine {
     const isFree = this._data.connectors[name]?.isFree ?? false;
     if (isFree) return; // Don't "remove" free connectors, only toggle
     this._data.connectors[name] = {
-      enabled:     false,
-      isFree:      false,
+      enabled: false,
+      isFree: false,
       credentials: {},
       connectedAt: null,
     };

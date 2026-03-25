@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Executors/TerminalExecutor.js
+// Evelina — Features/Chat/Executors/TerminalExecutor.js
 // Bridges the AI's local-dev tool calls to the Electron IPC layer.
 
 import { state } from '../../../Shared/State.js';
@@ -110,7 +110,7 @@ function formatProjectChecks(result) {
   return lines.join('\n');
 }
 
-export async function execute(toolName, params, onStage = () => {}) {
+export async function execute(toolName, params, onStage = () => { }) {
   switch (toolName) {
     case 'inspect_workspace': {
       const rootPath = resolveWorkingDirectory(params.path);

@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Executors/FunExecutor.js
+// Evelina — Features/Chat/Executors/FunExecutor.js
 import { safeJson } from './utils.js';
 
 const HANDLED = new Set(['get_random_fact', 'get_number_fact']);

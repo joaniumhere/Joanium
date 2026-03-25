@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Automation/Github.js
+//  Evelina — Packages/Automation/Github.js
 //  GitHub REST API integration (main-process safe)
 //  Pure functions: accept { token } credentials, return data or throw.
 // ─────────────────────────────────────────────
@@ -10,10 +10,10 @@ async function githubFetch(endpoint, token, options = {}) {
   const res = await fetch(`${GITHUB_BASE}${endpoint}`, {
     ...options,
     headers: {
-      Authorization:          `Bearer ${token}`,
-      Accept:                 'application/vnd.github+json',
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
-      'Content-Type':         'application/json',
+      'Content-Type': 'application/json',
       ...(options.headers ?? {}),
     },
   });
@@ -43,7 +43,7 @@ export async function getRepoTree(credentials, owner, repo, branch) {
     githubFetch(`/repos/${owner}/${repo}/git/trees/${b}?recursive=1`, credentials.token);
 
   if (branch) return tryBranch(branch);
-  try   { return await tryBranch('main'); }
+  try { return await tryBranch('main'); }
   catch { return tryBranch('master'); }
 }
 
@@ -96,7 +96,7 @@ export async function getBranches(credentials, owner, repo) {
 export async function createIssue(credentials, owner, repo, title, body, labels = []) {
   return githubFetch(`/repos/${owner}/${repo}/issues`, credentials.token, {
     method: 'POST',
-    body:   JSON.stringify({ title, body, labels }),
+    body: JSON.stringify({ title, body, labels }),
   });
 }
 
@@ -139,8 +139,8 @@ export async function getPRDiff(credentials, owner, repo, prNumber) {
     `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`,
     {
       headers: {
-        Authorization:          `Bearer ${credentials.token}`,
-        Accept:                 'application/vnd.github.v3.diff',
+        Authorization: `Bearer ${credentials.token}`,
+        Accept: 'application/vnd.github.v3.diff',
         'X-GitHub-Api-Version': '2022-11-28',
       },
     },

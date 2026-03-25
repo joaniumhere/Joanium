@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  Romelson — Public/Assets/Scripts/Pages/Events.js
+//  Evelina — Public/Assets/Scripts/Pages/Events.js
 // ─────────────────────────────────────────────
 
 import '../Shared/WindowControls.js';

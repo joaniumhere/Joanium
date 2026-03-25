@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="Assets/Styles/AgentsPage.css" />
   <script src="Assets/Scripts/Features/Themes/ThemeInit.js"></script>
 </head>
+
 <body>
 
   <div id="app">
@@ -14,23 +16,26 @@
     <div id="titlebar">
       <div id="titlebar-drag">
         <svg class="titlebar-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.5"/>
+          <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.5" />
         </svg>
-        <span class="titlebar-name">Romelson</span>
+        <span class="titlebar-name">Evelina</span>
       </div>
       <div id="titlebar-controls">
         <button id="btn-minimize" title="Minimize">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="5" y1="10" x2="15" y2="10" />
           </svg>
         </button>
         <button id="btn-maximize" title="Maximize / Restore">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <rect x="5" y="5" width="10" height="10" rx="2" ry="2" />
           </svg>
         </button>
         <button id="btn-close" title="Close">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="6" y1="6" x2="14" y2="14" />
             <line x1="14" y1="6" x2="6" y2="14" />
           </svg>
@@ -54,18 +59,23 @@
                 Agents
                 <span class="agents-tagline-badge">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-3.14Z" stroke-linecap="round"/>
-                    <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-3.14Z" stroke-linecap="round"/>
+                    <path
+                      d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-3.14Z"
+                      stroke-linecap="round" />
+                    <path
+                      d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-3.14Z"
+                      stroke-linecap="round" />
                   </svg>
                   Thinks &amp; Reacts
                 </span>
               </h2>
-              <p>AI-powered employees that monitor, analyze, and act on your behalf — using real intelligence, not just rules.</p>
+              <p>AI-powered employees that monitor, analyze, and act on your behalf — using real intelligence, not just
+                rules.</p>
             </div>
             <div class="agents-header-actions">
               <button class="add-agent-btn" id="add-agent-header-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                  <path d="M12 5v14M5 12h14" stroke-linecap="round" />
                 </svg>
                 New Agent
               </button>
@@ -76,12 +86,17 @@
           <div id="agents-empty" class="agents-empty" hidden>
             <div class="agents-empty-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="26" height="26">
-                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-3.14Z" stroke-linecap="round"/>
-                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-3.14Z" stroke-linecap="round"/>
+                <path
+                  d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-3.14Z"
+                  stroke-linecap="round" />
+                <path
+                  d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-3.14Z"
+                  stroke-linecap="round" />
               </svg>
             </div>
             <h3>No agents yet</h3>
-            <p>Create your first AI agent to start delegating intelligent, scheduled work — like email triage, PR monitoring, or daily news digests.</p>
+            <p>Create your first AI agent to start delegating intelligent, scheduled work — like email triage, PR
+              monitoring, or daily news digests.</p>
             <button class="agents-empty-btn" id="add-agent-empty-btn">
               + Create your first Agent
             </button>
@@ -110,7 +125,7 @@
         </div>
         <button class="settings-modal-close" id="agent-modal-close" type="button" aria-label="Close">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
           </svg>
         </button>
       </div>
@@ -122,18 +137,25 @@
         <div class="agent-section">
           <div class="agent-section-label">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13">
-              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-3.14Z" stroke-linecap="round"/>
-              <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-3.14Z" stroke-linecap="round"/>
+              <path
+                d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-3.14Z"
+                stroke-linecap="round" />
+              <path
+                d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-3.14Z"
+                stroke-linecap="round" />
             </svg>
             Identity
           </div>
           <div class="agent-field">
             <label class="agent-field-label">Agent Name <span style="color:var(--accent)">*</span></label>
-            <input type="text" id="agent-name" class="agent-input" placeholder="e.g. Inbox Analyst, PR Watcher, Morning Briefer" maxlength="80" autocomplete="off"/>
+            <input type="text" id="agent-name" class="agent-input"
+              placeholder="e.g. Inbox Analyst, PR Watcher, Morning Briefer" maxlength="80" autocomplete="off" />
           </div>
           <div class="agent-field">
-            <label class="agent-field-label">Description <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
-            <textarea id="agent-desc" class="agent-textarea" placeholder="What does this agent do? This becomes part of its personality in every AI call…"></textarea>
+            <label class="agent-field-label">Description <span
+                style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+            <textarea id="agent-desc" class="agent-textarea"
+              placeholder="What does this agent do? This becomes part of its personality in every AI call…"></textarea>
           </div>
         </div>
 
@@ -141,8 +163,8 @@
         <div class="agent-section">
           <div class="agent-section-label">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <path d="M8 21h8M12 17v4" stroke-linecap="round"/>
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8M12 17v4" stroke-linecap="round" />
             </svg>
             AI Power
           </div>
@@ -152,7 +174,9 @@
             <div class="agent-model-select-wrap">
               <button type="button" class="agent-model-dropdown-btn" id="primary-model-btn">
                 <span id="primary-model-label">Select a model…</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 9l6 6 6-6" stroke-linecap="round" />
+                </svg>
               </button>
               <div class="agent-model-menu" id="primary-model-menu"></div>
             </div>
@@ -160,11 +184,14 @@
           </div>
 
           <div class="agent-field">
-            <label class="agent-field-label">Fallback Models <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+            <label class="agent-field-label">Fallback Models <span
+                style="color:var(--text-muted);font-weight:400">(optional)</span></label>
             <div class="agent-fallback-list" id="fallback-models-list">
-              <div style="font-size:12px;color:var(--text-muted);padding:4px">Add API keys in Settings to see available models.</div>
+              <div style="font-size:12px;color:var(--text-muted);padding:4px">Add API keys in Settings to see available
+                models.</div>
             </div>
-            <div class="agent-field-hint">If the primary model fails, these are tried in order. Smart failover keeps your agent running.</div>
+            <div class="agent-field-hint">If the primary model fails, these are tried in order. Smart failover keeps
+              your agent running.</div>
           </div>
         </div>
 
@@ -172,9 +199,10 @@
         <div class="agent-section">
           <div class="agent-section-label">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13">
-              <path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z" stroke-linejoin="round"/>
+              <path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z" stroke-linejoin="round" />
             </svg>
-            Jobs <span id="jobs-count-badge" style="font-size:10px;font-weight:500;color:var(--text-muted);letter-spacing:0;text-transform:none;">(0/5)</span>
+            Jobs <span id="jobs-count-badge"
+              style="font-size:10px;font-weight:500;color:var(--text-muted);letter-spacing:0;text-transform:none;">(0/5)</span>
           </div>
           <div class="agent-field-hint" style="margin-top:-8px;margin-bottom:2px">
             Each job is a scheduled task: collect data → AI thinks → take action. Max 5 jobs per agent.
@@ -183,7 +211,9 @@
           <div id="jobs-list" class="jobs-list"></div>
 
           <button type="button" class="add-job-btn" id="add-job-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+            </svg>
             Add a Job
           </button>
         </div>
@@ -204,7 +234,7 @@
     <div class="agent-confirm-box">
       <div class="agent-confirm-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </div>
       <h3>Delete Agent?</h3>
@@ -218,4 +248,5 @@
 
   <script type="module" src="Assets/Scripts/Pages/Agents.js"></script>
 </body>
+
 </html>

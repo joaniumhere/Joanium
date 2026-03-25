@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════
-   SkillsPage.css  —  Romelson Skills page entry point
+   SkillsPage.css  —  Evelina Skills page entry point
    ═══════════════════════════════════════════════════ */
 
 @import './Animations.css';
@@ -20,4 +20,4 @@
 @import './Root.css';
 @import './Skills.css';
 @import './SharedSearchBarSkills&Agents.css';
-@import  './FreeConnectors.css';
+@import './FreeConnectors.css';

@@ -2,12 +2,12 @@
 import '../Shared/WindowControls.js';
 
 // Modals
-import { initSidebar }       from '../Shared/Sidebar.js';
-import { initAboutModal }    from '../Shared/Modals/AboutModal.js';
-import { initLibraryModal }  from '../Shared/Modals/LibraryModal.js';
+import { initSidebar } from '../Shared/Sidebar.js';
+import { initAboutModal } from '../Shared/Modals/AboutModal.js';
+import { initLibraryModal } from '../Shared/Modals/LibraryModal.js';
 import { initSettingsModal } from '../Shared/Modals/SettingsModal.js';
 
-const about    = initAboutModal();
+const about = initAboutModal();
 const settings = initSettingsModal();
 
 const library = initLibraryModal({
@@ -18,39 +18,39 @@ const library = initLibraryModal({
 });
 
 const sidebar = initSidebar({
-  activePage:    'personas',
-  onNewChat:     () => window.electronAPI?.launchMain(),
-  onLibrary:     () => library.isOpen() ? library.close() : library.open(),
+  activePage: 'personas',
+  onNewChat: () => window.electronAPI?.launchMain(),
+  onLibrary: () => library.isOpen() ? library.close() : library.open(),
   onAutomations: () => window.electronAPI?.launchAutomations?.(),
-  onAgents:      () => window.electronAPI?.launchAgents?.(),
-  onEvents:      () => window.electronAPI?.launchEvents?.(),
-  onSkills:      () => window.electronAPI?.launchSkills?.(),
-  onPersonas:    () => { /* already here */ },
-  onUsage:       () => window.electronAPI?.launchUsage?.(),
-  onSettings:    () => settings.open(),
-  onAbout:       () => about.open(),
+  onAgents: () => window.electronAPI?.launchAgents?.(),
+  onEvents: () => window.electronAPI?.launchEvents?.(),
+  onSkills: () => window.electronAPI?.launchSkills?.(),
+  onPersonas: () => { /* already here */ },
+  onUsage: () => window.electronAPI?.launchUsage?.(),
+  onSettings: () => settings.open(),
+  onAbout: () => about.open(),
 });
 
 window.addEventListener('ow:user-profile-updated', e => sidebar.setUser(e.detail?.name ?? ''));
 settings.loadUser().then(user => sidebar.setUser(user?.name ?? ''));
 
 // ── DOM refs ─────────────────────────────────────────────────────────────
-const activeBanner  = document.getElementById('personas-active-banner');
-const activeNameEl  = document.getElementById('personas-active-name');
-const personasGrid  = document.getElementById('personas-grid');
+const activeBanner = document.getElementById('personas-active-banner');
+const activeNameEl = document.getElementById('personas-active-name');
+const personasGrid = document.getElementById('personas-grid');
 const searchWrapper = document.getElementById('personas-search-wrapper');
-const searchInput   = document.getElementById('personas-search');
-const countEl       = document.getElementById('personas-count');
+const searchInput = document.getElementById('personas-search');
+const countEl = document.getElementById('personas-count');
 
 // ── State ─────────────────────────────────────────────────────────────────
 let _activePersona = null;
-let _allPersonas   = [];
+let _allPersonas = [];
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function escapeHtml(v) {
   return String(v ?? '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function getAvatarInitials(name) {
@@ -78,7 +78,7 @@ function matchesSearch(persona, query) {
 
 function updateBanner() {
   if (!activeBanner || !activeNameEl) return;
-  activeBanner.hidden      = false;
+  activeBanner.hidden = false;
   activeNameEl.textContent = _activePersona ? _activePersona.name : 'Default Assistant';
 }
 
@@ -86,7 +86,7 @@ function updateBanner() {
 
 function buildDefaultCard() {
   const active = isDefaultActive();
-  const card   = document.createElement('div');
+  const card = document.createElement('div');
   card.className = `persona-card persona-card--default${active ? ' is-active' : ''}`;
 
   card.innerHTML = `
@@ -98,7 +98,7 @@ function buildDefaultCard() {
     </div>
     <div class="persona-info">
       <div class="persona-name">Default Assistant</div>
-      <div class="persona-description">The standard Romelson AI — helpful, accurate, and contextually aware of your system, repos, and email.</div>
+      <div class="persona-description">The standard Evelina AI — helpful, accurate, and contextually aware of your system, repos, and email.</div>
     </div>
     <div class="persona-personality">
       <span class="persona-tag">helpful</span>
@@ -107,9 +107,9 @@ function buildDefaultCard() {
     </div>
     <div class="persona-card-footer">
       ${active
-        ? `<button class="persona-status-btn" disabled>Currently active</button>`
-        : `<button class="persona-activate-btn" type="button">Set active</button>`
-      }
+      ? `<button class="persona-status-btn" disabled>Currently active</button>`
+      : `<button class="persona-activate-btn" type="button">Set active</button>`
+    }
       <button class="persona-chat-btn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -138,7 +138,7 @@ function buildDefaultCard() {
 
 function buildPersonaCard(persona) {
   const active = isActiveCustom(persona);
-  const card   = document.createElement('div');
+  const card = document.createElement('div');
   card.className = `persona-card${active ? ' is-active' : ''}`;
 
   const tags = (persona.personality || '')
@@ -155,9 +155,9 @@ function buildPersonaCard(persona) {
     ${tags ? `<div class="persona-personality">${tags}</div>` : ''}
     <div class="persona-card-footer">
       ${active
-        ? `<button class="persona-deactivate-btn" type="button">Deactivate</button>`
-        : `<button class="persona-activate-btn" type="button">Activate</button>`
-      }
+      ? `<button class="persona-deactivate-btn" type="button">Deactivate</button>`
+      : `<button class="persona-activate-btn" type="button">Activate</button>`
+    }
       <button class="persona-chat-btn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
@@ -210,7 +210,7 @@ function render(query = '') {
 
   if (showItems.length === 0) {
     const nope = document.createElement('div');
-    nope.className   = 'personas-no-results';
+    nope.className = 'personas-no-results';
     nope.textContent = `No personas match "${query}"`;
     personasGrid.appendChild(nope);
     return;
@@ -249,8 +249,8 @@ async function load() {
       window.electronAPI?.getPersonas?.(),
       window.electronAPI?.getActivePersona?.(),
     ]);
-    _allPersonas   = personasRes?.personas  ?? [];
-    _activePersona = activeRes?.persona     ?? null;
+    _allPersonas = personasRes?.personas ?? [];
+    _activePersona = activeRes?.persona ?? null;
   } catch (err) {
     console.error('[Personas] Load error:', err);
   }

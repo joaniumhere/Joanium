@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/TerminalComponent.js
+// Evelina — Features/Chat/TerminalComponent.js
 
 let dependencyPromise = null;
 
@@ -125,10 +125,10 @@ export function initTerminalObserver() {
         mutations.forEach((mutation) => {
             mutation.addedNodes.forEach((node) => {
                 if (node.nodeType === Node.ELEMENT_NODE) {
-                    const mounts = node.classList?.contains('embedded-terminal-mount') 
-                        ? [node] 
+                    const mounts = node.classList?.contains('embedded-terminal-mount')
+                        ? [node]
                         : node.querySelectorAll?.('.embedded-terminal-mount');
-                    
+
                     if (mounts?.length) {
                         mounts.forEach(mount => {
                             if (!mount.classList.contains('initialized')) {

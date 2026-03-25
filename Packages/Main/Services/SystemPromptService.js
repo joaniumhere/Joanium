@@ -1,22 +1,22 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/Services/SystemPromptService.js
+//  Evelina — Packages/Main/Services/SystemPromptService.js
 //  Builds and caches the context-aware system prompt.
 //  Cache is invalidated whenever settings, connectors, or active persona change.
 // ─────────────────────────────────────────────
 
 import fs from 'fs';
-import * as GithubAPI    from '../../Automation/Github.js';
+import * as GithubAPI from '../../Automation/Github.js';
 import { buildSystemPrompt } from '../../System/SystemPrompt.js';
 import Paths from '../Paths.js';
 
 const TTL_MS = 5 * 60_000; // 5 minutes
 
-let _cache     = null;
+let _cache = null;
 let _cacheTime = 0;
 
 /** Discard the cached prompt so the next call rebuilds it fresh. */
 export function invalidate() {
-  _cache     = null;
+  _cache = null;
   _cacheTime = 0;
 }
 
@@ -35,16 +35,16 @@ export async function get({ user, customInstructions, memory, connectorEngine })
   if (_cache && now - _cacheTime < TTL_MS) return _cache;
 
   const githubCreds = connectorEngine.getCredentials('github');
-  const gmailCreds  = connectorEngine.getCredentials('gmail');
+  const gmailCreds = connectorEngine.getCredentials('gmail');
 
   let githubUsername = null;
-  let githubRepos    = [];
+  let githubRepos = [];
 
   if (githubCreds?.token) {
     try {
-      const ghUser   = await GithubAPI.getUser(githubCreds);
+      const ghUser = await GithubAPI.getUser(githubCreds);
       githubUsername = ghUser.login;
-      githubRepos    = await GithubAPI.getRepos(githubCreds, 20);
+      githubRepos = await GithubAPI.getRepos(githubCreds, 20);
     } catch (e) {
       console.warn('[SystemPromptService] GitHub fetch failed:', e.message);
     }
@@ -61,12 +61,12 @@ export async function get({ user, customInstructions, memory, connectorEngine })
   }
 
   _cache = await buildSystemPrompt({
-    userName:           user.name,
+    userName: user.name,
     customInstructions,
     memory,
     githubUsername,
     githubRepos,
-    gmailEmail:    gmailCreds?.email ?? null,
+    gmailEmail: gmailCreds?.email ?? null,
     activePersona,
   });
   _cacheTime = now;

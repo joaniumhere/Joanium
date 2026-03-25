@@ -1,4 +1,4 @@
-// Romelson — Pages/Automations/fieldBuilders.js
+// Evelina — Pages/Automations/fieldBuilders.js
 // Builds individual form field DOM elements used inside action rows.
 
 import { FIELD_META, FIELD_LABELS } from './Constants.js';
@@ -47,15 +47,15 @@ export function makeFieldRow(fieldKey, value = '', hideLabel = false) {
 }
 
 export function makeToggleRow({ checkClass, checked = false, icon = '', labelText, subEl = null }) {
-  const wrap  = document.createElement('div');
+  const wrap = document.createElement('div');
   wrap.className = 'action-sub-event';
   const label = document.createElement('label');
   label.className = 'action-sub-toggle';
-  const cb    = document.createElement('input');
+  const cb = document.createElement('input');
   cb.type = 'checkbox';
   cb.className = `action-sub-check ${checkClass}`;
   if (checked) cb.checked = true;
-  const span  = document.createElement('span');
+  const span = document.createElement('span');
   span.className = 'action-sub-toggle-text';
   span.innerHTML = icon ? `${icon} ${escapeHtml(labelText)}` : escapeHtml(labelText);
   label.append(cb, span);

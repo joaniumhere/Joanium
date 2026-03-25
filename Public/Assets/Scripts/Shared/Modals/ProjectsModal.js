@@ -28,8 +28,8 @@ function formatRelativeDate(isoString) {
 
 export function initProjectsModal({
   onProjectOpen = async () => false,
-  onProjectRemoved = async () => {},
-  onClose = () => {},
+  onProjectRemoved = async () => { },
+  onClose = () => { },
 } = {}) {
   const backdrop = document.getElementById('projects-modal-backdrop');
   const closeBtn = document.getElementById('projects-close');
@@ -59,8 +59,8 @@ export function initProjectsModal({
 
   if (!backdrop || !listEl) {
     return {
-      open() {},
-      close() {},
+      open() { },
+      close() { },
       isOpen: () => false,
       refreshProjects: async () => [],
     };
@@ -176,7 +176,7 @@ export function initProjectsModal({
       item.querySelector('.project-delete-btn')?.addEventListener('click', async () => {
         const confirmed = await showConfirm(
           'Remove project',
-          `Remove "${project.name}" from Romelson and delete its saved project chats? Your local folder will not be touched.`
+          `Remove "${project.name}" from Evelina and delete its saved project chats? Your local folder will not be touched.`
         );
         if (!confirmed) return;
 

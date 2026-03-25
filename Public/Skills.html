@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="Assets/Styles/SkillsPage.css" />
   <script src="Assets/Scripts/Features/Themes/ThemeInit.js"></script>
 </head>
+
 <body>
 
   <div id="app">
@@ -14,23 +16,26 @@
     <div id="titlebar">
       <div id="titlebar-drag">
         <svg class="titlebar-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.5"/>
+          <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.5" />
         </svg>
-        <span class="titlebar-name">Romelson</span>
+        <span class="titlebar-name">Evelina</span>
       </div>
       <div id="titlebar-controls">
         <button id="btn-minimize" title="Minimize">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="5" y1="10" x2="15" y2="10" />
           </svg>
         </button>
         <button id="btn-maximize" title="Maximize / Restore">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <rect x="5" y="5" width="10" height="10" rx="2" ry="2" />
           </svg>
         </button>
         <button id="btn-close" title="Close">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="6" y1="6" x2="14" y2="14" />
             <line x1="14" y1="6" x2="6" y2="14" />
           </svg>
@@ -53,7 +58,8 @@
             <div class="skills-page-header">
               <div class="skills-page-header-copy">
                 <h2>Skills</h2>
-                <p>Enable skills to add specialised capabilities to every chat. Disabled skills are never injected into the AI context.</p>
+                <p>Enable skills to add specialised capabilities to every chat. Disabled skills are never injected into
+                  the AI context.</p>
               </div>
 
               <div class="skills-header-actions">
@@ -62,7 +68,8 @@
                 <span id="skills-enabled-count" class="skills-enabled-count">None active</span>
 
                 <!-- Bulk controls -->
-                <button id="skills-enable-all"  class="skills-bulk-btn skills-bulk-btn--enable" disabled>Enable all</button>
+                <button id="skills-enable-all" class="skills-bulk-btn skills-bulk-btn--enable" disabled>Enable
+                  all</button>
                 <button id="skills-disable-all" class="skills-bulk-btn" disabled>Disable all</button>
               </div>
             </div>
@@ -71,14 +78,14 @@
             <div id="skills-search-wrapper" class="page-search-wrapper" hidden>
               <div class="page-search-box">
                 <svg class="page-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <circle cx="11" cy="11" r="7"/>
-                  <path d="M16.5 16.5L21 21" stroke-linecap="round"/>
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M16.5 16.5L21 21" stroke-linecap="round" />
                 </svg>
-                <input type="text" id="skills-search" class="page-search-input"
-                  placeholder="Search skills…" autocomplete="off" spellcheck="false"/>
+                <input type="text" id="skills-search" class="page-search-input" placeholder="Search skills…"
+                  autocomplete="off" spellcheck="false" />
                 <button id="skills-search-clear" class="page-search-clear" type="button" aria-label="Clear search">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+                    <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" />
                   </svg>
                 </button>
               </div>
@@ -89,11 +96,12 @@
               <div class="page-empty-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                        stroke-linecap="round" stroke-linejoin="round"/>
+                    stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </div>
               <h3>No skills yet</h3>
-              <p>Add <code>.md</code> files to your <code>Skills/</code> folder with <code>name:</code>, <code>trigger:</code>, and <code>description:</code> frontmatter to get started.</p>
+              <p>Add <code>.md</code> files to your <code>Skills/</code> folder with <code>name:</code>,
+                <code>trigger:</code>, and <code>description:</code> frontmatter to get started.</p>
             </div>
 
             <!-- Grid -->
@@ -114,14 +122,14 @@
           <div class="skill-modal-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                    stroke-linecap="round" stroke-linejoin="round"/>
+                stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
           <div class="skill-modal-name" id="skill-modal-name">Skill</div>
         </div>
         <button class="settings-modal-close" id="skill-modal-close" type="button" aria-label="Close">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
           </svg>
         </button>
       </div>
@@ -133,4 +141,5 @@
 
   <script type="module" src="Assets/Scripts/Pages/Skills.js"></script>
 </body>
+
 </html>

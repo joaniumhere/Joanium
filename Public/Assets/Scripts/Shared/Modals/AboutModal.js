@@ -1,5 +1,5 @@
 const SPONSOR_URL = 'https://github.com/sponsors/withinjoel';
-const AUTHOR_URL  = 'https://joeljolly.vercel.app';
+const AUTHOR_URL = 'https://joeljolly.vercel.app';
 
 // HTML TEMPLATE
 function buildHTML() {
@@ -24,7 +24,7 @@ function buildHTML() {
             </svg>
           </div>
 
-          <div class="about-app-name" id="about-modal-title">Romelson</div>
+          <div class="about-app-name" id="about-modal-title">Evelina</div>
           <div class="about-version" id="about-version">v1.0.0</div>
 
           <p class="about-description">
@@ -74,9 +74,9 @@ export function initAboutModal() {
   }
 
   // 2. Element refs
-  const backdrop   = document.getElementById('about-modal-backdrop');
-  const closeBtn   = document.getElementById('about-modal-close');
-  const versionEl  = document.getElementById('about-version');
+  const backdrop = document.getElementById('about-modal-backdrop');
+  const closeBtn = document.getElementById('about-modal-close');
+  const versionEl = document.getElementById('about-version');
   const sponsorBtn = document.getElementById('about-sponsor-btn');
   const authorLink = document.getElementById('about-author-link');
 

@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Executors/ReviewExecutor.js
+// Evelina — Features/Chat/Executors/ReviewExecutor.js
 // Handles PR diff fetching and posting AI-generated code reviews.
 
 const HANDLED = new Set([
@@ -13,7 +13,7 @@ const MAX_DIFF_CHARS = 28_000; // keep diffs within context window budget
 
 export function handles(toolName) { return HANDLED.has(toolName); }
 
-export async function execute(toolName, params, onStage = () => {}) {
+export async function execute(toolName, params, onStage = () => { }) {
   switch (toolName) {
 
     case 'github_get_pr_diff': {

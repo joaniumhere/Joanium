@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Tools/Index.js
+// Evelina — Features/Chat/Tools/Index.js
 // Aggregates static tool definitions and appends dynamic MCP tools at runtime.
 
 import { GMAIL_TOOLS } from './GmailTools.js';

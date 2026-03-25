@@ -81,12 +81,12 @@ app.whenReady().then(async () => {
   automationEngine.start();
   agentsEngine.start();
 
-  const startPage = isFirstRun() ? Paths.SETUP_PAGE : Paths.MAIN_PAGE;
+  const startPage = isFirstRun() ? Paths.SETUP_PAGE : Paths.CHAT_PAGE;
   createWindow(startPage);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0)
-      createWindow(isFirstRun() ? Paths.SETUP_PAGE : Paths.MAIN_PAGE);
+      createWindow(isFirstRun() ? Paths.SETUP_PAGE : Paths.CHAT_PAGE);
   });
 });
 

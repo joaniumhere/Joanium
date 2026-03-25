@@ -1,4 +1,4 @@
-// Romelson — Pages/Automations/grid.js
+// Evelina — Pages/Automations/grid.js
 // Renders the automation card grid and handles toggle interactions.
 // Calls onEdit / onConfirmDelete callbacks provided via initGrid().
 
@@ -13,25 +13,25 @@ let _onConfirmDelete = () => { };
 
 /** Wire up the grid with action callbacks before calling renderAutomations(). */
 export function initGrid({ onEdit, onConfirmDelete }) {
-    _onEdit = onEdit;
-    _onConfirmDelete = onConfirmDelete;
+  _onEdit = onEdit;
+  _onConfirmDelete = onConfirmDelete;
 }
 
 export function renderAutomations() {
-    if (!state.automations.length) {
-        emptyView.hidden = false;
-        grid.hidden = true;
-        return;
-    }
-    emptyView.hidden = true;
-    grid.hidden = false;
-    grid.innerHTML = '';
+  if (!state.automations.length) {
+    emptyView.hidden = false;
+    grid.hidden = true;
+    return;
+  }
+  emptyView.hidden = true;
+  grid.hidden = false;
+  grid.innerHTML = '';
 
-    state.automations.forEach(auto => {
-        const card = document.createElement('div');
-        card.className = `auto-card${auto.enabled ? '' : ' is-disabled'}`;
-        card.dataset.id = auto.id;
-        card.innerHTML = `
+  state.automations.forEach(auto => {
+    const card = document.createElement('div');
+    card.className = `auto-card${auto.enabled ? '' : ' is-disabled'}`;
+    card.dataset.id = auto.id;
+    card.innerHTML = `
       <div class="auto-card-head">
         <div class="auto-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -78,25 +78,25 @@ export function renderAutomations() {
         </button>
       </div>`;
 
-        card.querySelector('.toggle-input').addEventListener('change', async e => {
-            const enabled = e.target.checked;
-            await window.electronAPI?.toggleAutomation?.(auto.id, enabled);
-            auto.enabled = enabled;
-            card.classList.toggle('is-disabled', !enabled);
-        });
-        card.querySelector('.edit-btn').addEventListener('click', () => _onEdit(auto));
-        card.querySelector('.delete-btn').addEventListener('click', () => _onConfirmDelete(auto.id, auto.name));
-
-        grid.appendChild(card);
+    card.querySelector('.toggle-input').addEventListener('change', async e => {
+      const enabled = e.target.checked;
+      await window.electronAPI?.toggleAutomation?.(auto.id, enabled);
+      auto.enabled = enabled;
+      card.classList.toggle('is-disabled', !enabled);
     });
+    card.querySelector('.edit-btn').addEventListener('click', () => _onEdit(auto));
+    card.querySelector('.delete-btn').addEventListener('click', () => _onConfirmDelete(auto.id, auto.name));
+
+    grid.appendChild(card);
+  });
 }
 
 export async function loadAutomations() {
-    try {
-        const res = await window.electronAPI?.getAutomations?.();
-        state.automations = Array.isArray(res?.automations) ? res.automations : [];
-    } catch {
-        state.automations = [];
-    }
-    renderAutomations();
+  try {
+    const res = await window.electronAPI?.getAutomations?.();
+    state.automations = Array.isArray(res?.automations) ? res.automations : [];
+  } catch {
+    state.automations = [];
+  }
+  renderAutomations();
 }

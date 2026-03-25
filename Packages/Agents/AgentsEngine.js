@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Agents/AgentsEngine.js
+//  Evelina — Packages/Agents/AgentsEngine.js
 // ─────────────────────────────────────────────
 
-import fs   from 'fs';
+import fs from 'fs';
 import path from 'path';
-import os   from 'os';
+import os from 'os';
 import { shouldRunNow } from '../Automation/Scheduling.js';
 
 /* ══════════════════════════════════════════
@@ -25,13 +25,13 @@ async function trackUsage({ provider, model, modelName, inputTokens, outputToken
     if (!Array.isArray(data.records)) data.records = [];
 
     data.records.push({
-      timestamp:    new Date().toISOString(),
-      provider:     provider     ?? 'unknown',
-      model:        model        ?? 'unknown',
-      modelName:    modelName    ?? model ?? 'unknown',
-      inputTokens:  inputTokens  ?? 0,
+      timestamp: new Date().toISOString(),
+      provider: provider ?? 'unknown',
+      model: model ?? 'unknown',
+      modelName: modelName ?? model ?? 'unknown',
+      inputTokens: inputTokens ?? 0,
       outputTokens: outputTokens ?? 0,
-      chatId:       null,
+      chatId: null,
     });
 
     if (data.records.length > 20_000)
@@ -64,8 +64,8 @@ async function callModel(providerData, modelId, systemPrompt, userMessage) {
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message ?? `Anthropic ${res.status}`);
     return {
-      text:         data.content?.find(b => b.type === 'text')?.text ?? '(empty)',
-      inputTokens:  data.usage?.input_tokens  ?? 0,
+      text: data.content?.find(b => b.type === 'text')?.text ?? '(empty)',
+      inputTokens: data.usage?.input_tokens ?? 0,
       outputTokens: data.usage?.output_tokens ?? 0,
     };
   }
@@ -82,8 +82,8 @@ async function callModel(providerData, modelId, systemPrompt, userMessage) {
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error?.message ?? `Google ${res.status}`);
     return {
-      text:         data.candidates?.[0]?.content?.parts?.[0]?.text ?? '(empty)',
-      inputTokens:  data.usageMetadata?.promptTokenCount     ?? 0,
+      text: data.candidates?.[0]?.content?.parts?.[0]?.text ?? '(empty)',
+      inputTokens: data.usageMetadata?.promptTokenCount ?? 0,
       outputTokens: data.usageMetadata?.candidatesTokenCount ?? 0,
     };
   }
@@ -94,22 +94,22 @@ async function callModel(providerData, modelId, systemPrompt, userMessage) {
     headers: {
       'content-type': 'application/json',
       [auth_header]: `${auth_prefix}${api}`,
-      ...(pid === 'openrouter' ? { 'HTTP-Referer': 'https://romelson.app', 'X-Title': 'Romelson' } : {}),
+      ...(pid === 'openrouter' ? { 'HTTP-Referer': 'https://romelson.app', 'X-Title': 'Evelina' } : {}),
     },
     body: JSON.stringify({
       model: modelId,
       max_tokens: providerData.models?.[modelId]?.max_output ?? 2048,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userMessage },
+        { role: 'user', content: userMessage },
       ],
     }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message ?? `API ${res.status}`);
   return {
-    text:         data.choices?.[0]?.message?.content ?? '(empty)',
-    inputTokens:  data.usage?.prompt_tokens     ?? 0,
+    text: data.choices?.[0]?.message?.content ?? '(empty)',
+    inputTokens: data.usage?.prompt_tokens ?? 0,
     outputTokens: data.usage?.completion_tokens ?? 0,
   };
 }
@@ -132,10 +132,10 @@ async function callAIWithFailover(agent, systemPrompt, userMessage, allProviders
     try {
       const result = await callModel(provider, modelId, systemPrompt, userMessage);
       await trackUsage({
-        provider:     provider.provider,
-        model:        modelId,
-        modelName:    provider.models?.[modelId]?.name ?? modelId,
-        inputTokens:  result.inputTokens,
+        provider: provider.provider,
+        model: modelId,
+        modelName: provider.models?.[modelId]?.name ?? modelId,
+        inputTokens: result.inputTokens,
         outputTokens: result.outputTokens,
       });
       return result.text;
@@ -337,8 +337,8 @@ async function collectOneSource(ds, connectorEngine) {
 
     case 'crypto_price': {
       const coins = (ds.coins ?? 'bitcoin,ethereum').split(',').map(c => c.trim().toLowerCase()).join(',');
-      const cur   = (ds.currency ?? 'usd').toLowerCase();
-      const data  = await fetch(
+      const cur = (ds.currency ?? 'usd').toLowerCase();
+      const data = await fetch(
         `https://api.coingecko.com/api/v3/simple/price?ids=${coins}&vs_currencies=${cur}&include_24hr_change=true`
       ).then(r => r.json());
       if (!Object.keys(data).length) return 'EMPTY: No crypto price data returned.';
@@ -388,7 +388,7 @@ async function collectData(job, connectorEngine) {
    OUTPUT EXECUTORS
 ══════════════════════════════════════════ */
 async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
-  const now     = new Date();
+  const now = new Date();
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   switch (output?.type) {
@@ -420,7 +420,7 @@ async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const entry = `\n\n--- ${agent.name} / ${job.name ?? 'Job'} — ${now.toISOString()} ---\n${aiResponse}\n`;
       if (output.append) fs.appendFileSync(output.filePath, entry, 'utf-8');
-      else               fs.writeFileSync(output.filePath, aiResponse, 'utf-8');
+      else fs.writeFileSync(output.filePath, aiResponse, 'utf-8');
       break;
     }
 
@@ -477,11 +477,11 @@ async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
 ══════════════════════════════════════════ */
 export class AgentsEngine {
   constructor(agentsFilePath, connectorEngine = null) {
-    this.filePath        = agentsFilePath;
+    this.filePath = agentsFilePath;
     this.connectorEngine = connectorEngine;
-    this.agents          = [];
-    this._ticker         = null;
-    this._running        = new Map();
+    this.agents = [];
+    this._ticker = null;
+    this._running = new Map();
   }
 
   start() {
@@ -490,9 +490,9 @@ export class AgentsEngine {
     this._ticker = setInterval(() => this._checkScheduled(), 60_000);
   }
 
-  stop()       { if (this._ticker) { clearInterval(this._ticker); this._ticker = null; } }
-  reload()     { this._load(); }
-  getAll()     { return this.agents; }
+  stop() { if (this._ticker) { clearInterval(this._ticker); this._ticker = null; } }
+  reload() { this._load(); }
+  getAll() { return this.agents; }
   getRunning() { return Array.from(this._running.values()); }
 
   /**
@@ -515,7 +515,7 @@ export class AgentsEngine {
     this._load();
     const idx = this.agents.findIndex(a => a.id === agent.id);
     if (idx >= 0) {
-      const existing    = this.agents[idx];
+      const existing = this.agents[idx];
       const updatedJobs = (agent.jobs ?? []).map(newJob => {
         const oldJob = (existing.jobs ?? []).find(j => j.id === newJob.id);
         return oldJob
@@ -558,7 +558,7 @@ export class AgentsEngine {
   _load() {
     try {
       if (fs.existsSync(this.filePath)) {
-        const data  = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
+        const data = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
         this.agents = Array.isArray(data.agents) ? data.agents : [];
       } else {
         this.agents = [];
@@ -598,28 +598,28 @@ export class AgentsEngine {
   }
 
   async _executeJob(agent, job) {
-    const runKey  = `${agent.id}__${job.id}`;
+    const runKey = `${agent.id}__${job.id}`;
     const agentId = agent.id;
-    const jobId   = job.id;
+    const jobId = job.id;
 
     this._running.set(runKey, {
       agentId,
       agentName: agent.name,
       jobId,
-      jobName:   job.name || 'Job',
+      jobName: job.name || 'Job',
       startedAt: new Date().toISOString(),
-      trigger:   job.trigger ?? null,
+      trigger: job.trigger ?? null,
     });
 
     const entry = {
-      timestamp:       new Date().toISOString(),
-      acted:           false,
-      skipped:         false,
+      timestamp: new Date().toISOString(),
+      acted: false,
+      skipped: false,
       nothingToReport: false,
-      error:           null,
-      skipReason:      null,
-      summary:         '',
-      fullResponse:    '',
+      error: null,
+      skipReason: null,
+      summary: '',
+      fullResponse: '',
     };
 
     try {
@@ -645,11 +645,11 @@ export class AgentsEngine {
       ].join('\n');
 
       const aiResponse = await callAIWithFailover(agent, systemPrompt, userMessage, allProviders);
-      const trimmed    = aiResponse.trim();
-      const isNothing  = trimmed === '[NOTHING]' || trimmed.toUpperCase() === '[NOTHING]';
+      const trimmed = aiResponse.trim();
+      const isNothing = trimmed === '[NOTHING]' || trimmed.toUpperCase() === '[NOTHING]';
 
       if (isNothing) {
-        entry.skipped         = true;
+        entry.skipped = true;
         entry.nothingToReport = true;
         const sourceTypes = (Array.isArray(job.dataSources) && job.dataSources.length
           ? job.dataSources
@@ -661,13 +661,13 @@ export class AgentsEngine {
         entry.summary = entry.skipReason;
       } else {
         entry.fullResponse = trimmed;
-        entry.summary      = trimmed.slice(0, 400);
+        entry.summary = trimmed.slice(0, 400);
         await executeOutput(job.output ?? {}, trimmed, agent, job, this.connectorEngine);
         entry.acted = true;
       }
 
     } catch (err) {
-      entry.error   = err.message;
+      entry.error = err.message;
       entry.summary = `Error: ${err.message}`;
       console.error(`[AgentsEngine] "${job.name ?? job.id}" failed:`, err.message);
     } finally {
@@ -676,7 +676,7 @@ export class AgentsEngine {
 
     // Re-find by ID — guards against concurrent _load() replacing this.agents
     const liveAgent = this.agents.find(a => a.id === agentId);
-    const liveJob   = liveAgent?.jobs?.find(j => j.id === jobId);
+    const liveJob = liveAgent?.jobs?.find(j => j.id === jobId);
 
     if (liveAgent && liveJob) {
       if (!Array.isArray(liveJob.history)) liveJob.history = [];

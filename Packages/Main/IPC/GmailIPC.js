@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/IPC/GmailIPC.js
+//  Evelina — Packages/Main/IPC/GmailIPC.js
 // ─────────────────────────────────────────────
 
-import { ipcMain }                                from 'electron';
-import * as GmailAPI                              from '../../Automation/Gmail.js';
+import { ipcMain } from 'electron';
+import * as GmailAPI from '../../Automation/Gmail.js';
 import { startGmailOAuthFlow, setConnectorEngine } from '../../Automation/Gmail.js';
-import { invalidate as invalidateSysPrompt }      from '../Services/SystemPromptService.js';
+import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
 
 export function register(connectorEngine) {
   // Give Gmail.js a reference to connectorEngine so it can

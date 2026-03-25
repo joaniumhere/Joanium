@@ -1,4 +1,4 @@
-// Romelson — Pages/Automations/constants.js
+// Evelina — Pages/Automations/constants.js
 // Static metadata for action types and their form fields.
 
 export const ACTION_META = {

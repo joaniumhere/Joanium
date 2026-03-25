@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Tools/HackerNewsTools.js
+// Evelina — Features/Chat/Tools/HackerNewsTools.js
 export const HACKERNEWS_TOOLS = [
     {
         name: 'get_hacker_news',

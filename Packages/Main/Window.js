@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/Window.js
+//  Evelina — Packages/Main/Window.js
 //  Creates and exposes the single BrowserWindow.
 //  All other modules call get() / loadPage() instead
 //  of holding a direct reference to the window.
@@ -18,19 +18,19 @@ let _win = null;
  */
 export function create(page) {
   _win = new BrowserWindow({
-    width:    1100,
-    height:   720,
+    width: 1100,
+    height: 720,
     minWidth: 1100,
     minHeight: 720,
-    frame:           false,
-    titleBarStyle:   'hidden',
+    frame: false,
+    titleBarStyle: 'hidden',
     backgroundColor: '#1a1a1a',
     show: false,
     webPreferences: {
-      preload:          Paths.PRELOAD,
+      preload: Paths.PRELOAD,
       contextIsolation: true,
-      nodeIntegration:  false,
-      sandbox:          false,
+      nodeIntegration: false,
+      sandbox: false,
     },
   });
 

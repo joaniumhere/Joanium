@@ -1,16 +1,16 @@
 // ─────────────────────────────────────────────
-//  Romelson — Public/Assets/Scripts/Features/Composer/Composer.js
+//  Evelina — Public/Assets/Scripts/Features/Composer/Composer.js
 //  Manages the message input area: auto-resize, attachment
 //  paste, drag-drop, multi-file support (CSV/JSON/YAML/MD/TXT/code).
 // ─────────────────────────────────────────────
 
-import { state }              from '../../Shared/State.js';
-import { generateId }         from '../../Shared/Utils.js';
+import { state } from '../../Shared/State.js';
+import { generateId } from '../../Shared/Utils.js';
 import {
   textarea, sendBtn, attachmentBtn, folderBtn,
   composerAttachments as composerAttachmentsEl,
   composerHint,
-}                             from '../../Shared/DOM.js';
+} from '../../Shared/DOM.js';
 import { modelSupportsInput, getModelInputs } from '../ModelSelector/ModelSelector.js';
 
 /* ══════════════════════════════════════════
@@ -23,42 +23,42 @@ const FILE_TYPES = {
   image: { icon: '🖼️', color: '#7c5dff', label: 'Image' },
 
   // Data files
-  json:   { icon: '{}',  color: '#f59e0b', label: 'JSON'  },
-  csv:    { icon: '⊞',   color: '#22c55e', label: 'CSV'   },
-  tsv:    { icon: '⊟',   color: '#22c55e', label: 'TSV'   },
-  yaml:   { icon: '≡',   color: '#06b6d4', label: 'YAML'  },
-  yml:    { icon: '≡',   color: '#06b6d4', label: 'YAML'  },
-  toml:   { icon: '⚙',   color: '#8b5cf6', label: 'TOML'  },
-  xml:    { icon: '</>',  color: '#f97316', label: 'XML'   },
+  json: { icon: '{}', color: '#f59e0b', label: 'JSON' },
+  csv: { icon: '⊞', color: '#22c55e', label: 'CSV' },
+  tsv: { icon: '⊟', color: '#22c55e', label: 'TSV' },
+  yaml: { icon: '≡', color: '#06b6d4', label: 'YAML' },
+  yml: { icon: '≡', color: '#06b6d4', label: 'YAML' },
+  toml: { icon: '⚙', color: '#8b5cf6', label: 'TOML' },
+  xml: { icon: '</>', color: '#f97316', label: 'XML' },
 
   // Code
-  js:     { icon: 'JS',  color: '#f7df1e', label: 'JavaScript', dark: true },
-  ts:     { icon: 'TS',  color: '#3178c6', label: 'TypeScript'  },
-  jsx:    { icon: 'JSX', color: '#61dafb', label: 'React', dark: true },
-  tsx:    { icon: 'TSX', color: '#61dafb', label: 'React TS', dark: true },
-  py:     { icon: 'PY',  color: '#3776ab', label: 'Python'      },
-  rb:     { icon: 'RB',  color: '#cc342d', label: 'Ruby'        },
-  go:     { icon: 'GO',  color: '#00add8', label: 'Go'          },
-  rs:     { icon: 'RS',  color: '#ce422b', label: 'Rust'        },
-  java:   { icon: '♨',   color: '#ed8b00', label: 'Java'        },
-  cs:     { icon: 'C#',  color: '#68217a', label: 'C#'          },
-  cpp:    { icon: 'C++', color: '#00589d', label: 'C++'         },
-  c:      { icon: 'C',   color: '#00589d', label: 'C'           },
-  php:    { icon: 'PHP', color: '#777bb4', label: 'PHP'         },
-  sh:     { icon: '$_',  color: '#1d1f21', label: 'Shell'       },
-  sql:    { icon: '⊡',   color: '#4479a1', label: 'SQL'         },
+  js: { icon: 'JS', color: '#f7df1e', label: 'JavaScript', dark: true },
+  ts: { icon: 'TS', color: '#3178c6', label: 'TypeScript' },
+  jsx: { icon: 'JSX', color: '#61dafb', label: 'React', dark: true },
+  tsx: { icon: 'TSX', color: '#61dafb', label: 'React TS', dark: true },
+  py: { icon: 'PY', color: '#3776ab', label: 'Python' },
+  rb: { icon: 'RB', color: '#cc342d', label: 'Ruby' },
+  go: { icon: 'GO', color: '#00add8', label: 'Go' },
+  rs: { icon: 'RS', color: '#ce422b', label: 'Rust' },
+  java: { icon: '♨', color: '#ed8b00', label: 'Java' },
+  cs: { icon: 'C#', color: '#68217a', label: 'C#' },
+  cpp: { icon: 'C++', color: '#00589d', label: 'C++' },
+  c: { icon: 'C', color: '#00589d', label: 'C' },
+  php: { icon: 'PHP', color: '#777bb4', label: 'PHP' },
+  sh: { icon: '$_', color: '#1d1f21', label: 'Shell' },
+  sql: { icon: '⊡', color: '#4479a1', label: 'SQL' },
 
   // Markup / config
-  html:   { icon: 'HTML', color: '#e34f26', label: 'HTML'       },
-  css:    { icon: 'CSS',  color: '#1572b6', label: 'CSS'        },
-  scss:   { icon: 'SCSS', color: '#cf649a', label: 'SCSS'       },
-  md:     { icon: '↓',    color: '#083fa1', label: 'Markdown'   },
-  mdx:    { icon: '↓',    color: '#083fa1', label: 'MDX'        },
+  html: { icon: 'HTML', color: '#e34f26', label: 'HTML' },
+  css: { icon: 'CSS', color: '#1572b6', label: 'CSS' },
+  scss: { icon: 'SCSS', color: '#cf649a', label: 'SCSS' },
+  md: { icon: '↓', color: '#083fa1', label: 'Markdown' },
+  mdx: { icon: '↓', color: '#083fa1', label: 'MDX' },
 
   // Text
-  txt:    { icon: '📄',  color: '#6b7280', label: 'Text'        },
-  log:    { icon: '📋',  color: '#6b7280', label: 'Log'         },
-  env:    { icon: '🔑',  color: '#10b981', label: 'Env'         },
+  txt: { icon: '📄', color: '#6b7280', label: 'Text' },
+  log: { icon: '📋', color: '#6b7280', label: 'Log' },
+  env: { icon: '🔑', color: '#10b981', label: 'Env' },
 };
 
 function getFileTypeMeta(filename) {
@@ -86,7 +86,7 @@ function enrichCSV(text, delimiter = ',') {
   try {
     const lines = text.trim().split('\n');
     if (!lines.length) return text;
-    const headers  = parseCSVLine(lines[0], delimiter);
+    const headers = parseCSVLine(lines[0], delimiter);
     const dataRows = lines.slice(1).filter(l => l.trim());
 
     // Build stats
@@ -106,7 +106,7 @@ function enrichCSV(text, delimiter = ',') {
     });
 
     const preview = [lines[0], ...dataRows.slice(0, 5)].join('\n');
-    const note    = dataRows.length > 5
+    const note = dataRows.length > 5
       ? `\n…(${dataRows.length - 5} more rows)`
       : '';
 
@@ -123,7 +123,7 @@ function enrichCSV(text, delimiter = ',') {
 
 function parseCSVLine(line, delimiter = ',') {
   const result = [];
-  let current  = '';
+  let current = '';
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
@@ -175,7 +175,7 @@ function enrichYAML(text) {
 /* ══════════════════════════════════════════
    INTERNAL
 ══════════════════════════════════════════ */
-let _onSend   = () => {};
+let _onSend = () => { };
 let _hintTimer = null;
 
 function getModelName() {
@@ -202,8 +202,8 @@ function updateSendBtn() {
 function showHint(message, tone = 'info', { sticky = false } = {}) {
   if (!composerHint) return;
   clearTimeout(_hintTimer);
-  composerHint.textContent    = message;
-  composerHint.className      = `composer-hint visible ${tone}`;
+  composerHint.textContent = message;
+  composerHint.className = `composer-hint visible ${tone}`;
   composerHint.dataset.sticky = sticky ? 'true' : 'false';
   if (!sticky)
     _hintTimer = window.setTimeout(hideHint, 2800);
@@ -213,8 +213,8 @@ function hideHint(force = false) {
   if (!composerHint) return;
   if (!force && composerHint.dataset.sticky === 'true') return;
   clearTimeout(_hintTimer);
-  composerHint.textContent    = '';
-  composerHint.className      = 'composer-hint';
+  composerHint.textContent = '';
+  composerHint.className = 'composer-hint';
   composerHint.dataset.sticky = 'false';
 }
 
@@ -240,10 +240,10 @@ function autoResize() {
 function buildImageFrame(attachment, className) {
   const frame = document.createElement('div');
   frame.className = className;
-  frame.title     = attachment.name || 'Pasted image';
+  frame.title = attachment.name || 'Pasted image';
   const img = document.createElement('img');
-  img.src     = attachment.dataUrl;
-  img.alt     = attachment.name || 'Pasted image';
+  img.src = attachment.dataUrl;
+  img.alt = attachment.name || 'Pasted image';
   img.loading = 'lazy';
   frame.appendChild(img);
   return frame;
@@ -286,12 +286,12 @@ function buildFileChip(att) {
 function renderAttachments() {
   if (!composerAttachmentsEl) return;
   composerAttachmentsEl.innerHTML = '';
-  composerAttachmentsEl.hidden    = state.composerAttachments.length === 0;
+  composerAttachmentsEl.hidden = state.composerAttachments.length === 0;
 
   state.composerAttachments.forEach(att => {
-    const chip    = document.createElement('div');
+    const chip = document.createElement('div');
     chip.className = 'composer-attachment';
-    chip.title     = att.name || 'Attachment';
+    chip.title = att.name || 'Attachment';
 
     let preview;
     if (att.type === 'image') {
@@ -301,7 +301,7 @@ function renderAttachments() {
     }
 
     const removeBtn = document.createElement('button');
-    removeBtn.type      = 'button';
+    removeBtn.type = 'button';
     removeBtn.className = 'composer-attachment-remove';
     removeBtn.setAttribute('aria-label', `Remove ${att.name || 'attachment'}`);
     removeBtn.textContent = '×';
@@ -324,12 +324,12 @@ function readClipboardImage(item, index) {
     const file = item.getAsFile();
     if (!file) { resolve(null); return; }
     const reader = new FileReader();
-    reader.onload  = () => resolve({
-      id:       generateId('attachment'),
-      type:     'image',
+    reader.onload = () => resolve({
+      id: generateId('attachment'),
+      type: 'image',
       mimeType: file.type || 'image/png',
-      name:     file.name || `Pasted image ${index + 1}`,
-      dataUrl:  String(reader.result ?? ''),
+      name: file.name || `Pasted image ${index + 1}`,
+      dataUrl: String(reader.result ?? ''),
     });
     reader.onerror = () => resolve(null);
     reader.readAsDataURL(file);
@@ -337,7 +337,7 @@ function readClipboardImage(item, index) {
 }
 
 async function handlePaste(event) {
-  const items      = Array.from(event.clipboardData?.items ?? []);
+  const items = Array.from(event.clipboardData?.items ?? []);
   const imageItems = items.filter(i => i.type.startsWith('image/'));
   if (imageItems.length === 0) return;
 
@@ -345,7 +345,7 @@ async function handlePaste(event) {
   const pastedText = event.clipboardData?.getData('text/plain') ?? '';
   if (pastedText) {
     const start = textarea.selectionStart ?? textarea.value.length;
-    const end   = textarea.selectionEnd   ?? start;
+    const end = textarea.selectionEnd ?? start;
     textarea.value = `${textarea.value.slice(0, start)}${pastedText}${textarea.value.slice(end)}`;
     textarea.setSelectionRange(start + pastedText.length, start + pastedText.length);
     autoResize();
@@ -376,10 +376,10 @@ async function handlePaste(event) {
 ══════════════════════════════════════════ */
 export async function addAttachments(files) {
   const newAttachments = [];
-  let rejectedImages   = false;
+  let rejectedImages = false;
 
   for (const file of files) {
-    const ext  = file.name.split('.').pop()?.toLowerCase() ?? 'txt';
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'txt';
     const mime = file.type || '';
 
     // ── Image files ──────────────────────────────────────────────────────
@@ -390,7 +390,7 @@ export async function addAttachments(files) {
       }
       const dataUrl = await new Promise(resolve => {
         const reader = new FileReader();
-        reader.onload  = () => resolve(reader.result);
+        reader.onload = () => resolve(reader.result);
         reader.onerror = () => resolve(null);
         reader.readAsDataURL(file);
       });
@@ -416,9 +416,9 @@ export async function addAttachments(files) {
       continue;
     }
 
-    const lines          = rawText.split('\n').length;
+    const lines = rawText.split('\n').length;
     const enrichedContent = enrichFileContent(file.name, rawText);
-    const meta            = getFileTypeMeta(file.name);
+    const meta = getFileTypeMeta(file.name);
 
     // Build a short summary for the chip subtitle
     let summary = meta.label;
@@ -435,12 +435,12 @@ export async function addAttachments(files) {
     }
 
     newAttachments.push({
-      id:          generateId('attachment'),
-      type:        'file',
-      mimeType:    mime || `text/${ext}`,
-      name:        file.name,
+      id: generateId('attachment'),
+      type: 'file',
+      mimeType: mime || `text/${ext}`,
+      name: file.name,
       textContent: enrichedContent,  // enriched version for AI
-      rawContent:  rawText,          // original for potential re-processing
+      rawContent: rawText,          // original for potential re-processing
       lines,
       summary,
       ext,
@@ -497,8 +497,8 @@ export function syncCapabilities() {
    PUBLIC — RESET
 ══════════════════════════════════════════ */
 export function reset() {
-  textarea.value            = '';
-  textarea.style.height     = 'auto';
+  textarea.value = '';
+  textarea.style.height = 'auto';
   state.composerAttachments = [];
   renderAttachments();
   hideHint(true);
@@ -522,9 +522,9 @@ export function init(onSend) {
   // Attachment button opens native file picker for all supported types
   attachmentBtn?.addEventListener('click', () => {
     const input = Object.assign(document.createElement('input'), {
-      type:     'file',
+      type: 'file',
       multiple: true,
-      accept:   'image/*,.csv,.tsv,.json,.yaml,.yml,.toml,.xml,.txt,.md,.mdx,.log,.env,.sh,.py,.js,.ts,.jsx,.tsx,.vue,.svelte,.rs,.go,.rb,.java,.cs,.cpp,.c,.h,.php,.sql,.graphql,.html,.css,.scss,.less',
+      accept: 'image/*,.csv,.tsv,.json,.yaml,.yml,.toml,.xml,.txt,.md,.mdx,.log,.env,.sh,.py,.js,.ts,.jsx,.tsx,.vue,.svelte,.rs,.go,.rb,.java,.cs,.cpp,.c,.h,.php,.sql,.graphql,.html,.css,.scss,.less',
     });
     input.addEventListener('change', async () => {
       if (input.files?.length) await addAttachments(Array.from(input.files));
@@ -543,7 +543,7 @@ export function init(onSend) {
         updateSendBtn();
       }
     });
-    
+
     // Clear workspace state if user double clicks folder btn
     folderBtn.addEventListener('dblclick', () => {
       if (state.activeProject) return;

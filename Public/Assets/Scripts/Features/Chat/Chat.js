@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  Romelson — Public/Assets/Scripts/Features/Chat/Chat.js
+//  Evelina — Public/Assets/Scripts/Features/Chat/Chat.js
 //  Core chat logic with:
 //    • Streaming responses (SSE, progressive markdown during stream)
 //    • Per-response inline token/cost footer (always on)
@@ -253,7 +253,7 @@ let _userMessagesSinceLastLearn = 0;
 
 function showMemoryIndicator() {
   const existing = document.getElementById('memory-learn-indicator');
-  if (existing) return () => {};
+  if (existing) return () => { };
 
   const el = document.createElement('div');
   el.id = 'memory-learn-indicator';
@@ -632,7 +632,7 @@ function createLiveRow() {
           }
           const text = item.querySelector('.agent-log-text');
           if (text) {
-             text.style.color = success ? 'var(--text-secondary)' : '#ef4444';
+            text.style.color = success ? 'var(--text-secondary)' : '#ef4444';
           }
         }
       };
@@ -994,7 +994,7 @@ export function restoreWelcome() {
   const greeting = welcome.querySelector('.welcome-greeting');
   if (greeting) {
     greeting.style.animation = 'none';
-    greeting.style.opacity   = '1';
+    greeting.style.opacity = '1';
     greeting.style.transform = 'none';
     requestAnimationFrame(() => {
       greeting.style.removeProperty('animation');
@@ -1133,7 +1133,7 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
     bumpScrollBadge();
     setTimeout(updateTimeline, 100);
 
-    attemptMemoryUpdate().catch(() => {});
+    attemptMemoryUpdate().catch(() => { });
 
   } catch (err) {
     _currentAbortController = null;

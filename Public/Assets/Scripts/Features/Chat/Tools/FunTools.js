@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Tools/FunTools.js
+// Evelina — Features/Chat/Tools/FunTools.js
 export const FUN_TOOLS = [
     {
         name: 'get_random_fact',

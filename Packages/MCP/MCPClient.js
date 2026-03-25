@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/MCP/MCPClient.js
+//  Evelina — Packages/MCP/MCPClient.js
 //  Model Context Protocol client.
 //  Supports:
 //    • HTTP transport (POST + SSE response)
@@ -7,14 +7,14 @@
 //  See: https://spec.modelcontextprotocol.io
 // ─────────────────────────────────────────────
 
-import { EventEmitter }      from 'events';
-import { spawn }             from 'child_process';
-import fs                    from 'fs';
-import path                  from 'path';
-import { createInterface }   from 'readline';
+import { EventEmitter } from 'events';
+import { spawn } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { createInterface } from 'readline';
 
 const PROTOCOL_VERSION = '2024-11-05';
-const CLIENT_INFO      = { name: 'Romelson', version: '0.1.0' };
+const CLIENT_INFO = { name: 'Evelina', version: '0.1.0' };
 
 /* ══════════════════════════════════════════
    BASE MCP SESSION
@@ -22,7 +22,7 @@ const CLIENT_INFO      = { name: 'Romelson', version: '0.1.0' };
 class MCPSession extends EventEmitter {
   constructor() {
     super();
-    this._nextId  = 1;
+    this._nextId = 1;
     this._pending = new Map(); // id → { resolve, reject }
   }
 
@@ -53,8 +53,8 @@ class MCPSession extends EventEmitter {
   async initialize() {
     return this._request('initialize', {
       protocolVersion: PROTOCOL_VERSION,
-      capabilities:    { tools: {}, resources: {} },
-      clientInfo:      CLIENT_INFO,
+      capabilities: { tools: {}, resources: {} },
+      clientInfo: CLIENT_INFO,
     });
   }
 
@@ -78,7 +78,7 @@ class MCPSession extends EventEmitter {
 
   // Subclasses implement _send and must call _dispatch on incoming messages
   _send(_msg) { throw new Error('_send() not implemented'); }
-  async close()   { /* override */ }
+  async close() { /* override */ }
 }
 
 /* ══════════════════════════════════════════
@@ -90,9 +90,9 @@ export class StdioMCPSession extends MCPSession {
   constructor({ command, args = [], env = {} }) {
     super();
     this._proc = spawn(command, args, {
-      stdio:   ['pipe', 'pipe', 'pipe'],
-      env:     { ...process.env, ...env },
-      shell:   process.platform === 'win32',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, ...env },
+      shell: process.platform === 'win32',
     });
 
     const rl = createInterface({ input: this._proc.stdout });
@@ -140,11 +140,11 @@ export class HttpMCPSession extends MCPSession {
   }
 
   async _request(method, params = {}) {
-    const id  = this._nextReqId();
+    const id = this._nextReqId();
     const res = await fetch(`${this._url}/mcp`, {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body:    JSON.stringify({ jsonrpc: '2.0', id, method, params }),
+      body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
     });
     if (!res.ok) throw new Error(`MCP HTTP ${res.status}: ${await res.text().catch(() => '')}`);
     const data = await res.json();
@@ -197,7 +197,7 @@ export class MCPRegistry {
   async disconnect(serverId) {
     const entry = this._servers.get(serverId);
     if (!entry) return;
-    await entry.session.close().catch(() => {});
+    await entry.session.close().catch(() => { });
     this._servers.delete(serverId);
     console.log(`[MCP] Disconnected "${entry.meta.name}"`);
   }
@@ -231,13 +231,13 @@ export class MCPRegistry {
     throw new Error(`Tool "${toolName}" not found in any connected MCP server.`);
   }
 
-  getServer(id)   { return this._servers.get(id); }
-  getAll()        { return [...this._servers.values()].map(e => ({ ...e.meta, toolCount: e.tools.length })); }
+  getServer(id) { return this._servers.get(id); }
+  getAll() { return [...this._servers.values()].map(e => ({ ...e.meta, toolCount: e.tools.length })); }
   isConnected(id) { return this._servers.has(id); }
 
   async disconnectAll() {
     for (const id of this._servers.keys()) {
-      await this.disconnect(id).catch(() => {});
+      await this.disconnect(id).catch(() => { });
     }
   }
 }

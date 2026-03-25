@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/IPC/AgentsIPC.js
+//  Evelina — Packages/Main/IPC/AgentsIPC.js
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
 import { loadPage } from '../Window.js';
-import Paths        from '../Paths.js';
+import Paths from '../Paths.js';
 
 export function register(agentsEngine, automationEngine = null) {
 
@@ -26,7 +26,7 @@ export function register(agentsEngine, automationEngine = null) {
   });
 
   ipcMain.handle('get-running-jobs', () => {
-    try   { return { ok: true, running: agentsEngine.getRunning() }; }
+    try { return { ok: true, running: agentsEngine.getRunning() }; }
     catch (err) { return { ok: false, error: err.message, running: [] }; }
   });
 

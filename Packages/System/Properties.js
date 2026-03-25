@@ -1,4 +1,4 @@
-const APP_NAME = 'Romelson';
+const APP_NAME = 'Evelina';
 
 export const Properties = {
   name: APP_NAME,

@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Tools/JokeTools.js
+// Evelina — Features/Chat/Tools/JokeTools.js
 export const JOKE_TOOLS = [
     {
         name: 'get_joke',

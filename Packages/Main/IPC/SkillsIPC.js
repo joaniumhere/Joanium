@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/IPC/SkillsIPC.js
+//  Evelina — Packages/Main/IPC/SkillsIPC.js
 //  Reads skill .md files from Skills/ directory.
 //  Manages per-skill enabled state in Data/Skills.json.
 //  All skills are DISABLED by default.
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
-import fs   from 'fs';
+import fs from 'fs';
 import path from 'path';
 import Paths from '../Paths.js';
 import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
@@ -75,7 +75,7 @@ export function register() {
 
       const skills = files.map(filename => {
         try {
-          const raw  = fs.readFileSync(path.join(Paths.SKILLS_DIR, filename), 'utf-8');
+          const raw = fs.readFileSync(path.join(Paths.SKILLS_DIR, filename), 'utf-8');
           const { meta, body } = parseFrontmatter(raw);
 
           // Skip files that have no name and no body content
@@ -83,8 +83,8 @@ export function register() {
 
           return {
             filename,
-            name:        meta.name        || filename.replace('.md', ''),
-            trigger:     meta.trigger     || '',
+            name: meta.name || filename.replace('.md', ''),
+            trigger: meta.trigger || '',
             description: meta.description || '',
             body,
             raw,

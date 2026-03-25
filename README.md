@@ -1,8 +1,8 @@
-# Romelson
+# Evelina
 
 > One interface. Every AI. Think clearly. Build faster. Create freely.
 
-Romelson is a personal desktop AI platform built on Electron. It brings together multiple AI providers, a powerful automation engine, Gmail and GitHub integrations, custom AI personas, and a skill system — all in a single offline-first app where your data stays on your machine.
+Evelina is a personal desktop AI platform built on Electron. It brings together multiple AI providers, a powerful automation engine, Gmail and GitHub integrations, custom AI personas, and a skill system — all in a single offline-first app where your data stays on your machine.
 
 ---
 
@@ -24,8 +24,8 @@ Romelson is a personal desktop AI platform built on Electron. It brings together
 ```bash
 # Prerequisites: Node.js 18+, npm
 
-git clone https://github.com/withinJoel/Romelson
-cd Romelson
+git clone https://github.com/withinJoel/Evelina
+cd Evelina
 npm install
 npm start
 ```
@@ -37,7 +37,7 @@ On first launch, a setup wizard walks you through adding your API keys. Everythi
 ## Project Layout
 
 ```
-Romelson/
+Evelina/
 ├── App.js                        # Electron main process entry point
 ├── package.json
 │
@@ -52,7 +52,7 @@ Romelson/
 │   └── System/                   # SystemPrompt builder, app properties
 │
 ├── Public/                       # Renderer process (HTML + CSS + JS)
-│   ├── index.html                # Main chat page
+│   ├── index.html                # Landing Page
 │   ├── Automations.html
 │   ├── Skills.html
 │   ├── Personas.html

@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Tools/GmailTools.js
+// Evelina — Features/Chat/Tools/GmailTools.js
 export const GMAIL_TOOLS = [
     {
         name: 'gmail_send_email',

@@ -1,6 +1,6 @@
 # Features
 
-A detailed breakdown of every feature in Romelson.
+A detailed breakdown of every feature in Evelina.
 
 ---
 
@@ -84,7 +84,7 @@ Returns photo URLs, photographer credits, dimensions, and like counts.
 
 ### GitHub (when connected)
 **Tools:** `github_list_repos`, `github_get_issues`, `github_get_pull_requests`, `github_get_file`, `github_get_file_tree`, `github_get_notifications`  
-**Try:** "Show my open PRs" or "Load the README from my main repo" or "What issues are open in withinjoel/Romelson?"
+**Try:** "Show my open PRs" or "Load the README from my main repo" or "What issues are open in withinjoel/Evelina?"
 
 ### Utility Tools
 **Tools:** `calculate_expression`, `convert_units`, `get_time_in_timezone`, `generate_uuid`, `hash_text`, `encode_base64`, `decode_base64`, `format_json`, `convert_text_case`, `get_text_stats`  
@@ -100,7 +100,7 @@ These tools handle local utility tasks without leaving the app: calculations, co
 Schedule sequences of actions to run automatically.
 
 ### Triggers
-- **On startup** — runs every time you open Romelson
+- **On startup** — runs every time you open Evelina
 - **Every N minutes** — interval timer (minimum 1 minute)
 - **Every hour** — at the top of each hour
 - **Daily at time** — once per day at a set time
@@ -180,7 +180,7 @@ See [Personas.md](Personas.md) for the persona file format.
 
 ## Usage Analytics
 
-The Usage page tracks every API call made through Romelson.
+The Usage page tracks every API call made through Evelina.
 
 ### What's Tracked
 Per call: timestamp, provider, model, model name, input tokens, output tokens, chat ID.
@@ -249,4 +249,4 @@ All conversations are automatically saved to `Data/Chats/`. Open the Library (bo
 
 ## Window Controls
 
-Romelson uses a frameless window with custom titlebar controls. The minimize, maximize/restore, and close buttons are in the top-right corner. The drag region is the titlebar area.
+Evelina uses a frameless window with custom titlebar controls. The minimize, maximize/restore, and close buttons are in the top-right corner. The drag region is the titlebar area.

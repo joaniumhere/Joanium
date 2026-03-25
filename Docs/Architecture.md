@@ -1,6 +1,6 @@
 # Architecture
 
-Romelson is an Electron app. Understanding Electron's two-process model is the key to understanding everything else.
+Evelina is an Electron app. Understanding Electron's two-process model is the key to understanding everything else.
 
 ---
 
@@ -147,12 +147,12 @@ The built prompt is **cached for 5 minutes** by `SystemPromptService.js` and inv
 
 ## Multi-Page Architecture
 
-Romelson is not a single-page app. Each page is a separate HTML file loaded into the same `BrowserWindow`:
+Evelina is not a single-page app. Each page is a separate HTML file loaded into the same `BrowserWindow`:
 
 | HTML file | Purpose |
 |---|---|
 | `Setup.html` | First-run onboarding wizard |
-| `index.html` | Main chat interface |
+| `index.html` | Landing Page |
 | `Automations.html` | Automation builder and grid |
 | `Skills.html` | Skills browser |
 | `Personas.html` | Persona selection grid |

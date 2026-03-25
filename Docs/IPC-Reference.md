@@ -1,6 +1,6 @@
 # IPC Reference
 
-Every IPC channel exposed by Romelson. All channels use `ipcRenderer.invoke()` (request/response) unless noted as `ipcRenderer.send()` (fire-and-forget).
+Every IPC channel exposed by Evelina. All channels use `ipcRenderer.invoke()` (request/response) unless noted as `ipcRenderer.send()` (fire-and-forget).
 
 The preload script (`Packages/Electron/Preload.js`) exposes all channels as `window.electronAPI.*` methods. The renderer never calls ipcRenderer directly.
 
@@ -314,7 +314,7 @@ const result = await window.electronAPI.githubGetRepos()
 Returns the content of a file from a repository.
 
 ```typescript
-const result = await window.electronAPI.githubGetFile('withinJoel', 'Romelson', 'README.md')
+const result = await window.electronAPI.githubGetFile('withinJoel', 'Evelina', 'README.md')
 // Returns: { ok: boolean, path, name, content, sha, size, url }
 ```
 
@@ -322,7 +322,7 @@ const result = await window.electronAPI.githubGetFile('withinJoel', 'Romelson', 
 Returns the file tree of a repository.
 
 ```typescript
-const result = await window.electronAPI.githubGetTree('withinJoel', 'Romelson', 'main')
+const result = await window.electronAPI.githubGetTree('withinJoel', 'Evelina', 'main')
 // Returns: { ok: boolean, tree: Array<{ path, type, sha }> }
 ```
 
@@ -330,7 +330,7 @@ const result = await window.electronAPI.githubGetTree('withinJoel', 'Romelson', 
 Returns issues for a repository.
 
 ```typescript
-const result = await window.electronAPI.githubGetIssues('withinJoel', 'Romelson', 'open')
+const result = await window.electronAPI.githubGetIssues('withinJoel', 'Evelina', 'open')
 // Returns: { ok: boolean, issues: Array<issue> }
 ```
 
@@ -338,7 +338,7 @@ const result = await window.electronAPI.githubGetIssues('withinJoel', 'Romelson'
 Returns pull requests for a repository.
 
 ```typescript
-const result = await window.electronAPI.githubGetPRs('withinJoel', 'Romelson', 'open')
+const result = await window.electronAPI.githubGetPRs('withinJoel', 'Evelina', 'open')
 // Returns: { ok: boolean, prs: Array<pr> }
 ```
 
@@ -354,7 +354,7 @@ const result = await window.electronAPI.githubGetNotifications()
 Returns recent commits for a repository.
 
 ```typescript
-const result = await window.electronAPI.githubGetCommits('withinJoel', 'Romelson')
+const result = await window.electronAPI.githubGetCommits('withinJoel', 'Evelina')
 // Returns: { ok: boolean, commits: Array<commit> }
 ```
 
@@ -450,7 +450,7 @@ await window.electronAPI.launchUsage()
 All launch/navigate channels load a new HTML page in the same BrowserWindow:
 
 ```typescript
-await window.electronAPI.launchMain()        // → Public/index.html
+await window.electronAPI.launchMain()        // → Public/Chat.html
 await window.electronAPI.launchAutomations() // → Public/Automations.html
 await window.electronAPI.launchSkills()      // → Public/Skills.html
 await window.electronAPI.launchPersonas()    // → Public/Personas.html

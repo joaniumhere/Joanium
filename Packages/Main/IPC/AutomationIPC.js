@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/IPC/AutomationIPC.js
+//  Evelina — Packages/Main/IPC/AutomationIPC.js
 //  Handlers for automation CRUD + page navigation.
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
 import { loadPage } from '../Window.js';
-import Paths        from '../Paths.js';
+import Paths from '../Paths.js';
 
 /**
  * @param {AutomationEngine} automationEngine
@@ -17,7 +17,7 @@ export function register(automationEngine) {
   });
 
   ipcMain.handle('get-automations', () => {
-    try   { return { ok: true, automations: automationEngine.getAll() }; }
+    try { return { ok: true, automations: automationEngine.getAll() }; }
     catch (err) { return { ok: false, error: err.message, automations: [] }; }
   });
 

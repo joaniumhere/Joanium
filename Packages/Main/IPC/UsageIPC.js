@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/IPC/UsageIPC.js
+//  Evelina — Packages/Main/IPC/UsageIPC.js
 //  Tracks per-request token usage, persists to
 //  Data/Usage.json, and serves the Usage page.
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
-import fs   from 'fs';
+import fs from 'fs';
 import path from 'path';
 import { loadPage } from '../Window.js';
 import Paths from '../Paths.js';
@@ -38,13 +38,13 @@ export function register() {
     try {
       const data = load();
       data.records.push({
-        timestamp:   new Date().toISOString(),
-        provider:    record.provider    ?? 'unknown',
-        model:       record.model       ?? 'unknown',
-        modelName:   record.modelName   ?? record.model ?? 'unknown',
-        inputTokens: record.inputTokens  ?? 0,
-        outputTokens:record.outputTokens ?? 0,
-        chatId:      record.chatId      ?? null,
+        timestamp: new Date().toISOString(),
+        provider: record.provider ?? 'unknown',
+        model: record.model ?? 'unknown',
+        modelName: record.modelName ?? record.model ?? 'unknown',
+        inputTokens: record.inputTokens ?? 0,
+        outputTokens: record.outputTokens ?? 0,
+        chatId: record.chatId ?? null,
       });
       // Keep last 20 000 records (~ months of heavy use)
       if (data.records.length > 20_000)

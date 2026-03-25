@@ -1,4 +1,4 @@
-// Romelson — Pages/Automations/subEvents.js
+// Evelina — Pages/Automations/subEvents.js
 // Appends optional sub-section controls to action field areas.
 
 import { makeFieldRow, makeToggleRow } from './FieldBuilders.js';
@@ -60,7 +60,7 @@ export function appendGmailSendSubs(fieldsEl, data) {
 }
 
 export function appendGithubCheckSubs(fieldsEl, type, data) {
-  const stateWrap   = document.createElement('div');
+  const stateWrap = document.createElement('div');
   stateWrap.className = 'action-sub-cmd-wrap';
   const stateSelect = document.createElement('select');
   stateSelect.className = 'action-type-select';

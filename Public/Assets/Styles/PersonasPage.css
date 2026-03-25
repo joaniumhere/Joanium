@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════
-   PersonasPage.css  —  Romelson Personas page entry point
+   PersonasPage.css  —  Evelina Personas page entry point
    ═══════════════════════════════════════════════════ */
 
 @import './Animations.css';
@@ -20,4 +20,4 @@
 @import './Root.css';
 @import './Personas.css';
 @import './SharedSearchBarSkills&Agents.css';
-@import  './FreeConnectors.css';
+@import './FreeConnectors.css';

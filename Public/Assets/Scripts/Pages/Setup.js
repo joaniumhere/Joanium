@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────
-//  Romelson — SetupPage.js
+//  Evelina — SetupPage.js
 //  First-run onboarding · Splash → Name → Providers → Done
 // ─────────────────────────────────────────────
 

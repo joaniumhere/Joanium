@@ -79,9 +79,9 @@ function buildSkillsBlock() {
 
   const skillDocs = skills.map(s => {
     const lines = [`### Skill: ${s.name}`];
-    if (s.trigger)     lines.push(`**When to use:** ${s.trigger}`);
+    if (s.trigger) lines.push(`**When to use:** ${s.trigger}`);
     if (s.description) lines.push(`**Description:** ${s.description}`);
-    if (s.body)        lines.push('', s.body);
+    if (s.body) lines.push('', s.body);
     return lines.join('\n');
   });
 
@@ -103,9 +103,9 @@ let _country = null;
 async function fetchCountry() {
   if (_country) return _country;
   try {
-    const ctrl  = new AbortController();
+    const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 3000);
-    const res   = await fetch('https://ipapi.co/country_name/', { signal: ctrl.signal });
+    const res = await fetch('https://ipapi.co/country_name/', { signal: ctrl.signal });
     clearTimeout(timer);
     if (res.ok) { _country = (await res.text()).trim(); return _country; }
   } catch { /* optional */ }
@@ -147,20 +147,20 @@ export async function buildSystemPrompt({
   });
 
   /* ── OS & hardware ── */
-  const platform  = process.platform;
-  const osName    = platform === 'darwin' ? 'macOS' : platform === 'win32' ? 'Windows' : 'Linux';
-  const release   = os.release();
+  const platform = process.platform;
+  const osName = platform === 'darwin' ? 'macOS' : platform === 'win32' ? 'Windows' : 'Linux';
+  const release = os.release();
   const totalMemGB = (os.totalmem() / 1_073_741_824).toFixed(1);
-  const cpus      = os.cpus();
-  const cpuModel  = (cpus[0]?.model ?? 'Unknown CPU').replace(/\s+/g, ' ').trim();
-  const cpuCores  = cpus.length;
+  const cpus = os.cpus();
+  const cpuModel = (cpus[0]?.model ?? 'Unknown CPU').replace(/\s+/g, ' ').trim();
+  const cpuCores = cpus.length;
 
   /* ── Country ── */
   const country = await fetchCountry();
 
   /* ── Build ── */
   const L = [];
-  const push  = (...args) => L.push(...args);
+  const push = (...args) => L.push(...args);
   const blank = () => L.push('');
 
   /* ── Opening — persona OR default assistant ── */
@@ -179,9 +179,9 @@ export async function buildSystemPrompt({
     blank();
     push('---');
     blank();
-    push(`You are running inside Romelson, a personal desktop AI platform.`);
+    push(`You are running inside Evelina, a personal desktop AI platform.`);
   } else {
-    push(`You are an intelligent AI assistant running inside Romelson — a personal desktop AI platform built by Joel Jolly.`);
+    push(`You are an intelligent AI assistant running inside Evelina — a personal desktop AI platform built by Joel Jolly.`);
   }
 
   blank();
@@ -193,7 +193,7 @@ export async function buildSystemPrompt({
   push(`- **Hardware:** ${cpuCores}-core CPU (${cpuModel}), ${totalMemGB} GB RAM`);
 
   const connected = [];
-  if (gmailEmail)    connected.push(`Gmail (${gmailEmail})`);
+  if (gmailEmail) connected.push(`Gmail (${gmailEmail})`);
   if (githubUsername) connected.push(`GitHub (@${githubUsername})`);
   if (connected.length) push(`- **Connected services:** ${connected.join(', ')}`);
 
@@ -203,7 +203,7 @@ export async function buildSystemPrompt({
     push(`The user has these repos (most recently updated first):`);
     githubRepos.slice(0, 20).forEach(r => {
       const desc = r.description ? ` — ${r.description}` : '';
-      const lang = r.language    ? ` [${r.language}]`    : '';
+      const lang = r.language ? ` [${r.language}]` : '';
       push(`- \`${r.full_name}\`${desc}${lang}`);
     });
     push(`When the user asks about "my repo" or references a project by name, match it against the list above.`);

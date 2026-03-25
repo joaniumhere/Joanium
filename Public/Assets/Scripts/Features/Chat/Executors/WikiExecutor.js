@@ -1,4 +1,4 @@
-// Romelson — Features/Chat/Executors/WikiExecutor.js
+// Evelina — Features/Chat/Executors/WikiExecutor.js
 import { safeJson } from './utils.js';
 
 const HANDLED = new Set(['search_wikipedia']);

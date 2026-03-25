@@ -1,4 +1,4 @@
-// Romelson — Public/Assets/Scripts/Features/Chat/Agent.js
+// Evelina — Public/Assets/Scripts/Features/Chat/Agent.js
 // Owns planning, failover, and the multi-step tool execution loop.
 
 import { state } from '../../Shared/State.js';
@@ -270,14 +270,14 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
 
   const callPlanHint = plannedToolCalls?.length
     ? [
-        'CALL PLAN — execute these tool calls in order before writing the final answer:',
-        ...plannedToolCalls.map((toolCall, index) => {
-          const params = Object.entries(toolCall.params ?? {})
-            .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
-            .join(', ');
-          return `${index + 1}. ${toolCall.name}(${params})`;
-        }),
-      ].join('\n')
+      'CALL PLAN — execute these tool calls in order before writing the final answer:',
+      ...plannedToolCalls.map((toolCall, index) => {
+        const params = Object.entries(toolCall.params ?? {})
+          .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+          .join(', ');
+        return `${index + 1}. ${toolCall.name}(${params})`;
+      }),
+    ].join('\n')
     : '';
 
   const sysPromptWithPlan = [basePrompt, callPlanHint].filter(Boolean).join('\n\n');

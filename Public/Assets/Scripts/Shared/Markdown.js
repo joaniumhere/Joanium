@@ -1,5 +1,5 @@
 /**
- * Romelson — Shared/Markdown.js
+ * Evelina — Shared/Markdown.js
  *
  * Production-grade, Claude-style Markdown renderer.
  *

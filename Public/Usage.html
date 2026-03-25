@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -21,9 +22,21 @@
       align-items: center;
       gap: 6px;
     }
-    .usage-refresh-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .usage-refresh-btn svg   { width: 13px; height: 13px; }
-    .usage-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .usage-refresh-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .usage-refresh-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .usage-refresh-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
     /* ── Insights strip ── */
     #insights-list {
@@ -31,6 +44,7 @@
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 12px;
     }
+
     .insight-card {
       display: flex;
       align-items: flex-start;
@@ -42,13 +56,50 @@
       animation: cardIn 0.4s var(--ease-out-expo) both;
       transition: border-color var(--transition-fast), transform var(--transition-fast);
     }
-    .insight-card:hover { border-color: color-mix(in srgb,var(--accent) 25%,var(--border)); transform: translateY(-1px); }
-    .insight-icon  { font-size: 20px; flex-shrink: 0; line-height: 1; margin-top: 1px; }
-    .insight-body  { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .insight-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); }
-    .insight-text  { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-    .insight-text strong { color: var(--text-primary); font-weight: 600; }
-    .insight-empty { font-size: 13px; color: var(--text-muted); padding: 16px; }
+
+    .insight-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+      transform: translateY(-1px);
+    }
+
+    .insight-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      line-height: 1;
+      margin-top: 1px;
+    }
+
+    .insight-body {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .insight-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .insight-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .insight-text strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .insight-empty {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 16px;
+    }
 
     /* ── Hourly heatmap ── */
     #heatmap-wrap {
@@ -56,6 +107,7 @@
       grid-template-columns: repeat(24, 1fr);
       gap: 4px;
     }
+
     .heatmap-cell {
       display: flex;
       flex-direction: column;
@@ -63,7 +115,8 @@
       gap: 4px;
       cursor: default;
     }
-    .heatmap-cell > div.heatmap-block {
+
+    .heatmap-cell>div.heatmap-block {
       width: 100%;
       aspect-ratio: 1;
       border-radius: 5px;
@@ -71,7 +124,11 @@
       opacity: var(--cell-opacity, 0.05);
       transition: opacity 0.2s, transform 0.15s;
     }
-    .heatmap-cell:hover > div.heatmap-block { transform: scaleY(1.08); }
+
+    .heatmap-cell:hover>div.heatmap-block {
+      transform: scaleY(1.08);
+    }
+
     .heatmap-label {
       font-size: 8px;
       color: var(--text-muted);
@@ -79,16 +136,19 @@
       white-space: nowrap;
       overflow: hidden;
     }
+
     .heatmap-count {
       font-size: 8.5px;
       color: var(--accent);
       font-weight: 700;
       font-family: var(--font-mono);
     }
+
     /* rebuild heatmap cells properly */
     .heatmap-cell {
       position: relative;
     }
+
     .heatmap-cell::before {
       content: '';
       display: block;
@@ -99,13 +159,18 @@
       opacity: var(--cell-opacity, 0.05);
       transition: opacity 0.2s, transform 0.15s;
     }
-    .heatmap-cell:hover::before { transform: scaleY(1.1); }
+
+    .heatmap-cell:hover::before {
+      transform: scaleY(1.1);
+    }
+
     .heatmap-label {
       font-size: 7.5px;
       color: var(--text-muted);
       font-family: var(--font-mono);
       white-space: nowrap;
     }
+
     .heatmap-count {
       position: absolute;
       top: 2px;
@@ -124,27 +189,47 @@
       flex-direction: column;
       gap: 8px;
     }
+
     .dow-row {
       display: grid;
       grid-template-columns: 36px 1fr 80px 60px;
       align-items: center;
       gap: 10px;
     }
-    .dow-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+
+    .dow-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
     .dow-bar-track {
       height: 8px;
       background: var(--bg-tertiary);
       border-radius: 999px;
       overflow: hidden;
     }
+
     .dow-bar-fill {
       height: 100%;
       border-radius: 999px;
-      background: linear-gradient(90deg, var(--accent), color-mix(in srgb,var(--accent) 60%,#7c5dff));
+      background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #7c5dff));
       transition: width 0.5s var(--ease-out-expo);
     }
-    .dow-stat  { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); text-align: right; }
-    .dow-cost  { font-size: 11px; color: var(--accent); font-family: var(--font-mono); text-align: right; }
+
+    .dow-stat {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      text-align: right;
+    }
+
+    .dow-cost {
+      font-size: 11px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      text-align: right;
+    }
 
     /* ── Cost breakdown table ── */
     #cost-table-body {
@@ -152,6 +237,7 @@
       flex-direction: column;
       gap: 10px;
     }
+
     .cost-row {
       display: grid;
       grid-template-columns: 22px 1fr 120px 100px;
@@ -163,17 +249,75 @@
       border-radius: 12px;
       transition: border-color var(--transition-fast), transform var(--transition-fast);
     }
-    .cost-row:hover { border-color: color-mix(in srgb,var(--accent) 20%,var(--border)); transform: translateX(2px); }
-    .cost-row-rank  { font-size: 11px; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); }
-    .cost-row-info  { min-width: 0; }
-    .cost-row-name  { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cost-row-meta  { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
-    .cost-row-bar-wrap { height: 6px; background: var(--bg-secondary); border-radius: 999px; overflow: hidden; }
-    .cost-row-bar { height: 100%; border-radius: 999px; background: var(--accent); opacity: 0.75; transition: width 0.5s var(--ease-out-expo); }
-    .cost-row-figures { text-align: right; }
-    .cost-row-total { font-size: 13px; font-weight: 600; color: var(--accent); font-family: var(--font-mono); }
-    .cost-row-share { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
-    .cost-empty { font-size: 13px; color: var(--text-muted); padding: 12px 0; }
+
+    .cost-row:hover {
+      border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+      transform: translateX(2px);
+    }
+
+    .cost-row-rank {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .cost-row-info {
+      min-width: 0;
+    }
+
+    .cost-row-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cost-row-meta {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .cost-row-bar-wrap {
+      height: 6px;
+      background: var(--bg-secondary);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .cost-row-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--accent);
+      opacity: 0.75;
+      transition: width 0.5s var(--ease-out-expo);
+    }
+
+    .cost-row-figures {
+      text-align: right;
+    }
+
+    .cost-row-total {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      font-family: var(--font-mono);
+    }
+
+    .cost-row-share {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .cost-empty {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 12px 0;
+    }
 
     /* ── Two-col layout for heatmap + dow ── */
     .usage-two-col {
@@ -182,10 +326,16 @@
       gap: 18px;
       margin-bottom: 18px;
     }
-    @media (max-width: 900px) { .usage-two-col { grid-template-columns: 1fr; } }
+
+    @media (max-width: 900px) {
+      .usage-two-col {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
   <script src="Assets/Scripts/Features/Themes/ThemeInit.js"></script>
 </head>
+
 <body>
 
   <div id="app">
@@ -193,23 +343,26 @@
     <div id="titlebar">
       <div id="titlebar-drag">
         <svg class="titlebar-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.5"/>
+          <path d="M12 2L8 6H4v4L2 12l2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z" stroke-width="1.5" />
         </svg>
-        <span class="titlebar-name">Romelson</span>
+        <span class="titlebar-name">Evelina</span>
       </div>
       <div id="titlebar-controls">
         <button id="btn-minimize" title="Minimize">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="5" y1="10" x2="15" y2="10" />
           </svg>
         </button>
         <button id="btn-maximize" title="Maximize / Restore">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <rect x="5" y="5" width="10" height="10" rx="2" ry="2" />
           </svg>
         </button>
         <button id="btn-close" title="Close">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="6" y1="6" x2="14" y2="14" />
             <line x1="14" y1="6" x2="6" y2="14" />
           </svg>
@@ -240,15 +393,16 @@
               </div>
               <button class="usage-refresh-btn" id="refresh-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M23 4v6h-6" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M1 20v-6h6" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M23 4v6h-6" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M1 20v-6h6" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
                 Refresh
               </button>
               <button class="usage-clear-btn" id="clear-usage-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 Clear data
               </button>
@@ -339,4 +493,5 @@
 
   <script type="module" src="Assets/Scripts/Pages/Usage.js"></script>
 </body>
+
 </html>

@@ -1,13 +1,13 @@
 // ─────────────────────────────────────────────
-//  Romelson — Packages/Main/IPC/MCPIPC.js
+//  Evelina — Packages/Main/IPC/MCPIPC.js
 //  IPC handlers for MCP server management.
 //  The MCPRegistry singleton lives in the main process
 //  and is shared across all chat windows.
 // ─────────────────────────────────────────────
 
 import { ipcMain } from 'electron';
-import fs          from 'fs';
-import path        from 'path';
+import fs from 'fs';
+import path from 'path';
 import { MCPRegistry } from '../../MCP/MCPClient.js';
 import Paths from '../Paths.js';
 
@@ -50,7 +50,7 @@ export function register() {
 
   /* List all configured servers + connection status */
   ipcMain.handle('mcp-list-servers', () => {
-    const configs  = loadServerConfigs();
+    const configs = loadServerConfigs();
     const statuses = registry.getAll();
     return configs.map(cfg => ({
       ...cfg,
@@ -62,9 +62,9 @@ export function register() {
   /* Add or update a server config (does not connect) */
   ipcMain.handle('mcp-save-server', (_e, serverConfig) => {
     const configs = loadServerConfigs();
-    const idx     = configs.findIndex(c => c.id === serverConfig.id);
+    const idx = configs.findIndex(c => c.id === serverConfig.id);
     if (idx >= 0) configs[idx] = { ...configs[idx], ...serverConfig };
-    else          configs.push(serverConfig);
+    else configs.push(serverConfig);
     saveServerConfigs(configs);
     return { ok: true };
   });

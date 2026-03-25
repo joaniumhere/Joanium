@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Romelson — Personas page styles
+   Evelina — Personas page styles
 ══════════════════════════════════════════ */
 
 /* ── Page layout ── */
@@ -65,8 +65,17 @@
 }
 
 @keyframes personaDotPulse {
-  0%, 100% { opacity: 1; transform: scale(1);    }
-  50%       { opacity: 0.4; transform: scale(0.75); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
 }
 
 .personas-active-banner-text {
@@ -111,8 +120,8 @@
   position: relative;
   transition:
     border-color var(--transition-fast),
-    transform    var(--transition-fast),
-    box-shadow   var(--transition-mid);
+    transform var(--transition-fast),
+    box-shadow var(--transition-mid);
   animation: messageIn 0.35s var(--ease-out-expo) both;
 }
 
@@ -159,7 +168,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.85);
+  background: rgba(255, 255, 255, 0.85);
 }
 
 /* ── Avatar ── */
@@ -188,11 +197,20 @@
   box-shadow: none;
 }
 
-.persona-card:hover .persona-avatar { transform: scale(1.05); }
-.persona-card.is-active .persona-avatar { box-shadow: 0 10px 28px var(--accent-glow); }
+.persona-card:hover .persona-avatar {
+  transform: scale(1.05);
+}
+
+.persona-card.is-active .persona-avatar {
+  box-shadow: 0 10px 28px var(--accent-glow);
+}
 
 /* ── Persona info ── */
-.persona-info { display: flex; flex-direction: column; gap: 5px; }
+.persona-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 
 .persona-name {
   font-size: 16px;
@@ -259,9 +277,9 @@
   font-weight: 600;
   cursor: pointer;
   transition:
-    transform    var(--transition-fast),
-    box-shadow   var(--transition-mid),
-    filter       var(--transition-fast);
+    transform var(--transition-fast),
+    box-shadow var(--transition-mid),
+    filter var(--transition-fast);
   box-shadow: 0 4px 14px var(--accent-glow);
 }
 
@@ -326,7 +344,10 @@
   transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
-.persona-chat-btn svg { width: 13px; height: 13px; }
+.persona-chat-btn svg {
+  width: 13px;
+  height: 13px;
+}
 
 .persona-chat-btn:hover {
   background: var(--bg-hover);
@@ -335,5 +356,24 @@
 }
 
 /* ── Keyframes ── */
-@keyframes fadeIn    { from { opacity: 0; }                                          to { opacity: 1; } }
-@keyframes messageIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
