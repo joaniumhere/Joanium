@@ -1,17 +1,21 @@
 let _mcpToolNames = new Set();
 let _lastFetch = 0;
+let _refreshPromise = null;
 const CACHE_TTL = 30_000; // 30 s
 
 async function refreshMCPTools() {
-  const now = Date.now();
-  if (now - _lastFetch < CACHE_TTL) return;
-  try {
-    const res = await window.electronAPI?.mcpGetTools?.();
-    if (res?.ok) {
-      _mcpToolNames = new Set((res.tools ?? []).map(t => t.name));
-      _lastFetch = now;
-    }
-  } catch { /* non-fatal */ }
+  if (Date.now() - _lastFetch < CACHE_TTL) return;
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    try {
+      const res = await window.electronAPI?.mcpGetTools?.();
+      if (res?.ok) {
+        _mcpToolNames = new Set((res.tools ?? []).map(t => t.name));
+        _lastFetch = Date.now();
+      }
+    } catch { /* non-fatal */ }
+  })().finally(() => { _refreshPromise = null; });
+  return _refreshPromise;
 }
 
 export async function handles(toolName) {

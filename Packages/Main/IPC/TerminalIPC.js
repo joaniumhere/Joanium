@@ -486,11 +486,15 @@ export function register() {
 
     activePtys.set(pid, child);
 
-    child.stdout.on('data', data => e.sender.send('pty-data', pid, data.toString()));
-    child.stderr.on('data', data => e.sender.send('pty-data', pid, data.toString()));
+    const safeSend = (channel, ...args) => {
+      if (!e.sender.isDestroyed()) e.sender.send(channel, ...args);
+    };
+
+    child.stdout.on('data', data => safeSend('pty-data', pid, data.toString()));
+    child.stderr.on('data', data => safeSend('pty-data', pid, data.toString()));
     child.on('exit', code => {
       activePtys.delete(pid);
-      e.sender.send('pty-exit', pid, code);
+      safeSend('pty-exit', pid, code);
     });
 
     return { ok: true, pid };

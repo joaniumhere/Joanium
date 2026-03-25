@@ -96,13 +96,13 @@ function buildSkillsBlock() {
 let _country = null;
 async function fetchCountry() {
   if (_country) return _country;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 3000);
   try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 3000);
     const res = await fetch('https://ipapi.co/country_name/', { signal: ctrl.signal });
-    clearTimeout(timer);
     if (res.ok) { _country = (await res.text()).trim(); return _country; }
   } catch { /* optional */ }
+  finally { clearTimeout(timer); }
   return null;
 }
 

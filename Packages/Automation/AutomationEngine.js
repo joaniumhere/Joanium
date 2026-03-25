@@ -361,6 +361,7 @@ export class AutomationEngine {
     this.connectorEngine = connectorEngine;
     this.automations     = [];
     this._ticker         = null;
+    this._running        = new Set();
   }
 
   start() {
@@ -455,11 +456,14 @@ export class AutomationEngine {
   _checkScheduled() {
     const now = new Date();
     for (const a of this.automations) {
-      if (a.enabled && shouldRunNow(a, now)) this._execute(a);
+      if (a.enabled && !this._running.has(a.id) && shouldRunNow(a, now)) this._execute(a);
     }
   }
 
   async _execute(automation) {
+    const automationId = automation.id;
+    this._running.add(automationId);
+
     const entry = {
       timestamp: new Date().toISOString(),
       status:    'success',
@@ -476,18 +480,25 @@ export class AutomationEngine {
       entry.summary = actionTypes.length
         ? `Ran: ${actionTypes.join(', ')}`
         : 'Automation executed (no actions)';
-      automation.lastRun = entry.timestamp;
     } catch (err) {
       entry.status  = 'error';
       entry.error   = err.message;
       entry.summary = `Error: ${err.message}`;
       console.error(`[AutomationEngine] Error in "${automation.name}":`, err);
+    } finally {
+      this._running.delete(automationId);
     }
 
-    // Persist history
-    if (!Array.isArray(automation.history)) automation.history = [];
-    automation.history.unshift(entry);
-    if (automation.history.length > 30) automation.history = automation.history.slice(0, 30);
-    this._persist();
+    // Re-find by ID to guard against concurrent _load() replacing this.automations
+    const live = this.automations.find(a => a.id === automationId);
+    if (live) {
+      if (!Array.isArray(live.history)) live.history = [];
+      live.history.unshift(entry);
+      if (live.history.length > 30) live.history = live.history.slice(0, 30);
+      live.lastRun = entry.timestamp;
+      this._persist();
+    } else {
+      console.warn(`[AutomationEngine] Automation ${automationId} not found after run — was it deleted?`);
+    }
   }
 }

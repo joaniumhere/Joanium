@@ -269,12 +269,14 @@ export async function searchEmails(creds, query, maxResults = 10) {
 /* ══════════════════════════════════════════
    SEND EMAIL
 ══════════════════════════════════════════ */
-export async function sendEmail(creds, to, subject, body) {
+export async function sendEmail(creds, to, subject, body, cc = '', bcc = '') {
   const fresh = await getFreshCreds(creds);
 
   // Build a proper RFC 2822 message with UTF-8 encoding
   const message = [
     `To: ${to}`,
+    ...(cc ? [`Cc: ${cc}`] : []),
+    ...(bcc ? [`Bcc: ${bcc}`] : []),
     `Subject: ${subject}`,
     'Content-Type: text/plain; charset=UTF-8',
     'MIME-Version: 1.0',

@@ -262,7 +262,7 @@ async function handleToggle(filename, newEnabled) {
   const result = await window.electronAPI?.toggleSkill?.(filename, newEnabled);
   if (!result?.ok) {
     if (skill) skill.enabled = !newEnabled;
-    updateCounts();
+    render(searchInput?.value?.trim() ?? '');
     console.error('[Skills] Toggle failed:', result?.error);
   }
 }

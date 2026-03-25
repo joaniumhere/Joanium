@@ -114,7 +114,7 @@ async function callAIWithFailover(agent, systemPrompt, userMessage, allProviders
   const candidates = [];
   if (agent.primaryModel?.provider && agent.primaryModel?.modelId) {
     const p = allProviders.find(x => x.provider === agent.primaryModel.provider);
-    if (p) candidates.push({ provider: p, modelId: agent.primaryModel.modelId });
+    if (p?.api?.trim()) candidates.push({ provider: p, modelId: agent.primaryModel.modelId });
   }
   for (const fb of (agent.fallbackModels ?? [])) {
     if (!fb?.provider || !fb?.modelId) continue;
@@ -374,9 +374,14 @@ async function collectData(job, connectorEngine) {
     : (job.dataSource?.type ? [job.dataSource] : []);
   if (!sources.length) return '(no data source configured)';
   if (sources.length === 1) return collectOneSource(sources[0], connectorEngine);
-  const results = await Promise.all(sources.map(s => collectOneSource(s, connectorEngine)));
+  const results = await Promise.allSettled(sources.map(s => collectOneSource(s, connectorEngine)));
   return results
-    .map((text, i) => `=== ${DS_LABELS[sources[i]?.type] ?? `Source ${i + 1}`} ===\n${text}`)
+    .map((result, i) => {
+      const text = result.status === 'fulfilled'
+        ? result.value
+        : `⚠️ Source failed: ${result.reason?.message ?? 'Unknown error'}`;
+      return `=== ${DS_LABELS[sources[i]?.type] ?? `Source ${i + 1}`} ===\n${text}`;
+    })
     .join('\n\n');
 }
 
@@ -585,8 +590,10 @@ export class AgentsEngine {
     for (const agent of this.agents) {
       if (!agent.enabled) continue;
       for (const job of (agent.jobs ?? [])) {
+        const runKey = `${agent.id}__${job.id}`;
         if (
           job.enabled !== false &&
+          !this._running.has(runKey) &&
           shouldRunNow({ trigger: job.trigger, lastRun: job.lastRun ?? null }, now)
         ) this._executeJob(agent, job);
       }
@@ -678,7 +685,7 @@ export class AgentsEngine {
       if (!Array.isArray(liveJob.history)) liveJob.history = [];
       liveJob.history.unshift(entry);
       if (liveJob.history.length > 30) liveJob.history = liveJob.history.slice(0, 30);
-      if (!entry.error) liveJob.lastRun = entry.timestamp;
+      liveJob.lastRun = entry.timestamp;
       this._persist();
     } else {
       console.warn(`[AgentsEngine] Agent/job ${agentId}/${jobId} not found after run — was it deleted?`);

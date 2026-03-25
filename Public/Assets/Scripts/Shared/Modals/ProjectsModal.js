@@ -368,8 +368,14 @@ export function initProjectsModal({
     clearForm();
     setStatus(`Created ${result.project.name}.`, 'success');
     await refreshProjects();
-    const opened = await onProjectOpen(result.project);
-    if (opened) close();
+    try {
+      const opened = await onProjectOpen(result.project);
+      if (opened) close();
+    } catch (err) {
+      setStatus(`Project created but could not open: ${err.message}`, 'error');
+    } finally {
+      if (createBtn) { createBtn.disabled = false; createBtn.textContent = 'Create project'; }
+    }
   }
 
   async function handleEditSave() {

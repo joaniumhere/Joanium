@@ -525,6 +525,7 @@ async function doSendFromState() {
     state.messages.push({ role: 'assistant', content: safeReply, attachments: [] });
     saveCurrentChat();
     bumpScrollBadge();
+    attemptMemoryUpdate().catch(() => { });
   } catch (err) {
     _currentAbortController = null;
     if (err.name === 'AbortError') {
@@ -1285,8 +1286,8 @@ export async function loadChat(chatId, { updateModelLabel, buildModelDropdown, n
     resetComposer();
     showChatView();
     const restored = sanitizeMessagesForUI(chat.messages ?? []);
-    restored.forEach(m => appendMessage(m.role, m.content, false, false, m.attachments));
     state.messages = restored;
+    restored.forEach(m => appendMessage(m.role, m.content, false, false, m.attachments));
     smoothScrollToBottom();
     if (chat.provider && chat.model) {
       const provider = state.providers.find(p => p.provider === chat.provider);
