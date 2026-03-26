@@ -1,50 +1,5 @@
-const PROVIDERS = [
-  {
-    id: 'anthropic',
-    label: 'Claude',
-    company: 'Anthropic',
-    placeholder: 'sk-ant-api03-...',
-    color: '#cc785c',
-    iconPath: 'Assets/Icons/Claude.png',
-    fallback: 'C',
-  },
-  {
-    id: 'openai',
-    label: 'ChatGPT',
-    company: 'OpenAI',
-    placeholder: 'sk-proj-...',
-    color: '#10a37f',
-    iconPath: 'Assets/Icons/ChatGPT.png',
-    fallback: 'GPT',
-  },
-  {
-    id: 'google',
-    label: 'Gemini',
-    company: 'Google',
-    placeholder: 'AIza...',
-    color: '#4285f4',
-    iconPath: 'Assets/Icons/Gemini.png',
-    fallback: 'G',
-  },
-  {
-    id: 'openrouter',
-    label: 'OpenRouter',
-    company: '',
-    placeholder: 'sk-or-v1-...',
-    color: '#9b59b6',
-    iconPath: 'Assets/Icons/OpenRouter.png',
-    fallback: 'OR',
-  },
-  {
-    id: 'mistral',
-    label: 'Mistral',
-    company: '',
-    placeholder: 'sk-or-v1-...',
-    color: '#b6b159ff',
-    iconPath: 'Assets/Icons/Mistral.png',
-    fallback: 'MI',
-  },
-];
+import { PROVIDERS } from './Setup/SetupProviders.js';
+import { initStepController } from './Setup/SetupSteps.js';
 
 /* ── State ── */
 const state = {
@@ -55,28 +10,38 @@ const state = {
 };
 
 /* ── DOM refs ── */
-const stepSplash = document.getElementById('step-splash');
-const stepName = document.getElementById('step-name');
+const stepSplash    = document.getElementById('step-splash');
+const stepName      = document.getElementById('step-name');
 const stepProviders = document.getElementById('step-providers');
-const stepDone = document.getElementById('step-done');
+const stepDone      = document.getElementById('step-done');
 
-const tcCheck = document.getElementById('tc-check');
+const tcCheck        = document.getElementById('tc-check');
 const splashContinue = document.getElementById('splash-continue');
 
-const nameInput = document.getElementById('name-input');
+const nameInput    = document.getElementById('name-input');
 const nameContinue = document.getElementById('name-continue');
 
-const providerGrid = document.getElementById('provider-grid');
-const keysSection = document.getElementById('keys-section');
-const keysContinue = document.getElementById('keys-continue');
+const providerGrid  = document.getElementById('provider-grid');
+const keysSection   = document.getElementById('keys-section');
+const keysContinue  = document.getElementById('keys-continue');
 
 const progressTrack = document.getElementById('progress-track');
-const setupLogo = document.getElementById('setup-logo');
-const progressDots = document.querySelectorAll('.dot'); // 4 dots
-const doneTitle = document.getElementById('done-title');
+const setupLogo     = document.getElementById('setup-logo');
+const progressDots  = document.querySelectorAll('.dot'); // 4 dots
+const doneTitle     = document.getElementById('done-title');
 
 // Step elements in order (index = step number)
 const STEP_ELS = [stepSplash, stepName, stepProviders, stepDone];
+
+/* ── Step controller ── */
+// Wrap the base controller to inject page-specific side-effects (buildProviderGrid on step 2).
+const { goToStep: _baseGoToStep } = initStepController({
+  state, STEP_ELS, setupLogo, progressTrack, progressDots, nameInput, doneTitle,
+});
+function goToStep(n) {
+  _baseGoToStep(n);
+  if (n === 2) buildProviderGrid();
+}
 
 /* ══════════════════════════════════════════
      Particles (splash background)
@@ -165,7 +130,7 @@ function buildProviderGrid() {
 
     const image = card.querySelector('.p-icon-image');
     image.addEventListener('error', () => card.classList.add('icon-missing'));
-    image.addEventListener('load', () => card.classList.remove('icon-missing'));
+    image.addEventListener('load',  () => card.classList.remove('icon-missing'));
     if (image.complete && image.naturalWidth === 0) card.classList.add('icon-missing');
 
     card.addEventListener('click', () => toggleProvider(p.id, card));
@@ -289,76 +254,7 @@ async function saveSetup() {
   }
 }
 
-/* ══════════════════════════════════════════
-     STEP TRANSITIONS
-   ══════════════════════════════════════════ */
-function goToStep(n) {
-  const fromEl = STEP_ELS[state.step];
-  const toEl = STEP_ELS[n];
 
-  // Animate out
-  fromEl.classList.remove('visible');
-  fromEl.classList.add('leaving');
-  setTimeout(() => {
-    fromEl.classList.remove('leaving');
-    fromEl.style.display = 'none';
-  }, 340);
-
-  // Show logo + progress dots when leaving splash
-  if (n >= 1) {
-    setupLogo.style.opacity = '1';
-    setupLogo.style.pointerEvents = 'auto';
-    progressTrack.style.opacity = '1';
-  }
-
-  // Update dots: done = before current, active = current, rest = idle
-  progressDots.forEach((dot, i) => {
-    dot.classList.remove('active', 'done');
-    if (i < n) dot.classList.add('done');
-    if (i === n) dot.classList.add('active');
-  });
-
-  // Animate in
-  toEl.style.display = 'flex';
-  toEl.classList.add('entering');
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      toEl.classList.remove('entering');
-      toEl.classList.add('visible');
-    });
-  });
-
-  state.step = n;
-
-  // Step-specific side-effects
-  if (n === 1) {
-    setTimeout(() => nameInput.focus(), 360);
-  }
-
-  if (n === 2) {
-    buildProviderGrid();
-  }
-
-  if (n === 3) {
-    const first = state.name.split(' ')[0];
-    doneTitle.textContent = `You're all set, ${first} 🎉`;
-    setTimeout(() => {
-      window.electronAPI?.launchMain?.();
-    }, 2200);
-  }
-}
-
-/* ── Init: only splash is visible, everything else hidden ── */
-stepName.style.display = 'none';
-stepProviders.style.display = 'none';
-stepDone.style.display = 'none';
-
-// Logo + dots hidden until we leave splash
-setupLogo.style.opacity = '0';
-setupLogo.style.pointerEvents = 'none';
-setupLogo.style.transition = 'opacity 0.4s ease';
-progressTrack.style.opacity = '0';
-progressTrack.style.transition = 'opacity 0.4s ease';
 
 // Dot 0 (splash) active on load
 progressDots.forEach((dot, i) => {
