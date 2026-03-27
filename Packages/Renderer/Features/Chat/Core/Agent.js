@@ -479,7 +479,20 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
 
       if (success && logHandle?.done) logHandle.done(true);
 
-      if (typeof toolResult === 'string' && toolResult.includes('[TERMINAL:')) {
+      // Rich photo gallery rendering
+      let llmToolResult = toolResult;
+      if (typeof toolResult === 'string' && toolResult.startsWith('[PHOTO_RESULT]')) {
+        try {
+          const parsed = JSON.parse(toolResult.slice('[PHOTO_RESULT]'.length));
+          live.showPhotoGallery?.(parsed);
+          // Give LLM a clean text summary instead of raw JSON
+          const count = parsed.photos?.length ?? 0;
+          const names = (parsed.photos ?? []).slice(0, 3).map(p => `${p.photographer} — "${p.description?.slice(0, 60)}"`).join('; ');
+          llmToolResult = `Found ${count} photos on Unsplash for "${parsed.query}" (${parsed.total?.toLocaleString() ?? '?'} total available). Top results: ${names}. A visual gallery has already been displayed to the user in the chat.`;
+        } catch {
+          // fallback: treat as plain text
+        }
+      } else if (typeof toolResult === 'string' && toolResult.includes('[TERMINAL:')) {
         live.showToolOutput?.(toolResult);
       }
 
@@ -489,7 +502,7 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
 
       loopMessages.push({
         role: 'user',
-        content: buildToolResultContext(name, toolResult, success, remainingPlanned),
+        content: buildToolResultContext(name, llmToolResult, success, remainingPlanned),
         attachments: [],
       });
     }

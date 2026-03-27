@@ -7,7 +7,7 @@ export function handles(toolName) { return HANDLED.has(toolName); }
 export async function execute(toolName, params, onStage = () => { }) {
     if (toolName !== 'search_photos') throw new Error(`PhotoExecutor: unknown tool "${toolName}"`);
 
-    const { query, count = 5, orientation } = params;
+    const { query, count = 10, orientation } = params;
     if (!query) throw new Error('Missing required param: query');
 
     let apiKey = '';
@@ -32,7 +32,7 @@ export async function execute(toolName, params, onStage = () => { }) {
 
     onStage(`📷 Searching Unsplash for "${query}"…`);
 
-    const perPage = Math.min(count, 10);
+    const perPage = Math.min(Math.max(Number(count) || 10, 1), 30);
     const orientParam = orientation ? `&orientation=${orientation}` : '';
     const data = await safeJson(
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}${orientParam}`,
@@ -43,23 +43,22 @@ export async function execute(toolName, params, onStage = () => { }) {
         return `No photos found for "${query}" on Unsplash. Try different keywords.`;
     }
 
-    const photos = data.results.map((p, i) => {
-        const desc = p.description || p.alt_description || 'No description';
-        return [
-            `${i + 1}. ${desc}`,
-            `   📸 By: ${p.user?.name ?? 'Unknown'} (@${p.user?.username ?? '?'})`,
-            `   🔗 Full: ${p.urls?.full ?? p.links?.html}`,
-            `   🖼️ Regular: ${p.urls?.regular}`,
-            `   🔸 Thumb: ${p.urls?.thumb}`,
-            `   ❤️ Likes: ${p.likes ?? 0} | 📐 ${p.width}×${p.height}`,
-        ].join('\n');
-    }).join('\n\n');
+    const photos = data.results.map((p) => ({
+        id: p.id,
+        description: p.description || p.alt_description || 'Photo',
+        thumb: p.urls?.thumb,
+        small: p.urls?.small,
+        regular: p.urls?.regular,
+        full: p.urls?.full,
+        pageUrl: p.links?.html,
+        photographer: p.user?.name ?? 'Unknown',
+        photographerUsername: p.user?.username ?? '',
+        photographerUrl: p.user?.links?.html ?? `https://unsplash.com/@${p.user?.username ?? ''}`,
+        likes: p.likes ?? 0,
+        width: p.width,
+        height: p.height,
+    }));
 
-    return [
-        `📷 Unsplash results for "${query}" (${data.total?.toLocaleString() ?? '?'} total):`,
-        ``,
-        photos,
-        ``,
-        `Source: Unsplash (unsplash.com)`,
-    ].join('\n');
+    const payload = JSON.stringify({ query, total: data.total ?? photos.length, photos });
+    return `[PHOTO_RESULT]${payload}`;
 }
