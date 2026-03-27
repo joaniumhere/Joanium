@@ -75,10 +75,13 @@
 }
 
 .agent-thinking-body {
-  display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 8px 0 0 16px;
+}
+
+.agent-thinking-body:not([hidden]) {
+  display: flex;
 }
 
 .agent-thinking-shell--complete .agent-thinking-dot {
@@ -333,4 +336,3 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-
