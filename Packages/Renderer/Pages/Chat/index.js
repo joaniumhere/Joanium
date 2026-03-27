@@ -33,12 +33,79 @@ import { createEnhanceFeature } from './Features/ChatEnhance.js';
 function getWelcomeTitleText() {
   const rawName = String(state.userName ?? '').trim();
   const firstName = rawName.split(/\s+/)[0];
-  return firstName ? `Welcome, ${firstName}` : 'Welcome';
+  const name = firstName || '';
+
+  const hour = new Date().getHours();
+
+  const timeGreetings = hour >= 5 && hour < 12
+    ? [
+        `Good Morning${name ? `, ${name}` : ''} ☀️`,
+        `Rise and shine${name ? `, ${name}` : ''}!`,
+        `Morning${name ? `, ${name}` : ''}! Ready to get things done?`,
+      ]
+    : hour >= 12 && hour < 17
+    ? [
+        `Good Afternoon${name ? `, ${name}` : ''} 🌤️`,
+        `Hey${name ? ` ${name}` : ''}! Hope your day's going well.`,
+        `Afternoon${name ? `, ${name}` : ''}! What are we building today?`,
+      ]
+    : hour >= 17 && hour < 21
+    ? [
+        `Good Evening${name ? `, ${name}` : ''} 🌇`,
+        `Evening${name ? `, ${name}` : ''}! Wrapping up or just getting started?`,
+        `Hey${name ? ` ${name}` : ''}! How was your day?`,
+      ]
+    : [
+        `Burning the midnight oil${name ? `, ${name}` : ''}? 🌙`,
+        `Up late${name ? `, ${name}` : ''}? Let's make it count.`,
+        `Good night${name ? `, ${name}` : ''} — or morning? 🌌`,
+      ];
+
+  const randomGreetings = name
+    ? [
+        `How's it going, ${name}?`,
+        `What's on your mind, ${name}?`,
+        `Hey ${name}! What can I help with?`,
+        `Welcome back, ${name} 👋`,
+        `Great to see you, ${name}!`,
+        `What are we working on today, ${name}?`,
+        `How's your day treating you, ${name}?`,
+      ]
+    : [
+        `What can I help you with?`,
+        `What's on your mind?`,
+        `Hey! How can I help?`,
+        `Welcome back 👋`,
+        `What are we working on today?`,
+      ];
+
+  const allGreetings = [...timeGreetings, ...randomGreetings];
+  return allGreetings[Math.floor(Math.random() * allGreetings.length)];
 }
 
 function syncWelcomeTitle() {
   const welcomeTitle = document.querySelector('.welcome-title');
   if (welcomeTitle) welcomeTitle.textContent = getWelcomeTitleText();
+}
+
+const SUBTITLES = [
+  'Ask me anything.',
+  'Let\'s build something great.',
+  'Your ideas, supercharged.',
+  'Think it. Type it. Done.',
+  'What\'s the plan today?',
+  'Ready when you are.',
+  'Drop a thought, I\'ll run with it.',
+  'Let\'s get into it.',
+  'Bring your hardest problems.',
+  'Zero judgment. All help.',
+  'Code, write, explore — let\'s go.',
+  'Fast answers. Real results.',
+];
+
+function syncWelcomeSubtitle() {
+  const el = document.getElementById('welcome-subtitle');
+  if (el) el.textContent = SUBTITLES[Math.floor(Math.random() * SUBTITLES.length)];
 }
 
 function restoreChatFromState() {
@@ -74,6 +141,7 @@ export function mount(outlet, { settings, navigate }) {
   // CRITICAL: initDOM() must be called after HTML is injected.
   initDOM();
   syncWelcomeTitle();
+  syncWelcomeSubtitle();
 
   const APP_NAME = 'Evelina';
   document.title = APP_NAME;

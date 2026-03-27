@@ -37,9 +37,7 @@ export function getChatHTML() {
       </svg>
       <h1 class="welcome-title">Welcome</h1>
     </div>
-    <p class="welcome-subtitle">
-      I am your new friend in town
-    </p>
+    <p class="welcome-subtitle" id="welcome-subtitle">Ask me anything.</p>
     <div class="chips welcome-chips" aria-label="Starter prompts">
       <button class="chip" type="button" data-prompt="Summarize this project and point out the top 3 things I should improve next.">Review this project</button>
       <button class="chip" type="button" data-prompt="Help me debug an issue in this app. Ask for the files you need and guide me step by step.">Debug this app</button>
