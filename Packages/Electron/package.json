@@ -1,0 +1,10 @@
+{
+  "name": "@evelina/electron",
+  "private": true,
+  "type": "module",
+  "description": "Electron bridge modules for Evelina.",
+  "main": "./Bridge/Preload.js",
+  "exports": {
+    ".": "./Bridge/Preload.js"
+  }
+}

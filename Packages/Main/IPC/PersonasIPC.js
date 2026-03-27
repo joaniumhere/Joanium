@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import Paths from '../Paths.js';
+import Paths from '../Core/Paths.js';
 import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
 
 function parseFrontmatter(content) {

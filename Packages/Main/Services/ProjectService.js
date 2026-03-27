@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import Paths from '../Paths.js';
+import Paths from '../Core/Paths.js';
 
 const META_FILENAME = 'Project.json';
 const CHATS_DIRNAME = 'Chats';

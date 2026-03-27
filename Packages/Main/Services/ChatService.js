@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import Paths from '../Paths.js';
+import Paths from '../Core/Paths.js';
 import * as ProjectService from './ProjectService.js';
 
 const INTERNAL_ASSISTANT_TOOL_PATTERNS = [

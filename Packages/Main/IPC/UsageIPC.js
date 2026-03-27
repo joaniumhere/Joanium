@@ -1,8 +1,8 @@
 import { ipcMain } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import { loadPage } from '../Window.js';
-import Paths from '../Paths.js';
+import { loadPage } from '../Core/Window.js';
+import Paths from '../Core/Paths.js';
 
 /* ── Helpers ──────────────────────────────── */
 function load() {

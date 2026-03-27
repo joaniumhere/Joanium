@@ -8,7 +8,7 @@
     CRITICAL: Theme must apply BEFORE any CSS loads to prevent flash.
     Inline script runs synchronously before first paint.
   -->
-  <script src = "Assets/Scripts/Features/Themes/ThemeInit.js"></script>
+  <script src="../Packages/Renderer/Features/Themes/index.js"></script>
 
   <!--
     ALL page CSS loaded here upfront.
@@ -67,6 +67,6 @@
 </div><!-- /app -->
 
 <!-- Single entry point. Everything else is lazy-loaded per page. -->
-<script type="module" src="Assets/Scripts/Main.js"></script>
+<script type="module" src="../Packages/Renderer/Application/Main.js"></script>
 </body>
 </html>

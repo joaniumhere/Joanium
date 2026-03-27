@@ -32,7 +32,7 @@ Every file has one clear responsibility. The naming convention tells you what it
 ### Imports
 Main process: use ESM (`import`/`export`). The `"type": "module"` in `package.json` applies to the entire project.
 
-Renderer: also ESM. All scripts under `Public/Assets/Scripts/` use `import`/`export`. Pages load entry scripts with `<script type="module">`.
+Renderer: also ESM. All scripts under `Packages/Renderer/` use `import`/`export`. HTML files in `Public/` load those entry scripts with `<script type="module">`, and page/feature modules use folder-level `index.js` entrypoints.
 
 ### Error Handling in IPC Handlers
 Every IPC handler follows this pattern:
@@ -66,10 +66,10 @@ import Paths from '../Paths.js'
 Tools are the AI's live-data superpowers. Adding a tool involves four steps.
 
 ### 1. Define the Tool (Tools folder)
-Create or edit a file in `Public/Assets/Scripts/Features/Chat/Tools/`:
+Create or edit a file in `Packages/Renderer/Features/Chat/Tools/`:
 
 ```javascript
-// Public/Assets/Scripts/Features/Chat/Tools/WeatherTools.js
+// Packages/Renderer/Features/Chat/Tools/WeatherTools.js
 export const WEATHER_TOOLS = [
   {
     name: 'get_weather',               // snake_case, unique across all tools
@@ -113,7 +113,7 @@ const CATEGORY_TO_CONNECTOR = {
 ```
 
 ### 3. Write the Executor
-Create a file in `Public/Assets/Scripts/Features/Chat/Executors/`:
+Create a file in `Packages/Renderer/Features/Chat/Executors/`:
 
 ```javascript
 // WeatherExecutor.js
@@ -164,7 +164,7 @@ export async function executeTool(toolName, params, onStage) {
 
 ### 1. Add to `ACTION_META` in `Constants.js`
 ```javascript
-// Public/Assets/Scripts/Pages/Automations/Constants.js
+// Packages/Renderer/Pages/Automations/Constants.js
 my_new_action: { 
   label: '🆕 My New Action', 
   fields: ['url', 'param1'],  // which FIELD_META keys to show
@@ -231,7 +231,7 @@ const result = await window.electronAPI.myNewMethod(arg1, arg2)
 ## Adding a New Page
 
 1. Create `Public/MyPage.html` — copy the titlebar, sidebar, theme-panel, avatar-panel structure from an existing page
-2. Create `Public/Assets/Scripts/Pages/MyPage.js` — import `initSidebar`, `initAboutModal`, `initLibraryModal`, `initSettingsModal`, `WindowControls`
+2. Create `Packages/Renderer/Pages/MyPage/index.js` — import `initSidebar`, `initAboutModal`, `initLibraryModal`, `initSettingsModal`, `WindowControls`
 3. Create `Public/Assets/Styles/MyPagePage.css` — import the shared CSS files (see `SkillsPage.css` as a template)
 4. Add a `MYPAGE_PAGE` path to `Packages/Main/Paths.js`
 5. Add a launch IPC handler in `SetupIPC.js` or a new IPC file

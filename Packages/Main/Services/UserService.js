@@ -1,5 +1,5 @@
 import fs from 'fs';
-import Paths from '../Paths.js';
+import Paths from '../Core/Paths.js';
 
 /* ══════════════════════════════════════════
    DEFAULTS

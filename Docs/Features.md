@@ -40,7 +40,7 @@ Hover over any message (user or assistant) to reveal a **Copy** button.
 
 ## Tools
 
-The AI can call external APIs and built-in utilities from chat. Tools are defined in `Public/Assets/Scripts/Features/Chat/Tools/` and executed in `Executors/`.
+The AI can call external APIs and built-in utilities from chat. Tools are defined in `Packages/Renderer/Features/Chat/Tools/` and executed in `Packages/Renderer/Features/Chat/Executors/`.
 
 ### Weather
 **Tool:** `get_weather`  

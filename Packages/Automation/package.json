@@ -1,0 +1,10 @@
+{
+  "name": "@evelina/automation",
+  "private": true,
+  "type": "module",
+  "description": "Automation engine and action executors for Evelina.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

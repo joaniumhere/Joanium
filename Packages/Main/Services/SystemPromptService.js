@@ -1,7 +1,7 @@
 import fs from 'fs';
-import * as GithubAPI from '../../Automation/Github.js';
-import { buildSystemPrompt } from '../../System/SystemPrompt.js';
-import Paths from '../Paths.js';
+import * as GithubAPI from '../../Automation/Integrations/Github.js';
+import { buildSystemPrompt } from '../../System/Prompting/SystemPrompt.js';
+import Paths from '../Core/Paths.js';
 
 const TTL_MS = 5 * 60_000; // 5 minutes
 

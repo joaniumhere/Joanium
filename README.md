@@ -51,19 +51,21 @@ Evelina/
 │   ├── Connectors/               # ConnectorEngine (credentials, free APIs)
 │   └── System/                   # SystemPrompt builder, app properties
 │
-├── Public/                       # Renderer process (HTML + CSS + JS)
-│   ├── index.html                # Landing Page
+├── Public/                       # Static renderer assets (HTML + CSS)
+│   ├── index.html                # Landing Page shell
 │   ├── Automations.html
 │   ├── Skills.html
 │   ├── Personas.html
 │   ├── Usage.html
 │   ├── Setup.html
 │   └── Assets/
-│       ├── Scripts/
-│       │   ├── Pages/            # Page-level entry scripts
-│       │   ├── Features/         # Feature modules (Chat, ModelSelector, etc.)
-│       │   └── Shared/           # State, DOM refs, utils, modals, sidebar
 │       └── Styles/               # CSS (one file per feature area)
+│
+├── Packages/Renderer/            # Renderer process JavaScript package
+│   ├── Main.js                   # SPA/bootstrap entry point
+│   ├── Pages/                    # Folder-based page modules (`index.js` + local helpers)
+│   ├── Features/                 # Feature modules (Chat, ModelSelector, etc.)
+│   └── Shared/                   # State, DOM refs, utils, modals, sidebar
 │
 ├── Data/                         # All user data (gitignored in prod)
 │   ├── User.json

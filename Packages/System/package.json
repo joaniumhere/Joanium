@@ -1,0 +1,10 @@
+{
+  "name": "@evelina/system",
+  "private": true,
+  "type": "module",
+  "description": "System prompt and shared system metadata modules for Evelina.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

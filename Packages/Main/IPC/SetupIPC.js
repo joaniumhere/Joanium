@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import * as UserService from '../Services/UserService.js';
-import { loadPage } from '../Window.js';
-import Paths from '../Paths.js';
+import { loadPage } from '../Core/Window.js';
+import Paths from '../Core/Paths.js';
 
 export function register() {
   // Persist full user object written by the setup wizard

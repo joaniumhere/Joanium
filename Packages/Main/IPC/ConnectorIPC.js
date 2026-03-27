@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
-import * as GmailAPI from '../../Automation/Gmail.js';
-import * as GithubAPI from '../../Automation/Github.js';
+import * as GmailAPI from '../../Automation/Integrations/Gmail.js';
+import * as GithubAPI from '../../Automation/Integrations/Github.js';
 import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
 
 /**

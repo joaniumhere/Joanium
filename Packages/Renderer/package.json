@@ -1,0 +1,10 @@
+{
+  "name": "@evelina/renderer",
+  "private": true,
+  "type": "module",
+  "description": "Renderer-process JavaScript package for Evelina.",
+  "main": "./Application/Main.js",
+  "exports": {
+    ".": "./Application/Main.js"
+  }
+}

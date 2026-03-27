@@ -12,12 +12,12 @@ import { app, BrowserWindow } from 'electron';
 import fs from 'fs';
 
 // ── Infrastructure ────────────────────────────────────────────────────
-import Paths                from './Packages/Main/Paths.js';
-import { create as createWindow } from './Packages/Main/Window.js';
+import Paths                from './Packages/Main/Core/Paths.js';
+import { create as createWindow } from './Packages/Main/Core/Window.js';
 import { isFirstRun }       from './Packages/Main/Services/UserService.js';
-import { AutomationEngine } from './Packages/Automation/AutomationEngine.js';
-import { ConnectorEngine }  from './Packages/Connectors/ConnectorEngine.js';
-import { AgentsEngine }  from './Packages/Agents/AgentsEngine.js';
+import { AutomationEngine } from './Packages/Automation/Core/AutomationEngine.js';
+import { ConnectorEngine }  from './Packages/Connectors/Core/ConnectorEngine.js';
+import { AgentsEngine }  from './Packages/Agents/Core/AgentsEngine.js';
 
 // ── IPC handler modules ───────────────────────────────────────────────
 import * as SetupIPC      from './Packages/Main/IPC/SetupIPC.js';

@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import * as UserService from '../Services/UserService.js';
 import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
-import Paths from '../Paths.js';
+import Paths from '../Core/Paths.js';
 
 export function register() {
   ipcMain.handle('get-user', () => UserService.readUser());

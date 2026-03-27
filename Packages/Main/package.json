@@ -1,0 +1,10 @@
+{
+  "name": "@evelina/main",
+  "private": true,
+  "type": "module",
+  "description": "Main-process application modules for Evelina.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

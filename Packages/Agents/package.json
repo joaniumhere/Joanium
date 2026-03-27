@@ -1,0 +1,10 @@
+{
+  "name": "@evelina/agents",
+  "private": true,
+  "type": "module",
+  "description": "Agent scheduling and execution modules for Evelina.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

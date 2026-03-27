@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import { get as getWin } from '../Window.js';
+import { get as getWin } from '../Core/Window.js';
 
 export function register() {
   ipcMain.on('window-minimize', () => getWin()?.minimize());

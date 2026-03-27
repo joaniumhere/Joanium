@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import * as UserService from '../Services/UserService.js';
 import * as SystemPromptService from '../Services/SystemPromptService.js';
-import Paths from '../Paths.js';
+import Paths from '../Core/Paths.js';
 
 /**
  * @param {ConnectorEngine} connectorEngine

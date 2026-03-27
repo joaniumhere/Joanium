@@ -1,0 +1,10 @@
+{
+  "name": "@evelina/mcp",
+  "private": true,
+  "type": "module",
+  "description": "Model Context Protocol client modules for Evelina.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@evelina/connectors",
+  "private": true,
+  "type": "module",
+  "description": "Connector integrations and credential management for Evelina.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

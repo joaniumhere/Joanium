@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import * as GithubAPI from '../../Automation/Github.js';
+import * as GithubAPI from '../../Automation/Integrations/Github.js';
 
 export function register(connectorEngine) {
   function creds() { return connectorEngine.getCredentials('github'); }
