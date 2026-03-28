@@ -439,19 +439,19 @@ body {
 
 /* ── Provider grid ── */
 #provider-grid {
-    width: min(100%, 720px);
+    width: min(100%, 780px);
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 15px;
 }
 
 .provider-card {
     position: relative;
-    min-height: 122px;
-    padding: 14px 12px 12px;
+    min-height: 50px;
+    padding: 14px 10px 12px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 92%, white 8%), var(--bg-secondary));
     border: 1.5px solid var(--border);
-    border-radius: 24px;
+    border-radius: 22px;
     appearance: none;
     cursor: pointer;
     display: flex;
@@ -490,7 +490,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .p-check {
@@ -526,22 +526,31 @@ body {
 }
 
 .p-icon {
-    width: 58px;
-    height: 58px;
-    border-radius: 20px;
-    background: color-mix(in srgb, var(--p-color) 13%, transparent);
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--p-color) 18%, transparent),
-        0 10px 20px color-mix(in srgb, var(--p-color) 10%, transparent);
+}
+
+.provider-card[data-icon-frame='soft'] .p-icon,
+.provider-card[data-icon-frame='solid'] .p-icon {
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-color) 20%, transparent);
+}
+
+.provider-card[data-icon-frame='soft'] .p-icon {
+    background: color-mix(in srgb, var(--p-color) 12%, transparent);
+}
+
+.provider-card[data-icon-frame='solid'] .p-icon {
+    background: var(--p-color);
 }
 
 .p-icon-image {
-    width: 32px;
-    height: 32px;
+    width: var(--p-icon-size, 30px);
+    height: var(--p-icon-size, 30px);
     object-fit: contain;
     user-select: none;
     pointer-events: none;
@@ -551,10 +560,15 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.08em;
     color: var(--p-color);
+}
+
+.provider-card[data-provider='lmstudio'] .p-icon-fallback {
+    font-size: 18px;
+    letter-spacing: 0.1em;
 }
 
 .provider-card.icon-missing .p-icon-image {
@@ -581,6 +595,28 @@ body {
 }
 
 /* ── Responsive layout ── */
+@media (max-width: 900px) {
+    #provider-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    #provider-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .provider-card {
+        min-height: 50px;
+    }
+
+    .p-icon {
+        width: 40px;
+        height: 40px;
+    }
+}
+
 @media (max-width: 640px) {
     #provider-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -588,13 +624,13 @@ body {
     }
 
     .provider-card {
-        min-height: 112px;
+        min-height: 50px;
         border-radius: 22px;
     }
 
     .p-icon {
-        width: 54px;
-        height: 54px;
+        width: 40px;
+        height: 40px;
     }
 }
 

@@ -158,10 +158,13 @@ function buildProviderGrid() {
     card.type = 'button';
     card.className = 'provider-card';
     card.dataset.id = provider.id;
+    card.dataset.provider = provider.id;
+    card.dataset.iconFrame = provider.iconFrame || 'none';
     card.title = `${provider.label}${provider.company ? ` by ${provider.company}` : ''}`;
     card.setAttribute('aria-label', card.title);
     card.setAttribute('aria-pressed', String(isSelected));
     card.style.setProperty('--p-color', provider.color);
+    if (provider.iconSize) card.style.setProperty('--p-icon-size', provider.iconSize);
     card.innerHTML = `
       <span class="p-check" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
