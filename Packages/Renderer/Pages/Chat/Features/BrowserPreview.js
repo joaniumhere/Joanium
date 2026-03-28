@@ -5,7 +5,6 @@ import {
   browserPreviewUrl,
   browserPreviewStatus,
   browserPreviewStatusDot,
-  browserPreviewToggleBtn,
 } from '../../../Shared/Core/DOM.js';
 
 const DEFAULT_PREVIEW_STATE = Object.freeze({
@@ -89,18 +88,6 @@ export function createBrowserPreviewFeature() {
 
     setStatusTone(browserPreviewStatusDot, tone);
 
-    if (browserPreviewToggleBtn) {
-      if (!currentState.hasPage) {
-        browserPreviewToggleBtn.textContent = 'Waiting';
-        browserPreviewToggleBtn.disabled = true;
-      } else if (currentState.visible) {
-        browserPreviewToggleBtn.textContent = 'Hide Live View';
-        browserPreviewToggleBtn.disabled = false;
-      } else {
-        browserPreviewToggleBtn.textContent = 'Show Live View';
-        browserPreviewToggleBtn.disabled = false;
-      }
-    }
   }
 
   async function syncBounds() {
@@ -152,19 +139,10 @@ export function createBrowserPreviewFeature() {
     applyState(DEFAULT_PREVIEW_STATE);
   }
 
-  async function handleToggleClick() {
-    if (!window.electronAPI?.browserPreviewSetVisible || !currentState.hasPage) return;
-    const result = await window.electronAPI.browserPreviewSetVisible(!currentState.visible);
-    if (!result?.ok && result?.error) {
-      console.warn('[Chat] Failed to toggle browser preview:', result.error);
-    }
-  }
-
   function handlePreviewState(nextState) {
     applyState(nextState);
   }
 
-  browserPreviewToggleBtn?.addEventListener('click', handleToggleClick);
   window.addEventListener('resize', scheduleBoundsSync);
 
   if (window.visualViewport) {
@@ -189,7 +167,6 @@ export function createBrowserPreviewFeature() {
       cancelAnimationFrame(animationFrameId);
       resizeObserver?.disconnect();
       modalObserver?.disconnect();
-      browserPreviewToggleBtn?.removeEventListener('click', handleToggleClick);
       window.removeEventListener('resize', scheduleBoundsSync);
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', scheduleBoundsSync);

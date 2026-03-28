@@ -1369,6 +1369,24 @@ export class BrowserMCPServer {
     `, false);
   }
 
+  async _getCurrentPageSummary(webContents = null, { includeExcerpt = false, excerptLimit = 240 } = {}) {
+    const activeWebContents = webContents ?? await this._getWebContents();
+    const url = activeWebContents.getURL() || '(no page loaded)';
+    const title = activeWebContents.getTitle() || '(untitled page)';
+    const lines = [
+      `Current title: ${title}`,
+      `Current URL: ${url}`,
+      `Loading: ${activeWebContents.isLoading() ? 'yes' : 'no'}`,
+    ];
+
+    if (includeExcerpt) {
+      const excerpt = await this._getTextExcerpt(excerptLimit);
+      if (excerpt) lines.push(`Visible text: ${excerpt}`);
+    }
+
+    return lines.join('\n');
+  }
+
   async _waitForLoadStop(webContents, timeoutMs = 30000) {
     if (!webContents.isLoading()) return;
 
@@ -1453,8 +1471,9 @@ export class BrowserMCPServer {
     this._preview.setStatus(`Navigating to ${target}`);
     const webContents = await this._preview.loadURL(target);
     const title = webContents.getTitle() || '(untitled page)';
+    const pageSummary = await this._getCurrentPageSummary(webContents, { includeExcerpt: true });
     this._preview.setStatus(`Opened ${title}`);
-    return `Opened ${target}\nTitle: ${title}`;
+    return `Requested URL: ${target}\n${pageSummary}`;
   }
 
   async _snapshot() {
@@ -1518,8 +1537,9 @@ export class BrowserMCPServer {
     } catch (err) {
       if (!/Timed out waiting for navigation/.test(String(err?.message ?? ''))) throw err;
     }
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return `Clicked ${formatElementLine(result.info)}`;
+    return `Clicked ${formatElementLine(result.info)}\n${pageSummary}`;
   }
 
   async _hover(target) {
@@ -1571,6 +1591,7 @@ export class BrowserMCPServer {
 
     const clearFirst = options.clearFirst !== false;
     const pressEnter = Boolean(options.pressEnter);
+    const webContents = await this._getWebContents();
     this._preview.setStatus(`Typing into ${target}`);
 
     const result = await this._execute(`
@@ -1609,8 +1630,17 @@ export class BrowserMCPServer {
     `);
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not type into the requested field.');
+    await wait(150);
+    if (pressEnter) {
+      try {
+        await this._waitForPotentialNavigation(webContents, 1000);
+      } catch (err) {
+        if (!/Timed out waiting for navigation/.test(String(err?.message ?? ''))) throw err;
+      }
+    }
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return `Typed into ${formatElementLine(result.info)}\nValue: ${result.value}`;
+    return `Typed into ${formatElementLine(result.info)}\nValue: ${result.value}\n${pageSummary}`;
   }
 
   async _clear(target) {
@@ -1645,6 +1675,7 @@ export class BrowserMCPServer {
   async _pressKey(key, target = null) {
     if (!key) throw new Error('Key is required.');
 
+    const webContents = await this._getWebContents();
     this._preview.setStatus(`Pressing ${key}`);
     const result = await this._execute(`
       (() => {
@@ -1661,8 +1692,17 @@ export class BrowserMCPServer {
     `);
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not press the requested key.');
+    await wait(150);
+    if (String(key) === 'Enter') {
+      try {
+        await this._waitForPotentialNavigation(webContents, 1000);
+      } catch (err) {
+        if (!/Timed out waiting for navigation/.test(String(err?.message ?? ''))) throw err;
+      }
+    }
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return `Pressed ${key}${result.info?.id ? ` on ${formatElementLine(result.info)}` : ''}`;
+    return `Pressed ${key}${result.info?.id ? ` on ${formatElementLine(result.info)}` : ''}\n${pageSummary}`;
   }
 
   async _selectOption(target, value) {
@@ -2026,8 +2066,9 @@ export class BrowserMCPServer {
     } catch (err) {
       if (!/Timed out waiting for navigation/.test(String(err?.message ?? ''))) throw err;
     }
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return `Submitted via ${result.mode}: ${formatElementLine(result.info)}`;
+    return `Submitted via ${result.mode}: ${formatElementLine(result.info)}\n${pageSummary}`;
   }
 
   async _waitForElement(target, timeoutMs = 15000) {
@@ -2117,9 +2158,10 @@ export class BrowserMCPServer {
     const webContents = await this._getWebContents();
     const timeout = normalizeTimeout(timeoutMs, 15000);
     this._preview.setStatus('Waiting for navigation');
-    const result = await this._waitForPotentialNavigation(webContents, timeout);
+    await this._waitForPotentialNavigation(webContents, timeout);
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return result;
+    return `Navigation finished.\n${pageSummary}`;
   }
 
   async _screenshot(fileName) {
@@ -2136,15 +2178,7 @@ export class BrowserMCPServer {
 
   async _getState() {
     const webContents = await this._getWebContents();
-    const url = webContents.getURL() || '(no page loaded)';
-    const title = webContents.getTitle() || '(untitled page)';
-    const excerpt = await this._getTextExcerpt();
-    return [
-      `Title: ${title}`,
-      `URL: ${url}`,
-      `Loading: ${webContents.isLoading() ? 'yes' : 'no'}`,
-      excerpt ? `Visible text: ${excerpt}` : '',
-    ].filter(Boolean).join('\n');
+    return this._getCurrentPageSummary(webContents, { includeExcerpt: true, excerptLimit: 1200 });
   }
 
   async _goBack() {
@@ -2155,8 +2189,9 @@ export class BrowserMCPServer {
     this._preview.setStatus('Going back');
     webContents.goBack();
     await this._waitForPotentialNavigation(webContents, 15000);
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return 'Navigated back to the previous page.';
+    return `Navigated back to the previous page.\n${pageSummary}`;
   }
 
   async _goForward() {
@@ -2167,8 +2202,9 @@ export class BrowserMCPServer {
     this._preview.setStatus('Going forward');
     webContents.goForward();
     await this._waitForPotentialNavigation(webContents, 15000);
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return 'Navigated forward to the next page.';
+    return `Navigated forward to the next page.\n${pageSummary}`;
   }
 
   async _refresh() {
@@ -2176,8 +2212,9 @@ export class BrowserMCPServer {
     this._preview.setStatus('Refreshing page');
     webContents.reload();
     await this._waitForLoadStop(webContents, 20000);
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return 'Refreshed the current page.';
+    return `Refreshed the current page.\n${pageSummary}`;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2218,8 +2255,9 @@ export class BrowserMCPServer {
     } catch (err) {
       if (!/Timed out waiting for navigation/.test(String(err?.message ?? ''))) throw err;
     }
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return `Double-clicked ${formatElementLine(result.info)}`;
+    return `Double-clicked ${formatElementLine(result.info)}\n${pageSummary}`;
   }
 
   async _rightClick(target) {
@@ -2322,8 +2360,9 @@ export class BrowserMCPServer {
     } catch (err) {
       if (!/Timed out waiting for navigation/.test(String(err?.message ?? ''))) throw err;
     }
+    const pageSummary = await this._getCurrentPageSummary(webContents);
     this._preview.clearStatus();
-    return `Clicked at coordinates (${px}, ${py}).`;
+    return `Clicked at coordinates (${px}, ${py}).\n${pageSummary}`;
   }
 
   // ── Content reading ────────────────────────────────────────────────────────

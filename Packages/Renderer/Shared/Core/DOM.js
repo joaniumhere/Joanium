@@ -22,7 +22,6 @@ export let browserPreviewTitle     = null;
 export let browserPreviewUrl       = null;
 export let browserPreviewStatus    = null;
 export let browserPreviewStatusDot = null;
-export let browserPreviewToggleBtn = null;
 
 // ── Sidebar ───────────────────────────────────
 export let sidebarBtns  = [];
@@ -83,7 +82,6 @@ export function initDOM() {
   browserPreviewUrl       = document.getElementById('browser-preview-url');
   browserPreviewStatus    = document.getElementById('browser-preview-status');
   browserPreviewStatusDot = document.getElementById('browser-preview-status-dot');
-  browserPreviewToggleBtn = document.getElementById('browser-preview-toggle-btn');
 
   sidebarBtns  = Array.from(document.querySelectorAll('.sidebar-btn[data-view]'));
   themeBtn     = document.getElementById('theme-toggle-btn');

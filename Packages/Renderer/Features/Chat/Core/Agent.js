@@ -326,6 +326,8 @@ function buildBrowserAutomationBlock(browserTools = []) {
     'Use them when the user needs real-time browsing, ticket availability checks, reservations, form filling, or other website navigation.',
     'Prefer the official site or a site the user explicitly names.',
     'Verify live details such as dates, prices, availability, passenger details, and policies from the page before answering.',
+    'Never claim that a page, profile, search result, or checkout is visible unless the latest browser tool result explicitly confirms the current URL, title, or visible page text.',
+    'If the current page is not explicit in the latest result, call browser_get_state or browser_snapshot before answering.',
     'Stop and ask for explicit confirmation before any irreversible website action such as a final booking, reservation, checkout, purchase, or payment submission.',
     'If login, CAPTCHA, OTP, 2FA, or payment details are required, ask the user for that step clearly and continue after they reply.',
     listedTools ? `Browser-capable tools currently available:\n${listedTools}` : '',
@@ -432,7 +434,16 @@ function buildToolFailureLabel(name, err) {
   return `${buildToolLogLabel(name)} failed${message ? `: ${message}` : ''}`;
 }
 
-function buildToolResultContext(name, toolResult, success, remainingPlanned) {
+function buildBrowserResultInstruction(toolMeta = null) {
+  if (!looksLikeBrowserAutomationTool(toolMeta)) return '';
+
+  return [
+    'For browser work, only describe the page that is explicitly confirmed in the Result block below.',
+    'If the Result block does not clearly confirm the current URL, title, or visible text, call browser_get_state or browser_snapshot before answering the user.',
+  ].join(' ');
+}
+
+function buildToolResultContext(name, toolResult, success, remainingPlanned, extraInstruction = '') {
   const resultText = stringifyToolResult(toolResult);
   const lines = [
     'Internal execution context for the assistant only. Never quote or mention this block to the user.',
@@ -443,6 +454,11 @@ function buildToolResultContext(name, toolResult, success, remainingPlanned) {
     resultText,
     '',
   ];
+
+  if (extraInstruction) {
+    lines.push(extraInstruction);
+    lines.push('');
+  }
 
   if (remainingPlanned > 0) {
     lines.push(`You still have ${remainingPlanned} more planned background step(s) to execute before answering the user.`);
@@ -760,10 +776,11 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
       const totalPlanned = plannedToolCalls?.length ?? 0;
       executedToolCount += 1;
       const remainingPlanned = totalPlanned > 0 ? Math.max(0, totalPlanned - executedToolCount) : 0;
+      const browserResultInstruction = buildBrowserResultInstruction(toolMeta);
 
       loopMessages.push({
         role: 'user',
-        content: buildToolResultContext(name, llmToolResult, success, remainingPlanned),
+        content: buildToolResultContext(name, llmToolResult, success, remainingPlanned, browserResultInstruction),
         attachments: [],
       });
     }

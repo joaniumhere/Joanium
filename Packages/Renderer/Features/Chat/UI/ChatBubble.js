@@ -576,10 +576,29 @@ const INTERNAL_ASSISTANT_TOOL_PATTERNS = [
   /\[TERMINAL:[^\]]+\]/i,
 ];
 
+function stripAssistantReasoningTags(text) {
+  const value = String(text ?? '');
+  if (!value) return '';
+
+  return value
+    .replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, ' ')
+    .replace(/<thinking\b[^>]*>[\s\S]*?<\/thinking>/gi, ' ')
+    .replace(/<analysis\b[^>]*>[\s\S]*?<\/analysis>/gi, ' ')
+    .replace(/<\/?(?:think|thinking|analysis)\b[^>]*>/gi, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export function normalizeMessage(msg) {
+  const role = msg?.role ?? 'user';
+  const content = role === 'assistant'
+    ? stripAssistantReasoningTags(msg?.content ?? '')
+    : String(msg?.content ?? '');
+
   return {
-    role: msg?.role ?? 'user',
-    content: String(msg?.content ?? ''),
+    role,
+    content,
     attachments: Array.isArray(msg?.attachments)
       ? msg.attachments.filter(a => (a?.type === 'image' || a?.type === 'file') && (typeof a.dataUrl === 'string' || typeof a.textContent === 'string'))
       : [],
@@ -600,7 +619,7 @@ export function isInternalHiddenMessage(msg) {
 }
 
 export function sanitizeAssistantReply(text) {
-  const value = String(text ?? '').trim();
+  const value = stripAssistantReasoningTags(text);
   if (!value) return '(empty response)';
   if (!isInternalAssistantToolLeak(value)) return value;
   return 'I ran into an internal formatting issue while preparing the answer. Please try again.';
