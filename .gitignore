@@ -4,7 +4,6 @@ Data/Chats
 Data/Projects
 Data/Memory.md
 Data/User.md
-Data/Usuage.json
 Data/WindowState.json
 Data/Skills.json
 Data/CustomInstructions.md
@@ -12,5 +11,6 @@ Data/Channels.json
 Data/Connectors.json
 Data/Agents.json
 Data/Automations.json
+Data/Usage.json
 Data/ActivePersona.json
 dist
