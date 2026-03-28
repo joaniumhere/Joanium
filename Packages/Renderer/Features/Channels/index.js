@@ -155,6 +155,110 @@ function buildHTML() {
     </div>
   </div>
 
+  <!-- ── Discord card ── -->
+  <div class="ch-card" id="ch-card-discord">
+    <div class="ch-card-header">
+      <div class="ch-icon ch-icon--discord" style="color:#5865F2;">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+      </div>
+      <div class="ch-title-group">
+        <div class="ch-name">Discord</div>
+        <div class="ch-status">
+          <span class="ch-status-dot" id="ch-dot-discord"></span>
+          <span id="ch-status-discord">Not connected</span>
+        </div>
+      </div>
+      <label class="ch-toggle" title="Enable / disable">
+        <input type="checkbox" class="ch-toggle-input" id="ch-toggle-discord" disabled />
+        <span class="ch-toggle-track"></span>
+      </label>
+    </div>
+
+    <div class="ch-steps" id="ch-steps-discord">
+      <div class="ch-steps-label">Setup via Discord Developer Portal</div>
+      <ol class="ch-steps-list">
+        <li>Create an application in the Discord Developer Portal</li>
+        <li>Enable <strong>Message Content Intent</strong> under Bot settings</li>
+        <li>Copy your Bot Token and the targeted Channel ID below</li>
+      </ol>
+    </div>
+
+    <div class="ch-form">
+      <div class="ch-fields-row">
+        <div class="ch-field">
+          <label class="ch-label" for="ch-dc-channel">Channel ID <span class="ch-req">*</span></label>
+          <input type="text" id="ch-dc-channel" class="ch-input" placeholder="123456789012345678" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="ch-field">
+          <label class="ch-label" for="ch-dc-token">Bot Token <span class="ch-req">*</span></label>
+          <div class="ch-input-wrap">
+            <input type="password" id="ch-dc-token" class="ch-input" placeholder="Your format token" autocomplete="off" spellcheck="false" />
+            <button type="button" class="ch-eye" id="ch-eye-dc" title="Show/hide">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="ch-actions">
+        <button type="button" class="ch-btn-danger" id="ch-disc-discord" hidden>Disconnect</button>
+        <button type="button" class="ch-btn-primary" id="ch-connect-discord">Connect</button>
+      </div>
+      <div class="ch-feedback" id="ch-fb-discord" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- ── Slack card ── -->
+  <div class="ch-card" id="ch-card-slack">
+    <div class="ch-card-header">
+      <div class="ch-icon ch-icon--slack" style="color:#E01E5A;">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.27 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.27a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.124 3.774a2.528 2.528 0 0 1 2.52-2.522 2.528 2.528 0 0 1 2.522 2.522 2.528 2.528 0 0 1-2.522 2.52h-2.52v-2.52zm-1.27 0a2.528 2.528 0 0 1-2.521 2.52 2.528 2.528 0 0 1-2.521-2.52V2.52A2.527 2.527 0 0 1 15.166 0a2.528 2.528 0 0 1 2.521 2.522v6.313zM15.166 18.96a2.528 2.528 0 0 1 2.521 2.52 2.528 2.528 0 0 1-2.521 2.521 2.528 2.528 0 0 1-2.521-2.521v-2.52h2.521zm0-1.27a2.528 2.528 0 0 1-2.521-2.52 2.528 2.528 0 0 1 2.521-2.522h6.313A2.528 2.528 0 0 1 24 15.167a2.528 2.528 0 0 1-2.522 2.521h-6.313z"/></svg>
+      </div>
+      <div class="ch-title-group">
+        <div class="ch-name">Slack</div>
+        <div class="ch-status">
+          <span class="ch-status-dot" id="ch-dot-slack"></span>
+          <span id="ch-status-slack">Not connected</span>
+        </div>
+      </div>
+      <label class="ch-toggle" title="Enable / disable">
+        <input type="checkbox" class="ch-toggle-input" id="ch-toggle-slack" disabled />
+        <span class="ch-toggle-track"></span>
+      </label>
+    </div>
+
+    <div class="ch-steps" id="ch-steps-slack">
+      <div class="ch-steps-label">Setup via Slack App Directory</div>
+      <ol class="ch-steps-list">
+        <li>Create an App in Slack API and install to your workspace</li>
+        <li>Enable chat:write and messaging scopes</li>
+        <li>Get your Bot User OAuth Token and the Channel ID</li>
+      </ol>
+    </div>
+
+    <div class="ch-form">
+      <div class="ch-fields-row">
+        <div class="ch-field">
+          <label class="ch-label" for="ch-sk-channel">Channel ID <span class="ch-req">*</span></label>
+          <input type="text" id="ch-sk-channel" class="ch-input" placeholder="C0123456789" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="ch-field">
+          <label class="ch-label" for="ch-sk-token">Bot Token <span class="ch-req">*</span></label>
+          <div class="ch-input-wrap">
+            <input type="password" id="ch-sk-token" class="ch-input" placeholder="xoxb-your-token" autocomplete="off" spellcheck="false" />
+            <button type="button" class="ch-eye" id="ch-eye-sk" title="Show/hide">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="ch-actions">
+        <button type="button" class="ch-btn-danger" id="ch-disc-slack" hidden>Disconnect</button>
+        <button type="button" class="ch-btn-primary" id="ch-connect-slack">Connect</button>
+      </div>
+      <div class="ch-feedback" id="ch-fb-slack" aria-live="polite"></div>
+    </div>
+  </div>
+
 </div>
   `;
 }
@@ -175,6 +279,14 @@ function wireEvents() {
   });
   document.getElementById('ch-eye-wa')?.addEventListener('click', () => {
     const i = document.getElementById('ch-wa-token');
+    if (i) i.type = i.type === 'password' ? 'text' : 'password';
+  });
+  document.getElementById('ch-eye-dc')?.addEventListener('click', () => {
+    const i = document.getElementById('ch-dc-token');
+    if (i) i.type = i.type === 'password' ? 'text' : 'password';
+  });
+  document.getElementById('ch-eye-sk')?.addEventListener('click', () => {
+    const i = document.getElementById('ch-sk-token');
     if (i) i.type = i.type === 'password' ? 'text' : 'password';
   });
 
@@ -199,7 +311,26 @@ function wireEvents() {
       setFb('whatsapp', err.message, 'error');
     }
   });
-
+  document.getElementById('ch-toggle-discord')?.addEventListener('change', async (e) => {
+    try {
+      await api?.toggleChannel?.('discord', e.target.checked);
+      setStatus('discord', e.target.checked);
+      setFb('discord', e.target.checked ? 'Discord enabled.' : 'Discord paused.', 'success');
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      setFb('discord', err.message, 'error');
+    }
+  });
+  document.getElementById('ch-toggle-slack')?.addEventListener('change', async (e) => {
+    try {
+      await api?.toggleChannel?.('slack', e.target.checked);
+      setStatus('slack', e.target.checked);
+      setFb('slack', e.target.checked ? 'Slack enabled.' : 'Slack paused.', 'success');
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      setFb('slack', err.message, 'error');
+    }
+  });
   // Connect Telegram
   document.getElementById('ch-connect-telegram')?.addEventListener('click', async () => {
     const token = document.getElementById('ch-tg-token')?.value.trim();
@@ -268,14 +399,75 @@ function wireEvents() {
       btn.disabled = false;
     }
   });
+  // Connect Discord
+  document.getElementById('ch-connect-discord')?.addEventListener('click', async () => {
+    const channel = document.getElementById('ch-dc-channel')?.value.trim();
+    const token   = document.getElementById('ch-dc-token')?.value.trim();
+    const tokenSaved = document.getElementById('ch-dc-token')?.placeholder.includes('saved');
 
+    if (!channel) { setFb('discord', 'Enter the Channel ID.', 'error'); return; }
+    if (!token && !tokenSaved) { setFb('discord', 'Enter the Bot Token.', 'error'); return; }
+
+    const btn = document.getElementById('ch-connect-discord');
+    btn.disabled = true;
+    setFb('discord', 'Connecting…', 'info');
+    try {
+      const payload = { channelId: channel };
+      if (token) payload.botToken = token;
+      
+      const r = await api?.saveChannel?.('discord', payload);
+      if (!r?.ok) throw new Error(r?.error ?? 'Save failed');
+      setStatus('discord', true);
+      setToggle('discord', true, true);
+      setStepsVisible('discord', false);
+      setDisconnectVisible('discord', true);
+      setFb('discord', '🎉 Connected! Message your discord channel to test.', 'success');
+    } catch (err) {
+      setFb('discord', `Error: ${err.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Connect Slack
+  document.getElementById('ch-connect-slack')?.addEventListener('click', async () => {
+    const channel = document.getElementById('ch-sk-channel')?.value.trim();
+    const token   = document.getElementById('ch-sk-token')?.value.trim();
+    const tokenSaved = document.getElementById('ch-sk-token')?.placeholder.includes('saved');
+
+    if (!channel) { setFb('slack', 'Enter the Channel ID.', 'error'); return; }
+    if (!token && !tokenSaved) { setFb('slack', 'Enter the Bot Token.', 'error'); return; }
+
+    const btn = document.getElementById('ch-connect-slack');
+    btn.disabled = true;
+    setFb('slack', 'Connecting…', 'info');
+    try {
+      const payload = { channelId: channel };
+      if (token) payload.botToken = token;
+      
+      const r = await api?.saveChannel?.('slack', payload);
+      if (!r?.ok) throw new Error(r?.error ?? 'Save failed');
+      setStatus('slack', true);
+      setToggle('slack', true, true);
+      setStepsVisible('slack', false);
+      setDisconnectVisible('slack', true);
+      setFb('slack', '🎉 Connected! Message your slack channel to test.', 'success');
+    } catch (err) {
+      setFb('slack', `Error: ${err.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
   // Disconnect buttons
   document.getElementById('ch-disc-telegram')?.addEventListener('click', () => disconnectChannel('telegram'));
   document.getElementById('ch-disc-whatsapp')?.addEventListener('click', () => disconnectChannel('whatsapp'));
+  document.getElementById('ch-disc-discord')?.addEventListener('click', () => disconnectChannel('discord'));
+  document.getElementById('ch-disc-slack')?.addEventListener('click', () => disconnectChannel('slack'));
 }
 
 async function disconnectChannel(name) {
-  if (!window.confirm(`Disconnect ${name === 'telegram' ? 'Telegram' : 'WhatsApp'}? The bot will stop replying.`)) return;
+  const titles = { telegram: 'Telegram', whatsapp: 'WhatsApp', discord: 'Discord', slack: 'Slack' };
+  if (!window.confirm(`Disconnect ${titles[name] || name}? The bot will stop replying.`)) return;
   try {
     const r = await api?.removeChannel?.(name);
     if (!r?.ok) throw new Error(r?.error ?? 'Failed');
@@ -285,10 +477,16 @@ async function disconnectChannel(name) {
     setDisconnectVisible(name, false);
     if (name === 'telegram') {
       const t = document.getElementById('ch-tg-token'); if (t) { t.value = ''; t.placeholder = '1234567890:ABCdef\u2026'; }
-    } else {
+    } else if (name === 'whatsapp') {
       const s = document.getElementById('ch-wa-sid');    if (s) { s.value = ''; s.placeholder = 'ACxxxxxxxxxxxxxxxx'; }
       const t = document.getElementById('ch-wa-token');  if (t) { t.value = ''; t.placeholder = 'Your auth token'; }
       const n = document.getElementById('ch-wa-number'); if (n) n.value = '';
+    } else if (name === 'discord') {
+      const c = document.getElementById('ch-dc-channel'); if (c) c.value = '';
+      const t = document.getElementById('ch-dc-token');   if (t) { t.value = ''; t.placeholder = 'Your bot token'; }
+    } else if (name === 'slack') {
+      const c = document.getElementById('ch-sk-channel'); if (c) c.value = '';
+      const t = document.getElementById('ch-sk-token');   if (t) { t.value = ''; t.placeholder = 'xoxb-your-token'; }
     }
     setFb(name, 'Disconnected.', 'info');
   } catch (err) {
@@ -300,7 +498,7 @@ async function disconnectChannel(name) {
    PREFILL  — populate already-saved data
 ────────────────────────────────────────────────────────────── */
 async function prefill() {
-  for (const name of ['telegram', 'whatsapp']) {
+  for (const name of ['telegram', 'whatsapp', 'discord', 'slack']) {
     try {
       const r = await api?.getChannelConfig?.(name);
       if (!r?.ok) continue;
@@ -313,6 +511,14 @@ async function prefill() {
         if (c.accountSidSet) { const el = document.getElementById('ch-wa-sid');   if (el) el.placeholder = 'AC……  (saved)'; }
         if (c.authTokenSet)  { const el = document.getElementById('ch-wa-token'); if (el) el.placeholder = '••••••••  (saved)'; }
         if (c.fromNumber)    { const el = document.getElementById('ch-wa-number'); if (el) el.value = c.fromNumber; }
+      }
+      if (name === 'discord') {
+        if (c.channelId) { const el = document.getElementById('ch-dc-channel'); if (el) el.value = c.channelId; }
+        if (c.botTokenSet) { const el = document.getElementById('ch-dc-token'); if (el) el.placeholder = '••••••••  (saved)'; }
+      }
+      if (name === 'slack') {
+        if (c.channelId) { const el = document.getElementById('ch-sk-channel'); if (el) el.value = c.channelId; }
+        if (c.botTokenSet) { const el = document.getElementById('ch-sk-token'); if (el) el.placeholder = '••••••••  (saved)'; }
       }
     } catch { /* ignore */ }
   }

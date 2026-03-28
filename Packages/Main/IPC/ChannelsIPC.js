@@ -23,6 +23,14 @@ export function register(channelEngine) {
         safe.authTokenSet  = Boolean(c.authToken);
         safe.fromNumber    = c.fromNumber ?? '';
       }
+      if (name === 'discord') {
+        safe.channelId   = c.channelId ?? '';
+        safe.botTokenSet = Boolean(c.botToken);
+      }
+      if (name === 'slack') {
+        safe.channelId   = c.channelId ?? '';
+        safe.botTokenSet = Boolean(c.botToken);
+      }
       return { ok: true, config: safe };
     } catch (err) { return { ok: false, error: err.message }; }
   });
