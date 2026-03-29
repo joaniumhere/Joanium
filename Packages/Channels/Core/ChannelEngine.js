@@ -114,71 +114,201 @@ async function sendWhatsApp(cfg, to, text) {
 
 /* ══════════════════════════════════════════
    DISCORD  — poll + send
+
+   IMPORTANT: For the bot to read message
+   content via REST polling, you MUST enable
+   "Message Content Intent" in the Discord
+   Developer Portal:
+     Bot → Privileged Gateway Intents →
+     Message Content Intent → ON
+
+   The bot must also be invited to your server
+   with at least Read Messages + Send Messages
+   permissions in the target channel.
 ══════════════════════════════════════════ */
 async function pollDiscord(cfg) {
-  if (!cfg.channelId) return [];
-  const url = `https://discord.com/api/v10/channels/${cfg.channelId}/messages?limit=10${cfg.lastMessageId ? `&after=${cfg.lastMessageId}` : ''}`;
+  if (!cfg.channelId || !cfg.botToken) return [];
+
+  // Fetch our own bot user ID on first poll so we can skip self-messages
+  if (!cfg._botUserId) {
+    try {
+      const meRes = await fetch('https://discord.com/api/v10/users/@me', {
+        headers: { Authorization: `Bot ${cfg.botToken}` },
+      });
+      if (meRes.ok) {
+        const me = await meRes.json();
+        cfg._botUserId = me.id;
+      }
+    } catch { /* non-fatal — we'll skip by author.bot flag instead */ }
+  }
+
+  const url = `https://discord.com/api/v10/channels/${cfg.channelId}/messages?limit=10${
+    cfg.lastMessageId ? `&after=${cfg.lastMessageId}` : ''
+  }`;
   const res = await fetch(url, { headers: { Authorization: `Bot ${cfg.botToken}` } });
+
+  if (res.status === 403) {
+    throw new Error(
+      `Discord 403: Bot cannot access channel ${cfg.channelId}. ` +
+      `Make sure: (1) the bot is invited to your server, ` +
+      `(2) the bot has "View Channel" and "Read Message History" permissions, ` +
+      `(3) the channel ID is correct.`
+    );
+  }
+  if (res.status === 401) {
+    throw new Error('Discord 401: Invalid bot token. Regenerate it in the Developer Portal.');
+  }
   if (!res.ok) throw new Error(`Discord HTTP ${res.status}`);
+
   const messages = await res.json();
+  if (!Array.isArray(messages)) return [];
 
   return messages
-    .filter(m => !m.author?.bot && m.content)
+    .filter(m => {
+      // Skip all bot messages (including ourselves)
+      if (m.author?.bot) return false;
+      // Skip our own user ID if we resolved it
+      if (cfg._botUserId && m.author?.id === cfg._botUserId) return false;
+      // Skip messages with no readable text
+      if (!m.content?.trim()) return false;
+      return true;
+    })
     .map(m => ({
       id: m.id,
       channelId: m.channel_id,
       text: m.content,
       from: m.author?.username ?? 'User',
-    })).reverse(); // Oldest first
+    }))
+    .reverse(); // Oldest first so we process in order
 }
 
 async function sendDiscord(botToken, channelId, text) {
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bot ${botToken}` },
-    body: JSON.stringify({ content: text }),
-  });
-  if (!res.ok) {
-    const d = await res.json().catch(() => ({}));
-    throw new Error(d.message ?? `Discord sendMessage HTTP ${res.status}`);
+  // Discord has a 2000 char limit per message — split if needed
+  const chunks = splitIntoChunks(text, 1990);
+  for (const chunk of chunks) {
+    const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bot ${botToken}` },
+      body: JSON.stringify({ content: chunk }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.message ?? `Discord sendMessage HTTP ${res.status}`);
+    }
   }
 }
 
 /* ══════════════════════════════════════════
    SLACK  — poll + send
+
+   The bot token needs these OAuth scopes:
+     channels:history  (read public channels)
+     channels:read     (list channels)
+     chat:write        (send messages)
+     groups:history    (read private channels)
+
+   The bot must also be /invited to the channel.
+
+   IMPORTANT: conversations.history oldest param
+   is EXCLUSIVE (messages after that timestamp,
+   not including it), which is exactly what we
+   want for polling — no duplicate processing.
 ══════════════════════════════════════════ */
 async function pollSlack(cfg) {
-  if (!cfg.channelId) return [];
-  const url = `https://slack.com/api/conversations.history?channel=${cfg.channelId}&limit=10${cfg.lastMessageTs ? `&oldest=${cfg.lastMessageTs}` : ''}`;
+  if (!cfg.channelId || !cfg.botToken) return [];
+
+  // Fetch our bot user ID once so we can skip our own messages
+  if (!cfg._botUserId) {
+    try {
+      const authRes = await fetch('https://slack.com/api/auth.test', {
+        headers: { Authorization: `Bearer ${cfg.botToken}` },
+      });
+      const authData = await authRes.json();
+      if (authData.ok) cfg._botUserId = authData.bot_id ?? authData.user_id;
+    } catch { /* non-fatal */ }
+  }
+
+  // Build URL — oldest is exclusive (messages AFTER this ts, not including it)
+  // This is exactly what we want for polling: no re-processing of last seen message
+  let url = `https://slack.com/api/conversations.history?channel=${cfg.channelId}&limit=10`;
+  if (cfg.lastMessageTs) {
+    url += `&oldest=${cfg.lastMessageTs}`;
+  }
+
   const res = await fetch(url, { headers: { Authorization: `Bearer ${cfg.botToken}` } });
   if (!res.ok) throw new Error(`Slack HTTP ${res.status}`);
+
   const data = await res.json();
-  if (!data.ok) throw new Error(data.error ?? 'Slack API error');
+
+  if (!data.ok) {
+    if (data.error === 'channel_not_found') {
+      throw new Error(
+        `Slack channel_not_found: Channel ID "${cfg.channelId}" is invalid or ` +
+        `the bot is not a member. Run /invite @YourBotName in the channel.`
+      );
+    }
+    if (data.error === 'not_in_channel') {
+      throw new Error(
+        `Slack not_in_channel: The bot is not a member of channel ${cfg.channelId}. ` +
+        `Run /invite @YourBotName in the Slack channel.`
+      );
+    }
+    throw new Error(data.error ?? 'Slack API error');
+  }
 
   const messages = (data.messages ?? [])
-    .filter(m => m.type === 'message' && !m.bot_id && m.text)
+    .filter(m => {
+      // Only plain user messages (type: 'message', no subtype = regular user message)
+      if (m.type !== 'message') return false;
+      // Skip bot messages and system messages (subtypes like channel_join, etc.)
+      if (m.subtype) return false;
+      if (m.bot_id) return false;
+      // Skip our own bot if we know its ID
+      if (cfg._botUserId && m.bot_id === cfg._botUserId) return false;
+      if (!m.text?.trim()) return false;
+      return true;
+    })
     .map(m => ({
       ts: m.ts,
       channelId: cfg.channelId,
       text: m.text,
       from: m.user || 'User',
     }));
-  
-  // conversations.history returns newest first, so reverse to process chronological
+
+  // conversations.history returns newest first — reverse for chronological processing
   return messages.reverse();
 }
 
 async function sendSlack(botToken, channelId, text) {
-  const res = await fetch('https://slack.com/api/chat.postMessage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${botToken}` },
-    body: JSON.stringify({ channel: channelId, text }),
-  });
-  if (!res.ok) {
-    throw new Error(`Slack sendMessage HTTP ${res.status}`);
+  // Slack has a ~40k char limit but we keep messages reasonable
+  const chunks = splitIntoChunks(text, 3000);
+  for (const chunk of chunks) {
+    const res = await fetch('https://slack.com/api/chat.postMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${botToken}` },
+      body: JSON.stringify({ channel: channelId, text: chunk }),
+    });
+    if (!res.ok) {
+      throw new Error(`Slack sendMessage HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error ?? 'Slack sendMessage API error');
   }
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error ?? 'Slack sendMessage API error');
+}
+
+/* ══════════════════════════════════════════
+   UTILITY
+══════════════════════════════════════════ */
+function splitIntoChunks(text, maxLen) {
+  const str = String(text ?? '');
+  if (str.length <= maxLen) return [str];
+  const chunks = [];
+  let i = 0;
+  while (i < str.length) {
+    chunks.push(str.slice(i, i + maxLen));
+    i += maxLen;
+  }
+  return chunks;
 }
 
 /* ══════════════════════════════════════════
@@ -257,6 +387,9 @@ export class ChannelEngine {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     const toSave = JSON.parse(JSON.stringify(this._data));
     delete toSave.channels.whatsapp._seenSids;
+    // Strip runtime-only cache fields
+    delete toSave.channels.discord._botUserId;
+    delete toSave.channels.slack._botUserId;
     fs.writeFileSync(this.filePath, JSON.stringify(toSave, null, 2), 'utf-8');
   }
 
@@ -330,6 +463,35 @@ export class ChannelEngine {
     return { username: data.username };
   }
 
+  /* ── Test that the Discord bot can actually read the channel ── */
+  async validateDiscordChannel(botToken, channelId) {
+    const res = await fetch(`https://discord.com/api/v10/channels/${channelId}`, {
+      headers: { Authorization: `Bot ${botToken}` },
+    });
+    if (res.status === 403) throw new Error(`Bot cannot access channel ${channelId}. Invite the bot to your server first.`);
+    if (res.status === 404) throw new Error(`Channel ${channelId} not found. Double-check the Channel ID.`);
+    if (!res.ok) throw new Error(`Discord HTTP ${res.status}`);
+    const data = await res.json();
+    return { channelName: data.name };
+  }
+
+  /* ── Test that the Slack bot can actually read the channel ── */
+  async validateSlackChannel(botToken, channelId) {
+    const res = await fetch(`https://slack.com/api/conversations.info?channel=${channelId}`, {
+      headers: { Authorization: `Bearer ${botToken}` },
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      if (data.error === 'channel_not_found') {
+        throw new Error(`Channel not found. Make sure the Channel ID is correct (starts with C for public channels).`);
+      }
+      throw new Error(data.error ?? 'Could not validate channel');
+    }
+    const isMember = data.channel?.is_member;
+    const channelName = data.channel?.name ?? channelId;
+    return { channelName, isMember };
+  }
+
   /* ── Polling ── */
   start() {
     this._load();
@@ -373,12 +535,10 @@ export class ChannelEngine {
       this._persist();
     }
 
-    // Process all incoming messages concurrently
     for (const msg of messages) {
       (async () => {
         let typingInterval = null;
         try {
-          // Send typing indicator every 4.5s while the AI is thinking (max 5s per Telegram docs)
           const sendTyping = () => fetch(`https://api.telegram.org/bot${cfg.botToken}/sendChatAction`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
@@ -388,9 +548,8 @@ export class ChannelEngine {
           sendTyping();
           typingInterval = setInterval(sendTyping, 4500);
 
-          // Full autonomous processing via renderer pipeline
           const reply = await this._dispatchToRenderer('telegram', msg.from, msg.text);
-          
+
           clearInterval(typingInterval);
           await sendTelegram(cfg.botToken, msg.chatId, reply);
         } catch (err) {
@@ -410,7 +569,6 @@ export class ChannelEngine {
     try { messages = await pollWhatsApp(cfg); }
     catch (err) { console.warn('[ChannelEngine] WhatsApp poll failed:', err.message); return; }
 
-    // Process all incoming messages concurrently
     for (const msg of messages) {
       (async () => {
         try {
@@ -437,7 +595,6 @@ export class ChannelEngine {
       this._persist();
     }
 
-    // Process all incoming messages concurrently
     for (const msg of messages) {
       (async () => {
         let typingInterval = null;
@@ -448,10 +605,10 @@ export class ChannelEngine {
           }).catch(() => {});
 
           sendTyping();
-          typingInterval = setInterval(sendTyping, 9000); // 10s max
+          typingInterval = setInterval(sendTyping, 9000); // 10s max per Discord docs
 
           const reply = await this._dispatchToRenderer('discord', msg.from, msg.text);
-          
+
           clearInterval(typingInterval);
           await sendDiscord(cfg.botToken, msg.channelId, reply);
         } catch (err) {
@@ -472,16 +629,17 @@ export class ChannelEngine {
     catch (err) { console.warn('[ChannelEngine] Slack poll failed:', err.message); return; }
 
     if (messages.length) {
+      // Store the ts of the newest message as our cursor for next poll
+      // conversations.history oldest param is exclusive, so we won't re-fetch this message
       cfg.lastMessageTs = messages[messages.length - 1].ts;
       this._persist();
     }
 
-    // Process all incoming messages concurrently
     for (const msg of messages) {
       (async () => {
         try {
           const reply = await this._dispatchToRenderer('slack', msg.from, msg.text);
-          await sendSlack(cfg.botToken, msg.channelId, reply);
+          await sendSlack(cfg.botToken, cfg.channelId, reply);
         } catch (err) {
           console.error(`[ChannelEngine] Slack reply failed (${msg.from}):`, err.message);
         }

@@ -64,6 +64,14 @@ export function register(channelEngine) {
         const info = await channelEngine.validateWhatsApp(credentials.accountSid, credentials.authToken);
         return { ok: true, ...info };
       }
+      if (name === 'discord') {
+        const info = await channelEngine.validateDiscord(credentials.botToken);
+        return { ok: true, ...info };
+      }
+      if (name === 'slack') {
+        const info = await channelEngine.validateSlack(credentials.botToken);
+        return { ok: true, ...info };
+      }
       return { ok: false, error: 'Unknown channel' };
     } catch (err) { return { ok: false, error: err.message }; }
   });

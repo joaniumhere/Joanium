@@ -1,6 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────
    Channels panel  —  loaded by SettingsModal on tab switch
-   Same pattern as Connectors/index.js and MCP/index.js
 ───────────────────────────────────────────────────────────────── */
 
 const api = window.electronAPI;
@@ -68,11 +67,12 @@ function buildHTML() {
     </div>
 
     <div class="ch-steps" id="ch-steps-telegram">
-      <div class="ch-steps-label">Setup — 30 seconds</div>
+      <div class="ch-steps-label">Setup — under 60 seconds</div>
       <ol class="ch-steps-list">
-        <li>Open Telegram → search <strong>@BotFather</strong></li>
-        <li>Send <code>/newbot</code> and follow prompts</li>
-        <li>Copy the <strong>bot token</strong> and paste below</li>
+        <li>Open Telegram and search for <strong>@BotFather</strong></li>
+        <li>Send <code>/newbot</code> → follow the prompts to name your bot</li>
+        <li>BotFather gives you a token like <code>1234567890:ABCdef…</code> — paste it below</li>
+        <li>Then message your new bot once to start the conversation</li>
       </ol>
     </div>
 
@@ -116,13 +116,12 @@ function buildHTML() {
     </div>
 
     <div class="ch-steps" id="ch-steps-whatsapp">
-      <div class="ch-steps-label">Setup via free Twilio Sandbox — ~3 minutes, zero cost</div>
+      <div class="ch-steps-label">Setup via Twilio Sandbox — free, ~3 minutes</div>
       <ol class="ch-steps-list">
-        <li>Create a free account at <strong>twilio.com</strong> (no card needed for sandbox)</li>
-        <li>Go to <strong>Messaging → Try it out → WhatsApp</strong></li>
-        <li>Copy <strong>Account SID</strong>, <strong>Auth Token</strong>, and the <strong>sandbox number</strong></li>
-        <li>From your phone, send the join code to that number</li>
-        <li>Paste all three values below and hit <strong>Connect</strong></li>
+        <li>Sign up free at <strong>twilio.com</strong> (no credit card needed for sandbox)</li>
+        <li>Go to <strong>Messaging → Try it out → Send a WhatsApp message</strong></li>
+        <li>From your phone, send the join code shown to the sandbox number</li>
+        <li>Copy your <strong>Account SID</strong>, <strong>Auth Token</strong> (from the Console homepage), and the <strong>sandbox number</strong> (e.g. <code>whatsapp:+14155238886</code>)</li>
       </ol>
     </div>
 
@@ -145,7 +144,7 @@ function buildHTML() {
       <div class="ch-field">
         <label class="ch-label" for="ch-wa-number">Sandbox Number <span class="ch-req">*</span></label>
         <input type="text" id="ch-wa-number" class="ch-input" placeholder="whatsapp:+14155238886" autocomplete="off" spellcheck="false" />
-        <div class="ch-hint">Include the <code>whatsapp:</code> prefix as shown in Twilio.</div>
+        <div class="ch-hint">Include the <code>whatsapp:</code> prefix exactly as shown in Twilio.</div>
       </div>
       <div class="ch-actions">
         <button type="button" class="ch-btn-danger" id="ch-disc-whatsapp" hidden>Disconnect</button>
@@ -175,28 +174,31 @@ function buildHTML() {
     </div>
 
     <div class="ch-steps" id="ch-steps-discord">
-      <div class="ch-steps-label">Setup via Discord Developer Portal</div>
+      <div class="ch-steps-label">Setup — ~3 minutes</div>
       <ol class="ch-steps-list">
-        <li>Create an application in the Discord Developer Portal</li>
-        <li>Enable <strong>Message Content Intent</strong> under Bot settings</li>
-        <li>Copy your Bot Token and the targeted Channel ID below</li>
+        <li>Go to <strong>discord.com/developers/applications</strong> → New Application → Bot → Add Bot</li>
+        <li>Under <strong>Bot → Privileged Gateway Intents</strong>, turn ON <strong>Message Content Intent</strong> ← this is required to read messages</li>
+        <li>Copy your <strong>Bot Token</strong> (Reset Token if needed)</li>
+        <li>Under <strong>OAuth2 → URL Generator</strong>: check <em>bot</em> scope + <em>Read Messages</em> + <em>Send Messages</em> permissions → open the generated URL to invite the bot to your server</li>
+        <li>Get your <strong>Channel ID</strong>: in Discord, enable Developer Mode (Settings → Advanced), then right-click any channel → Copy Channel ID</li>
       </ol>
     </div>
 
     <div class="ch-form">
       <div class="ch-fields-row">
         <div class="ch-field">
-          <label class="ch-label" for="ch-dc-channel">Channel ID <span class="ch-req">*</span></label>
-          <input type="text" id="ch-dc-channel" class="ch-input" placeholder="123456789012345678" autocomplete="off" spellcheck="false" />
-        </div>
-        <div class="ch-field">
           <label class="ch-label" for="ch-dc-token">Bot Token <span class="ch-req">*</span></label>
           <div class="ch-input-wrap">
-            <input type="password" id="ch-dc-token" class="ch-input" placeholder="Your format token" autocomplete="off" spellcheck="false" />
+            <input type="password" id="ch-dc-token" class="ch-input" placeholder="Your bot token" autocomplete="off" spellcheck="false" />
             <button type="button" class="ch-eye" id="ch-eye-dc" title="Show/hide">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
+        </div>
+        <div class="ch-field">
+          <label class="ch-label" for="ch-dc-channel">Channel ID <span class="ch-req">*</span></label>
+          <input type="text" id="ch-dc-channel" class="ch-input" placeholder="123456789012345678" autocomplete="off" spellcheck="false" />
+          <div class="ch-hint">Right-click channel in Discord → Copy Channel ID (enable Developer Mode in Settings → Advanced first)</div>
         </div>
       </div>
       <div class="ch-actions">
@@ -227,20 +229,18 @@ function buildHTML() {
     </div>
 
     <div class="ch-steps" id="ch-steps-slack">
-      <div class="ch-steps-label">Setup via Slack App Directory</div>
+      <div class="ch-steps-label">Setup — ~3 minutes</div>
       <ol class="ch-steps-list">
-        <li>Create an App in Slack API and install to your workspace</li>
-        <li>Enable chat:write and messaging scopes</li>
-        <li>Get your Bot User OAuth Token and the Channel ID</li>
+        <li>Go to <strong>api.slack.com/apps</strong> → Create New App → From scratch</li>
+        <li>Under <strong>OAuth &amp; Permissions → Bot Token Scopes</strong>, add: <code>channels:history</code>, <code>channels:read</code>, <code>chat:write</code>, <code>groups:history</code></li>
+        <li>Click <strong>Install to Workspace</strong> → copy the <strong>Bot User OAuth Token</strong> (starts with <code>xoxb-</code>)</li>
+        <li>In your Slack workspace, <strong>/invite @YourBotName</strong> into the channel you want monitored</li>
+        <li>Get the <strong>Channel ID</strong>: open the channel in Slack → click the channel name at the top → scroll to the bottom of the popup — the ID starts with <code>C</code></li>
       </ol>
     </div>
 
     <div class="ch-form">
       <div class="ch-fields-row">
-        <div class="ch-field">
-          <label class="ch-label" for="ch-sk-channel">Channel ID <span class="ch-req">*</span></label>
-          <input type="text" id="ch-sk-channel" class="ch-input" placeholder="C0123456789" autocomplete="off" spellcheck="false" />
-        </div>
         <div class="ch-field">
           <label class="ch-label" for="ch-sk-token">Bot Token <span class="ch-req">*</span></label>
           <div class="ch-input-wrap">
@@ -249,6 +249,11 @@ function buildHTML() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
+        </div>
+        <div class="ch-field">
+          <label class="ch-label" for="ch-sk-channel">Channel ID <span class="ch-req">*</span></label>
+          <input type="text" id="ch-sk-channel" class="ch-input" placeholder="C0123456789" autocomplete="off" spellcheck="false" />
+          <div class="ch-hint">Click the channel name in Slack → scroll to the bottom of the popup to find the ID (starts with C)</div>
         </div>
       </div>
       <div class="ch-actions">
@@ -264,7 +269,7 @@ function buildHTML() {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   WIRE EVENTS  (called once after HTML is injected)
+   WIRE EVENTS
 ────────────────────────────────────────────────────────────── */
 let _wired = false;
 
@@ -331,15 +336,16 @@ function wireEvents() {
       setFb('slack', err.message, 'error');
     }
   });
+
   // Connect Telegram
   document.getElementById('ch-connect-telegram')?.addEventListener('click', async () => {
     const token = document.getElementById('ch-tg-token')?.value.trim();
-    const saved = document.getElementById('ch-tg-token')?.placeholder.includes('saved');
-    if (!token && !saved) { setFb('telegram', 'Paste your bot token first.', 'error'); return; }
+    const hasSaved = document.getElementById('ch-tg-token')?.placeholder.includes('saved');
+    if (!token && !hasSaved) { setFb('telegram', 'Paste your bot token first.', 'error'); return; }
 
     const btn = document.getElementById('ch-connect-telegram');
     btn.disabled = true;
-    setFb('telegram', 'Validating…', 'info');
+    setFb('telegram', 'Validating…', '');
     try {
       if (token) {
         const v = await api?.validateChannel?.('telegram', { botToken: token });
@@ -354,7 +360,7 @@ function wireEvents() {
       setToggle('telegram', true, true);
       setStepsVisible('telegram', false);
       setDisconnectVisible('telegram', true);
-      setFb('telegram', '🎉 Connected! Message your bot to test.', 'success');
+      setFb('telegram', '🎉 Connected! Message your bot to test it.', 'success');
     } catch (err) {
       setFb('telegram', `Error: ${err.message}`, 'error');
     } finally {
@@ -372,11 +378,11 @@ function wireEvents() {
 
     if (!sid && !sidSaved)     { setFb('whatsapp', 'Enter your Account SID.', 'error'); return; }
     if (!token && !tokenSaved) { setFb('whatsapp', 'Enter your Auth Token.', 'error'); return; }
-    if (!number)               { setFb('whatsapp', 'Enter the sandbox number.', 'error'); return; }
+    if (!number)               { setFb('whatsapp', 'Enter the sandbox number (with whatsapp: prefix).', 'error'); return; }
 
     const btn = document.getElementById('ch-connect-whatsapp');
     btn.disabled = true;
-    setFb('whatsapp', 'Validating credentials…', 'info');
+    setFb('whatsapp', 'Validating credentials…', '');
     try {
       if (sid && token) {
         const v = await api?.validateChannel?.('whatsapp', { accountSid: sid, authToken: token });
@@ -399,31 +405,48 @@ function wireEvents() {
       btn.disabled = false;
     }
   });
+
   // Connect Discord
   document.getElementById('ch-connect-discord')?.addEventListener('click', async () => {
-    const channel = document.getElementById('ch-dc-channel')?.value.trim();
     const token   = document.getElementById('ch-dc-token')?.value.trim();
+    const channel = document.getElementById('ch-dc-channel')?.value.trim();
     const tokenSaved = document.getElementById('ch-dc-token')?.placeholder.includes('saved');
 
-    if (!channel) { setFb('discord', 'Enter the Channel ID.', 'error'); return; }
-    if (!token && !tokenSaved) { setFb('discord', 'Enter the Bot Token.', 'error'); return; }
+    if (!token && !tokenSaved) { setFb('discord', 'Enter your Bot Token.', 'error'); return; }
+    if (!channel)              { setFb('discord', 'Enter the Channel ID.', 'error'); return; }
 
     const btn = document.getElementById('ch-connect-discord');
     btn.disabled = true;
-    setFb('discord', 'Connecting…', 'info');
+    setFb('discord', 'Validating…', '');
+
     try {
+      // 1. Validate the token itself
+      if (token) {
+        const v = await api?.validateChannel?.('discord', { botToken: token });
+        if (!v?.ok) throw new Error(v?.error ?? 'Invalid bot token');
+        setFb('discord', `✓ Bot @${v.username} verified`, 'success');
+      }
+
+      // 2. Save and verify channel access
       const payload = { channelId: channel };
       if (token) payload.botToken = token;
-      
       const r = await api?.saveChannel?.('discord', payload);
       if (!r?.ok) throw new Error(r?.error ?? 'Save failed');
+
       setStatus('discord', true);
       setToggle('discord', true, true);
       setStepsVisible('discord', false);
       setDisconnectVisible('discord', true);
-      setFb('discord', '🎉 Connected! Message your discord channel to test.', 'success');
+      setFb('discord', '🎉 Connected! Send a message in that Discord channel to test.', 'success');
     } catch (err) {
-      setFb('discord', `Error: ${err.message}`, 'error');
+      // Give targeted help for common Discord mistakes
+      let msg = err.message;
+      if (msg.includes('403') || msg.includes('Missing Access')) {
+        msg = 'Bot cannot access that channel. Make sure: (1) bot is invited to the server, (2) Message Content Intent is ON in the Developer Portal.';
+      } else if (msg.includes('401') || msg.includes('Invalid')) {
+        msg = 'Invalid bot token. Go to Developer Portal → Bot → Reset Token.';
+      }
+      setFb('discord', `Error: ${msg}`, 'error');
     } finally {
       btn.disabled = false;
     }
@@ -431,33 +454,49 @@ function wireEvents() {
 
   // Connect Slack
   document.getElementById('ch-connect-slack')?.addEventListener('click', async () => {
-    const channel = document.getElementById('ch-sk-channel')?.value.trim();
     const token   = document.getElementById('ch-sk-token')?.value.trim();
+    const channel = document.getElementById('ch-sk-channel')?.value.trim();
     const tokenSaved = document.getElementById('ch-sk-token')?.placeholder.includes('saved');
 
-    if (!channel) { setFb('slack', 'Enter the Channel ID.', 'error'); return; }
-    if (!token && !tokenSaved) { setFb('slack', 'Enter the Bot Token.', 'error'); return; }
+    if (!token && !tokenSaved) { setFb('slack', 'Enter your Bot Token (xoxb-…).', 'error'); return; }
+    if (!channel)              { setFb('slack', 'Enter the Channel ID (starts with C).', 'error'); return; }
 
     const btn = document.getElementById('ch-connect-slack');
     btn.disabled = true;
-    setFb('slack', 'Connecting…', 'info');
+    setFb('slack', 'Validating…', '');
+
     try {
+      // 1. Validate the token
+      if (token) {
+        const v = await api?.validateChannel?.('slack', { botToken: token });
+        if (!v?.ok) throw new Error(v?.error ?? 'Invalid bot token');
+        setFb('slack', `✓ Connected to ${v.team} as ${v.name}`, 'success');
+      }
+
+      // 2. Save
       const payload = { channelId: channel };
       if (token) payload.botToken = token;
-      
       const r = await api?.saveChannel?.('slack', payload);
       if (!r?.ok) throw new Error(r?.error ?? 'Save failed');
+
       setStatus('slack', true);
       setToggle('slack', true, true);
       setStepsVisible('slack', false);
       setDisconnectVisible('slack', true);
-      setFb('slack', '🎉 Connected! Message your slack channel to test.', 'success');
+      setFb('slack', '🎉 Connected! Send a message in that Slack channel to test. (Remember to /invite your bot first if you haven\'t!)', 'success');
     } catch (err) {
-      setFb('slack', `Error: ${err.message}`, 'error');
+      let msg = err.message;
+      if (msg.includes('channel_not_found') || msg.includes('not_in_channel')) {
+        msg = 'Bot cannot access that channel. Run "/invite @YourBotName" in the Slack channel, then try again.';
+      } else if (msg.includes('invalid_auth') || msg.includes('token')) {
+        msg = 'Invalid bot token. Copy the "Bot User OAuth Token" (xoxb-…) from OAuth & Permissions in your Slack app.';
+      }
+      setFb('slack', `Error: ${msg}`, 'error');
     } finally {
       btn.disabled = false;
     }
   });
+
   // Disconnect buttons
   document.getElementById('ch-disc-telegram')?.addEventListener('click', () => disconnectChannel('telegram'));
   document.getElementById('ch-disc-whatsapp')?.addEventListener('click', () => disconnectChannel('whatsapp'));
@@ -476,19 +515,20 @@ async function disconnectChannel(name) {
     setStepsVisible(name, true);
     setDisconnectVisible(name, false);
     if (name === 'telegram') {
-      const t = document.getElementById('ch-tg-token'); if (t) { t.value = ''; t.placeholder = '1234567890:ABCdef\u2026'; }
+      const t = document.getElementById('ch-tg-token');
+      if (t) { t.value = ''; t.placeholder = '1234567890:ABCdef\u2026'; }
     } else if (name === 'whatsapp') {
       const s = document.getElementById('ch-wa-sid');    if (s) { s.value = ''; s.placeholder = 'ACxxxxxxxxxxxxxxxx'; }
       const t = document.getElementById('ch-wa-token');  if (t) { t.value = ''; t.placeholder = 'Your auth token'; }
       const n = document.getElementById('ch-wa-number'); if (n) n.value = '';
     } else if (name === 'discord') {
-      const c = document.getElementById('ch-dc-channel'); if (c) c.value = '';
       const t = document.getElementById('ch-dc-token');   if (t) { t.value = ''; t.placeholder = 'Your bot token'; }
+      const c = document.getElementById('ch-dc-channel'); if (c) c.value = '';
     } else if (name === 'slack') {
-      const c = document.getElementById('ch-sk-channel'); if (c) c.value = '';
       const t = document.getElementById('ch-sk-token');   if (t) { t.value = ''; t.placeholder = 'xoxb-your-token'; }
+      const c = document.getElementById('ch-sk-channel'); if (c) c.value = '';
     }
-    setFb(name, 'Disconnected.', 'info');
+    setFb(name, 'Disconnected.', '');
   } catch (err) {
     setFb(name, `Error: ${err.message}`, 'error');
   }
@@ -513,12 +553,12 @@ async function prefill() {
         if (c.fromNumber)    { const el = document.getElementById('ch-wa-number'); if (el) el.value = c.fromNumber; }
       }
       if (name === 'discord') {
-        if (c.channelId) { const el = document.getElementById('ch-dc-channel'); if (el) el.value = c.channelId; }
-        if (c.botTokenSet) { const el = document.getElementById('ch-dc-token'); if (el) el.placeholder = '••••••••  (saved)'; }
+        if (c.botTokenSet) { const el = document.getElementById('ch-dc-token');   if (el) el.placeholder = '••••••••  (saved)'; }
+        if (c.channelId)   { const el = document.getElementById('ch-dc-channel'); if (el) el.value = c.channelId; }
       }
       if (name === 'slack') {
-        if (c.channelId) { const el = document.getElementById('ch-sk-channel'); if (el) el.value = c.channelId; }
-        if (c.botTokenSet) { const el = document.getElementById('ch-sk-token'); if (el) el.placeholder = '••••••••  (saved)'; }
+        if (c.botTokenSet) { const el = document.getElementById('ch-sk-token');   if (el) el.placeholder = '••••••••  (saved)'; }
+        if (c.channelId)   { const el = document.getElementById('ch-sk-channel'); if (el) el.value = c.channelId; }
       }
     } catch { /* ignore */ }
   }
