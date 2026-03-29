@@ -50,9 +50,9 @@ function loadScript(src) {
 async function loadDependencies() {
     if (!dependencyPromise) {
         dependencyPromise = (async () => {
-            await loadStylesheet(assetUrl('../node_modules/xterm/css/xterm.css'));
-            await loadScript(assetUrl('../../node_modules/xterm/lib/xterm.js'));
-            await loadScript(assetUrl('../../node_modules/xterm-addon-fit/lib/xterm-addon-fit.js'));
+            await loadStylesheet(assetUrl('../node_modules/@xterm/xterm/css/xterm.css'));
+            await loadScript(assetUrl('../../node_modules/@xterm/xterm/lib/xterm.js'));
+            await loadScript(assetUrl('../../node_modules/@xterm/addon-fit/lib/xterm-addon-fit.js'));
         })().catch(err => {
             dependencyPromise = null;
             throw err;
