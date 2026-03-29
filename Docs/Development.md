@@ -1,336 +1,325 @@
-# Development Guide
+# Development
 
-Everything you need to add features, fix bugs, and extend Evelina.
+This guide documents how the current Evelina codebase is organized and how to extend it without drifting away from the runtime architecture that exists today.
 
----
+## Local Development
 
-## Setup
+Current package scripts:
 
 ```bash
-# Prerequisites: Node.js 18+, npm
-git clone https://github.com/withinJoel/Evelina
-cd Evelina
-npm install
 npm start
+npm run dev
+npm run lint
+npm run build
 ```
 
-DevTools are available via `Ctrl+Shift+I` (or `Cmd+Option+I` on Mac) in the renderer window. The main process logs to your terminal.
+What they do:
 
----
+- `npm start`: launch Electron normally
+- `npm run dev`: launch Electron with the `--dev` flag
+- `npm run lint`: run ESLint across the repo
+- `npm run build`: package the app with `electron-builder`
 
-## Code Conventions
+## Runtime Entry Point
 
-### File Organization
-Every file has one clear responsibility. The naming convention tells you what it does:
+The app boots from:
 
-- `*IPC.js` — registers IPC handlers for a domain, nothing else
-- `*Service.js` — business logic, no Electron imports
-- `*Engine.js` — stateful singleton (AutomationEngine, ConnectorEngine)
-- `*Executor.js` — executes one category of AI tools
-- `*Tools.js` — tool definitions (schema only, no execution logic)
-
-### Imports
-Main process: use ESM (`import`/`export`). The `"type": "module"` in `package.json` applies to the entire project.
-
-Renderer: also ESM. All scripts under `Packages/Renderer/` use `import`/`export`. HTML files in `Public/` load those entry scripts with `<script type="module">`, and page/feature modules use folder-level `index.js` entrypoints.
-
-### Error Handling in IPC Handlers
-Every IPC handler follows this pattern:
-
-```javascript
-ipcMain.handle('channel-name', async (_e, ...args) => {
-  try {
-    const result = doWork(...args)
-    return { ok: true, result }
-  } catch (err) {
-    console.error('[ModuleName] channel-name error:', err)
-    return { ok: false, error: err.message }
-  }
-})
+```text
+App.js
 ```
 
-The renderer always gets `{ ok, ... }` back — never an unhandled promise rejection across the IPC bridge.
+That file is responsible for:
 
-### Paths
-**Never construct paths by hand.** Always import from `Packages/Main/Paths.js`:
+- creating background engines
+- registering IPC handlers
+- creating the main window
+- attaching the browser preview service
+- handing the window reference to the channel engine
+- starting MCP auto-connect
 
-```javascript
-import Paths from '../Paths.js'
-// Use: Paths.DATA_DIR, Paths.CHATS_DIR, Paths.USER_FILE, etc.
+If you need to understand why a feature exists at runtime even when its page is closed, `App.js` is the first place to look.
+
+## Package Layout
+
+### `Packages/Main/`
+
+Main-process services, IPC handlers, paths, and Electron integration.
+
+Use this area for:
+
+- filesystem access
+- Electron APIs
+- persistence
+- OS integration
+- browser preview service
+- chat persistence
+- project persistence
+
+### `Packages/Renderer/`
+
+The SPA shell and browser-side app logic.
+
+Use this area for:
+
+- page rendering
+- shared UI state
+- settings panels
+- chat orchestration
+- feature-specific UI modules
+
+### `Packages/Automation/`
+
+The deterministic scheduler and action executors.
+
+### `Packages/Agents/`
+
+The scheduled AI job system.
+
+### `Packages/Channels/`
+
+External message polling and reply routing.
+
+### `Packages/Connectors/`
+
+Connector state management for Gmail, GitHub, and free APIs.
+
+### `Packages/MCP/`
+
+MCP client, registry, and built-in browser server support.
+
+### `Packages/System/`
+
+System prompt assembly and app property helpers.
+
+## HTML Shells
+
+The current app has two shells:
+
+- `Public/Setup.html` for first-run onboarding
+- `Public/index.html` for the main app
+
+Do not design new primary product features as isolated full HTML pages unless there is a strong reason. The normal pattern now is:
+
+- add or update a renderer page module
+- mount it inside the SPA shell
+
+## Adding A New Sidebar Page
+
+To add a new main page:
+
+1. create a page module under `Packages/Renderer/Pages/<Feature>/`
+2. expose the page in the renderer routing/bootstrap logic
+3. add or update sidebar navigation
+4. wire whatever IPC or state dependencies the page needs
+5. document the new page in `Docs/README.md` and the relevant subsystem docs
+
+Current canonical pages are:
+
+- chat
+- automations
+- agents
+- events
+- skills
+- personas
+- usage
+
+## Adding A Settings Panel
+
+Settings-driven features such as Connectors, Channels, and MCP follow a different pattern from sidebar pages.
+
+Typical flow:
+
+1. create a feature panel module under `Packages/Renderer/Features/`
+2. load it from the Settings modal tab switcher
+3. expose necessary IPC methods through preload
+4. persist the backing state in a main-process service or engine
+
+This is the right pattern when the feature is configuration-heavy but not a primary navigation destination.
+
+## Adding New IPC
+
+A full IPC addition usually requires four edits:
+
+1. add the handler in `Packages/Main/IPC/<Domain>.js`
+2. expose a matching preload method
+3. call that method from renderer code
+4. implement or reuse the service/engine logic behind it
+
+Keep the boundary clean:
+
+- renderer handles UI and orchestration
+- main process handles Node/Electron/OS concerns
+
+## Adding Chat Capabilities
+
+Interactive tool support flows through the chat capability system in the renderer.
+
+When adding a new chat capability, expect to touch:
+
+- the capability/tool registry
+- tool definition metadata
+- the executor implementation
+- any IPC or connector dependencies
+- possibly model/tool normalization logic if the tool shape is unusual
+
+Questions to ask before adding a new capability:
+
+- should this be a built-in tool or an MCP tool
+- does it need connector credentials
+- does it require workspace scope
+- should it be available when no project is active
+- does it have side effects that need confirmation or risk assessment
+
+## Adding A Connector
+
+For a new service or free data connector, update:
+
+- the connector engine default state
+- any validation/save/remove logic
+- the relevant settings UI
+- tool/automation/agent integrations that consume it
+- docs
+
+If the integration is an AI provider instead, update:
+
+- `Data/Models.json`
+- provider settings logic in `UserService`
+- any provider-specific transport code in the renderer or agent engine
+
+Do not mix those two systems conceptually. Provider config and connector config live in different places.
+
+## Adding An Automation Action
+
+To add a new automation action end-to-end:
+
+1. implement the action in the automation engine/action layer
+2. surface editable config in the automations UI
+3. update the action renderer/editor
+4. document the new action in `Docs/Automations.md`
+
+Remember the current execution rule:
+
+- a thrown error stops the remaining action chain
+
+So new actions should fail clearly and intentionally.
+
+## Adding An Agent Source Or Output
+
+To add a new agent data source:
+
+1. implement it in the `collectOneSource()` switch
+2. expose it in the renderer constants and config UI
+3. add guidance/templates if needed
+4. document it in `Docs/Agents.md`
+
+To add a new output type:
+
+1. implement it in the output execution switch
+2. expose it in the output-type UI/constants
+3. document required fields and behavior
+
+Keep UI constants and engine support synchronized. The current repo already has a few source labels ahead of engine implementation, and that mismatch is exactly the sort of drift to avoid.
+
+## Adding Or Changing Channel Support
+
+Channels involve both main and renderer work.
+
+Main-process responsibilities:
+
+- polling external services
+- storing credentials/cursors
+- sending and receiving IPC bridge messages
+
+Renderer responsibilities:
+
+- settings UI
+- channel gateway reply generation
+- interaction with model selection and prompt state
+
+When changing channels, verify:
+
+- saved config fields still match the engine
+- validation paths are wired through IPC where intended
+- per-channel settings are not accidentally documented as global if they are not persisted
+
+## Adding MCP Functionality
+
+Use built-in MCP when:
+
+- the tool is deeply tied to app internals, such as the browser preview
+
+Use custom MCP server support when:
+
+- you want runtime-extensible external tool capability
+
+When extending MCP support, consider:
+
+- server persistence
+- connection lifecycle
+- tool registry merging
+- settings UI
+- chat-side handling for risky or confirmation-worthy actions
+
+## Prompt-Related Development
+
+Prompt behavior is assembled from multiple sources:
+
+- base assistant identity
+- active persona
+- enabled skills
+- user name
+- memory
+- custom instructions
+- system context and connector-derived context
+
+If you change any of those sources, remember that `SystemPromptService` caches the built prompt. Prompt-affecting changes should invalidate cache at the right time.
+
+## Data And Persistence Guidelines
+
+The app is local-first. Most important state lives in `Data/`.
+
+Before adding new persistent state:
+
+- decide whether it belongs in a new file or an existing domain file
+- centralize the path in `Packages/Main/Core/Paths.js`
+- make sure read/write behavior is resilient to missing or corrupt files
+- keep derived fields out of persisted source data when possible
+
+Examples already following this pattern:
+
+- project `folderExists` is derived, not persisted
+- running jobs are transient, not persisted
+- browser preview state is live state, not general app config
+
+## Testing And Verification
+
+The current repo does not expose a large automated test suite from `package.json`.
+
+The main built-in verification step is:
+
+```bash
+npm run lint
 ```
 
----
+For behavior-heavy changes, manual verification is still important. Typical checks include:
 
-## Adding a New Tool
+- app launch and first-run routing
+- sidebar page mounting
+- settings panel loading
+- chat tool execution
+- project-scoped chat save/load
+- automation save/toggle/run behavior
+- agent run-now behavior
+- channel configuration and polling
+- MCP tool visibility and browser preview sync
 
-Tools are the AI's live-data superpowers. Adding a tool involves four steps.
+## Documentation Discipline
 
-### 1. Define the Tool (Tools folder)
-Create or edit a file in `Packages/Renderer/Features/Chat/Tools/`:
+This codebase changes quickly across several shared subsystems. To keep docs accurate:
 
-```javascript
-// Packages/Renderer/Features/Chat/Tools/WeatherTools.js
-export const WEATHER_TOOLS = [
-  {
-    name: 'get_weather',               // snake_case, unique across all tools
-    description: 'Get current weather for a city.', // used by the AI planner
-    category: 'open_meteo',            // maps to a connector name
-    parameters: {
-      location: {
-        type: 'string',
-        required: true,
-        description: 'City name (e.g. "Mumbai")'
-      },
-      units: {
-        type: 'string',
-        required: false,
-        description: '"celsius" or "fahrenheit"'
-      }
-    }
-  }
-]
-```
+- update subsystem docs when a feature's runtime behavior changes
+- note intentional UI/runtime mismatches explicitly
+- avoid copying older architecture descriptions forward
+- prefer documenting persisted state and engine behavior over visual assumptions
 
-### 2. Register in the Index
-Add your tool array to `Tools/Index.js`:
-
-```javascript
-import { WEATHER_TOOLS } from './WeatherTools.js'
-export const TOOLS = [
-  ...GMAIL_TOOLS,
-  ...GITHUB_TOOLS,
-  ...WEATHER_TOOLS,  // ← add here
-  // ...
-]
-```
-
-Also add the connector mapping if needed:
-```javascript
-const CATEGORY_TO_CONNECTOR = {
-  open_meteo: 'open_meteo',
-  // ...
-}
-```
-
-### 3. Write the Executor
-Create a file in `Packages/Renderer/Features/Chat/Executors/`:
-
-```javascript
-// WeatherExecutor.js
-const HANDLED = new Set(['get_weather'])
-
-export function handles(toolName) { return HANDLED.has(toolName) }
-
-export async function execute(toolName, params, onStage = () => {}) {
-  if (toolName !== 'get_weather') throw new Error(`Unknown tool: ${toolName}`)
-  
-  const { location, units = 'celsius' } = params
-  if (!location) throw new Error('Missing required param: location')
-  
-  onStage(`🌍 Locating ${location}…`)
-  
-  // call the API, process the result
-  const data = await fetch(`https://...`)
-  
-  return `Current weather in ${location}: 28°C, partly cloudy.`
-}
-```
-
-### 4. Register the Executor
-Add it to `Executors/Index.js`:
-
-```javascript
-import * as WeatherExecutor from './WeatherExecutor.js'
-
-const EXECUTORS = [
-  GmailExecutor,
-  GithubExecutor,
-  WeatherExecutor,  // ← add here
-  // ...
-]
-
-export async function executeTool(toolName, params, onStage) {
-  const executor = EXECUTORS.find(e => e.handles(toolName))
-  if (!executor) throw new Error(`No executor for tool: ${toolName}`)
-  return executor.execute(toolName, params, onStage)
-}
-```
-
-> If `Executors/Index.js` currently returns a 401 error (GitHub API auth issue on your repo), you'll need to create it locally with this pattern.
-
----
-
-## Adding a New Automation Action
-
-### 1. Add to `ACTION_META` in `Constants.js`
-```javascript
-// Packages/Renderer/Pages/Automations/Constants.js
-my_new_action: { 
-  label: '🆕 My New Action', 
-  fields: ['url', 'param1'],  // which FIELD_META keys to show
-  group: 'System' 
-},
-```
-
-### 2. Add field metadata to `FIELD_META` (if new fields needed)
-```javascript
-param1: { placeholder: 'Enter value here', textarea: false },
-```
-
-### 3. Handle collection in `ActionRenderer.js`
-In `collectActionFromRow()`, add a case for your action type:
-```javascript
-case 'my_new_action':
-  action.url = get('url')
-  action.param1 = get('param1')
-  if (!action.url) return null
-  break
-```
-
-### 4. Handle execution in `AutomationEngine.js`
-In `runAction()`, add a case:
-```javascript
-case 'my_new_action': {
-  if (!action.url) throw new Error('my_new_action: url required')
-  await doTheThing(action.url, action.param1)
-  console.log(`[AutomationEngine] my_new_action → ${action.url}`)
-  return
-}
-```
-
----
-
-## Adding a New IPC Channel
-
-### 1. Add the handler to the relevant IPC file
-```javascript
-// Packages/Main/IPC/SomeIPC.js
-ipcMain.handle('my-new-channel', async (_e, arg1, arg2) => {
-  try {
-    const result = await doWork(arg1, arg2)
-    return { ok: true, result }
-  } catch (err) {
-    return { ok: false, error: err.message }
-  }
-})
-```
-
-### 2. Expose it in the preload script
-```javascript
-// Packages/Electron/Preload.js
-myNewMethod: (arg1, arg2) => ipcRenderer.invoke('my-new-channel', arg1, arg2),
-```
-
-### 3. Call it from the renderer
-```javascript
-const result = await window.electronAPI.myNewMethod(arg1, arg2)
-```
-
----
-
-## Adding a New Page
-
-1. Create `Public/MyPage.html` — copy the titlebar, sidebar, theme-panel, avatar-panel structure from an existing page
-2. Create `Packages/Renderer/Pages/MyPage/index.js` — import `initSidebar`, `initAboutModal`, `initLibraryModal`, `initSettingsModal`, `WindowControls`
-3. Create `Public/Assets/Styles/MyPagePage.css` — import the shared CSS files (see `SkillsPage.css` as a template)
-4. Add a `MYPAGE_PAGE` path to `Packages/Main/Paths.js`
-5. Add a launch IPC handler in `SetupIPC.js` or a new IPC file
-6. Add `launchMyPage` to `Preload.js`
-7. Wire the sidebar button in `Sidebar.js` (the `onMyPage` callback)
-
----
-
-## The CSS Architecture
-
-CSS is modular — one file per feature area. The page-level CSS files (e.g. `IndexPage.css`, `SkillsPage.css`) are just import lists. To add styles for a new feature:
-
-1. Create `Public/Assets/Styles/MyFeature.css`
-2. Import it at the bottom of the relevant page CSS file: `@import './MyFeature.css';`
-
-CSS variables (colours, spacing, fonts) are defined in `Root.css` and `Themes.css`. Always use variables — never hardcode colours.
-
----
-
-## Data Formats
-
-### User.json
-```json
-{
-  "name": "Joel",
-  "setup_complete": true,
-  "created_at": "2024-01-15T10:30:00Z",
-  "api_keys": {
-    "anthropic": "sk-ant-...",
-    "openai": null
-  },
-  "preferences": {
-    "theme": "dark",
-    "default_provider": "anthropic",
-    "default_model": null
-  }
-}
-```
-
-### Chat file (`Data/Chats/{id}.json`)
-```json
-{
-  "id": "2024-01-15_10-30-00",
-  "title": "How does TCP/IP work",
-  "updatedAt": "2024-01-15T10:45:00Z",
-  "provider": "anthropic",
-  "model": "claude-sonnet-4-6",
-  "messages": [
-    {
-      "role": "user",
-      "content": "How does TCP/IP work?",
-      "attachments": []
-    },
-    {
-      "role": "assistant",
-      "content": "TCP/IP is...",
-      "attachments": []
-    }
-  ]
-}
-```
-
-### Automation (`Data/Automations.json`)
-```json
-{
-  "automations": [
-    {
-      "id": "auto_1234_xyz",
-      "name": "Morning Setup",
-      "description": "Opens tools on startup",
-      "enabled": true,
-      "trigger": { "type": "on_startup" },
-      "actions": [
-        { "type": "open_site", "url": "https://github.com" }
-      ],
-      "lastRun": "2024-01-15T09:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-## Common Gotchas
-
-**`window.electronAPI` is undefined in the console**  
-You're probably looking at the wrong DevTools. Make sure you opened DevTools from the renderer window, not the main process.
-
-**Changes to `Paths.js` don't reflect**  
-Electron caches ES module resolution. Restart the app (`npm start`).
-
-**IPC handler not firing**  
-Check that the IPC file is imported and `.register()` is called in `App.js`. Also check the channel name exactly matches (case-sensitive).
-
-**Skills/Personas not appearing**  
-Files must end in `.md` and have valid frontmatter (both opening and closing `---`). Check `parseFrontmatter()` logic — the body starts after the second `---\n`.
-
-**Automation not running on schedule**  
-The app must be open at the scheduled time. The engine checks every 60 seconds. Check that `lastRun` isn't blocking — it updates after every successful run.
-
-**System prompt not updating after settings change**  
-`invalidateSysPrompt()` must be called in the relevant IPC handler after any settings change. Check that the handler imports and calls it.
+The highest-value docs in this repo are the ones that explain shared behavior boundaries clearly, because one subsystem change often affects several others.

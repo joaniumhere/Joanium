@@ -1,267 +1,322 @@
 # Features
 
-A detailed breakdown of every feature in Evelina.
+This document describes the product as it works in the current repository, not the older multi-page version. Evelina now runs as a single renderer shell backed by several main-process engines, so many features share the same state, model selection, system prompt, and persistence layer.
 
----
+## Core Product Shape
+
+The current sidebar pages are:
+
+- `Chat`
+- `Automations`
+- `Agents`
+- `Events`
+- `Skills`
+- `Personas`
+- `Usage`
+
+The Settings modal contains additional operational panels that are not separate sidebar pages:
+
+- provider/API configuration
+- connectors
+- channels
+- MCP servers
+- user profile, memory, and instructions
+- theme and appearance controls
+
+That split matters because some important runtime features, such as Channels and MCP, are configured from Settings but are consumed by the chat pipeline and background engines.
 
 ## Chat
 
-The core experience. Chat with any configured AI provider.
+The chat page is the center of the app. It is not a thin text box over a single LLM request. It is a stateful orchestration layer that can:
 
-### Model Selection
-The model dropdown (bottom-left of composer) shows all providers that have a valid API key. Models are sorted by their `rank` field within each provider — lower rank = better/flagship model. The dropdown remembers your last selection within a session.
+- choose the active provider and model
+- stream assistant output
+- call built-in tools
+- call Gmail and GitHub tools through IPC
+- call workspace and terminal tools when a project/workspace is active
+- call connected MCP tools
+- persist chat history locally
+- keep usage tracking in sync
+- share the active system prompt with channels and other AI-driven flows
 
-When you send a message, the app always tries your selected model first. If it fails, it automatically falls back through a ranked list of alternatives (same provider first, then other providers). You see a status message in the agent log when failover happens.
+### What the current chat flow supports
 
-### Streaming
-Responses stream token by token. Markdown is re-rendered every 80ms during streaming so formatting appears progressively. A blinking cursor tracks the end of the streamed text. Once the response is complete, the cursor disappears and the final markdown render happens.
+- plain text prompts
+- image attachments
+- extracted text from supported local documents
+- workspace-aware file and shell tooling
+- connector-backed tools
+- MCP-backed tools
+- browser automation through the built-in browser MCP server
 
-### Image Attachments
-Models that support image input (Claude, GPT-4o, Gemini) accept images via paste (Ctrl+V / Cmd+V). Images are shown as thumbnails in the composer before sending. The attachment button shows which models support images — if your selected model doesn't support images, you get a warning and the send button stays disabled.
+### Tool groups exposed to chat
 
-### Document Attachments
-The composer also accepts local files and embeds their contents into the prompt so the AI can work directly from uploaded material. Plain text, code, JSON, CSV, YAML, Markdown, and logs are read immediately. PDF, DOCX, XLSX/XLS/ODS, PPTX, and RTF files are converted to text first so the model can read them.
+Current built-in tool families include:
 
-Structured files get lightweight enrichment before sending:
-- CSV/TSV files include row and column context.
-- JSON files are pretty-printed and summarized.
-- PDF, Word, spreadsheet, and slide decks are converted into readable plain text with a short summary such as page, sheet, or slide count.
+- Gmail
+- GitHub
+- terminal and workspace inspection
+- file reads and writes
+- git helpers
+- browser/search helpers
+- weather, crypto, finance, geography, astronomy, Wikipedia, dictionary, quotes, jokes, facts, and utility helpers
 
-### Token Footer
-Every AI response shows a token usage footer: input tokens ↑, output tokens ↓, and an estimated cost based on published pricing. This is always visible (not togglable).
+The final tool list is assembled dynamically. Built-in tools are registered locally, then connected MCP tools are merged into the registry at runtime.
 
-### Code Blocks
-Code in responses gets a header with the detected language, a **Copy** button, and a **Download** button. Download saves the code with the correct file extension (`.py`, `.js`, `.sql`, etc.).
+### Important current chat constraints
 
-### Message Actions
-Hover over any message (user or assistant) to reveal a **Copy** button.
+- Workspace tools are only useful when a workspace path is active.
+- Some browser-control MCP tools are treated as higher risk and may require explicit user confirmation in the chat flow.
+- Chat history is sanitized before persistence so hidden internal tool-execution messages do not get stored alongside normal conversation turns.
 
----
+## Projects And Workspaces
 
-## Tools
+Projects are first-class records now. They are not just a remembered folder path.
 
-The AI can call external APIs and built-in utilities from chat. Tools are defined in `Packages/Renderer/Features/Chat/Tools/` and executed in `Packages/Renderer/Features/Chat/Executors/`.
+Each project stores:
 
-### Weather
-**Tool:** `get_weather`  
-**Provider:** Open-Meteo (free, no key required)  
-**Try:** "What's the weather in Chennai?" or "Will it rain in Tokyo tomorrow?"
+- a stable project id
+- display name
+- absolute workspace root path
+- optional free-form project context
+- creation and update timestamps
+- last-opened timestamp
 
-Returns current conditions (temperature, humidity, wind, cloud cover, pressure) and a 3-day forecast.
+Projects matter because they change how chat behaves:
 
-### Crypto Prices
-**Tool:** `get_crypto_price`, `get_crypto_trending`  
-**Provider:** CoinGecko (free, no key required)  
-**Try:** "What's the price of Ethereum?" or "What coins are trending right now?"
+- the active project becomes `state.activeProject`
+- the active workspace path becomes `state.workspacePath`
+- project chats are saved under that project's storage folder instead of global chat storage
+- workspace tools now have a clear scope to inspect or modify
 
-Returns price in multiple currencies, 24h change, market cap, trading volume.
+This means Evelina supports both:
 
-### Exchange Rates
-**Tool:** `get_exchange_rate`  
-**Provider:** open.er-api.com (free, no key required)  
-**Try:** "Convert 100 USD to INR" or "What's the EUR/GBP rate?"
+- global chats under `Data/Chats/`
+- project-scoped chats under `Data/Projects/<project-id>/Chats/`
 
-Supports 160+ currencies, returns all major rates at once.
-
-### US Treasury Data
-**Tool:** `get_treasury_data`  
-**Provider:** fiscaldata.treasury.gov (free, no key required)  
-**Try:** "What is the current US national debt?" or "Show treasury interest rates"
-
-Three data types: `debt` (national debt), `rates` (average interest rates), `balance` (daily cash).
-
-### FRED Economic Data
-**Tool:** `get_fred_data`  
-**Provider:** Federal Reserve Bank of St. Louis  
-**Key:** Optional free key from fred.stlouisfed.org (public access is rate-limited)  
-**Try:** "Show me US GDP" or "What's the current unemployment rate?"
-
-Common series IDs: `GDP`, `UNRATE`, `CPIAUCSL`, `FEDFUNDS`, `DGS10`, `SP500`.
-
-### Photos
-**Tool:** `search_photos`  
-**Provider:** Unsplash  
-**Key:** Required — get free key at unsplash.com/developers  
-**Try:** "Find me photos of minimal workspace setups"
-
-Returns photo URLs, photographer credits, dimensions, and like counts.
-
-### Gmail (when connected)
-**Tools:** `gmail_read_inbox`, `gmail_send_email`, `gmail_search_emails`  
-**Try:** "Read my unread emails" or "Search for emails from my boss" or "Send an email to alice@example.com"
-
-### GitHub (when connected)
-**Tools:** `github_list_repos`, `github_get_issues`, `github_get_pull_requests`, `github_get_file`, `github_get_file_tree`, `github_get_notifications`  
-**Try:** "Show my open PRs" or "Load the README from my main repo" or "What issues are open in withinjoel/Evelina?"
-
-### Local Dev & Editing
-**Tools:** `inspect_workspace`, `search_workspace`, `find_file_by_name`, `read_local_file`, `extract_file_text`, `read_file_chunk`, `read_multiple_local_files`, `list_directory`, `list_directory_tree`, `write_file`, `apply_file_patch`, `replace_lines_in_file`, `insert_into_file`, `copy_item`, `move_item`, `git_status`, `git_diff`, `run_project_checks`, `start_local_server`  
-**Provider:** Built in (no connector required)  
-**Try:** "Inspect this repo", "Extract text from this PDF", "Read these three files", "Replace lines 20 to 35", "Insert this import before the router setup", "Copy this config into a new env file", or "Run lint and tests"
-
-These tools let the AI work directly with a local codebase and local documents: inspect the workspace, extract text from PDFs and Office files, read one or many files, view directory trees, make surgical edits, move or copy files, review Git state, run project checks, and start local dev servers without leaving chat.
-
-### Utility Tools
-**Tools:** `calculate_expression`, `convert_units`, `get_time_in_timezone`, `generate_uuid`, `hash_text`, `encode_base64`, `decode_base64`, `format_json`, `convert_text_case`, `get_text_stats`  
-**Provider:** Built in (no connector required)  
-**Try:** "Convert 5 miles to kilometers", "Format this JSON", "Hash this string with SHA-256", or "What time is it in Tokyo?"
-
-These tools handle local utility tasks without leaving the app: calculations, common unit conversions, timezone lookup, UUID generation, hashing, Base64 encode/decode, JSON formatting, text case conversion, and text statistics.
-
----
+See [Projects.md](Projects.md) for the storage and lifecycle details.
 
 ## Automations
 
-Schedule sequences of actions to run automatically.
+Automations are scheduled non-AI action chains that run in the main process. They are useful for deterministic tasks such as:
 
-### Triggers
-- **On startup** — runs every time you open Evelina
-- **Every N minutes** — interval timer (minimum 1 minute)
-- **Every hour** — at the top of each hour
-- **Daily at time** — once per day at a set time
-- **Weekly on day** — once per week on a specific day and time
+- opening websites
+- sending notifications
+- running shell commands or scripts
+- creating folders or moving files
+- writing files
+- sending Gmail messages
+- checking GitHub state
+- hitting webhooks
 
-### Actions (35+ available)
-See [Automations.md](Automations.md) for the full list with configuration details.
+Key traits of the current automation system:
 
-**System:** open site, open multiple sites, open folder, run command, run script, open app, send notification, copy to clipboard, write file, move file, copy file, delete file, create folder, lock screen, HTTP request/webhook
+- runs on startup and on a 60-second scheduler tick
+- supports `on_startup`, `interval`, `hourly`, `daily`, and `weekly` triggers
+- persists definitions and recent history in `Data/Automations.json`
+- stops the current action chain on the first thrown error
 
-**Gmail:** send email, email brief notification, unread count notification, search & notify
+Automations are ideal when you already know the exact action sequence you want. They do not do planning or summarization themselves.
 
-**GitHub:** open repo in browser, check PRs, check issues, check commits, check latest release, check notifications, create issue
+See [Automations.md](Automations.md) for the action catalog and trigger rules.
 
-### Action Chaining
-Each automation can have multiple actions in sequence. They run in order, one after another. If any action throws an error, that action is logged and the automation continues with the next action.
+## Agents
 
-### Last Run Tracking
-Each automation card shows when it last ran. The `lastRun` timestamp is updated after each successful execution and persisted to `Data/Automations.json`.
+Agents are scheduled AI jobs. They are different from automations in one important way: they collect data, ask a model to interpret it, and then decide what output to produce based on the configured output type.
 
----
+Typical agent use cases:
 
-## Connectors
+- daily email briefings
+- PR review summaries
+- issue triage
+- website or feed monitoring
+- alerts generated from local files or system stats
 
-Connectors link external services so the AI and automations can interact with them.
+Current agent behavior includes:
 
-See [Connectors.md](Connectors.md) for setup instructions.
+- per-agent primary model selection
+- fallback model chain
+- multiple jobs per agent
+- multiple data sources per job
+- structured job history
+- `[NOTHING]` short-circuit handling when there is nothing actionable
+- optional outputs like email, file writing, notifications, webhooks, memory append, and GitHub PR review comments
 
-### Service Connectors (require credentials)
-- **Gmail** — OAuth 2.0 flow using your own Google Cloud project credentials
-- **GitHub** — Personal Access Token
+Agents are AI-first and decision-oriented. Automations are deterministic and action-first.
 
-### Free API Connectors (enabled by default)
-Open-Meteo, CoinGecko, Exchange Rates, US Treasury, FRED, OpenWeatherMap, Unsplash
+See [Agents.md](Agents.md) for the exact source and output types.
 
-Each free connector has a toggle. Some (FRED, Unsplash) support an optional API key to unlock higher rate limits or additional features.
+## Events
 
----
+The Events page is an operational timeline, not a separate persisted subsystem.
+
+It aggregates:
+
+- automation history
+- agent job history
+- currently running agent jobs
+
+Important implementation details:
+
+- it refreshes frequently from live IPC calls
+- there is no dedicated `Events.json`
+- clearing event history clears automation and agent histories at the source
+
+This page is mainly for visibility and troubleshooting. It helps answer:
+
+- what ran
+- when it ran
+- whether it acted, skipped, or failed
+- what is still running right now
 
 ## Skills
 
-Skills are markdown files in the `Skills/` folder with YAML frontmatter. They are read at runtime and injected into the system prompt context when relevant.
+Skills are local Markdown files that can be enabled or disabled. Enabled skills are injected into the system prompt. Disabled skills are ignored.
 
-The AI planning step determines which skills apply to a given request. Skill metadata (name, trigger, description) is passed to the planner; the planner decides which are relevant and logs them in the agent log before the response.
+That makes the current skill system much stronger than a simple tag library. A skill is effectively prompt-time behavior and domain guidance that the assistant can use during planning and response generation.
 
-Skills are read-only in the UI (browse via the Skills page). To add or modify skills, edit the `.md` files directly.
+The skills page currently supports:
 
-See [Skills.md](Skills.md) for the skill file format and how to write new ones.
+- listing installed skill files
+- toggling individual skills
+- enabling all skills
+- disabling all skills
 
----
+The enablement state lives in `Data/Skills.json`, not inside the skill files themselves.
+
+See [Skills.md](Skills.md) for the file format and prompt effects.
 
 ## Personas
 
-Personas are markdown files in the `Personas/` folder with YAML frontmatter. The active persona replaces the default assistant identity in the system prompt.
+Personas are also Markdown files, but they serve a different role from skills.
 
-### Switching Personas
-Open the Personas page from the sidebar. Click **Activate** on any persona card. The system prompt is rebuilt immediately (cache invalidated). Click **Chat** to activate a persona and jump straight to chat.
+- A persona changes the assistant's identity, tone, and framing.
+- A skill adds domain-specific guidance or workflows.
 
-### Included Personas
-| Persona | Role |
-|---|---|
-| Atlas | High-performance execution coach |
-| Cassian | Negotiation and communication strategist |
-| Dante | Master storyteller and narrative architect |
-| Elio | Empathetic emotional companion |
-| Franklin | Leadership and confidence coach |
-| Iris | Deep research analyst |
-| Lyra | Creative and unconventional thinker |
-| Nova | Curious explorer and learning guide |
-| Rex | Fitness and nutrition coach |
-| Sage | Mindfulness and wellness guide |
-| Solen | Philosopher and introspective guide |
+Only one persona is active at a time. The active persona is stored in `Data/ActivePersona.json` and is folded into the system prompt.
 
-See [Personas.md](Personas.md) for the persona file format.
+The personas page supports:
 
----
+- listing available persona files
+- selecting one as active
+- resetting back to the default assistant identity
+
+See [Personas.md](Personas.md) for the format and activation model.
+
+## Connectors
+
+The connector layer currently includes two categories:
+
+- service connectors that require credentials, such as Gmail and GitHub
+- free data connectors that are enabled locally and may or may not need an API key
+
+These connectors are shared across multiple product areas:
+
+- chat tools
+- automations
+- agents
+- system prompt enrichment
+
+Examples:
+
+- Gmail powers inbox reading, search, send, label, reply, archive, and draft workflows
+- GitHub powers repo access, issues, PRs, notifications, workflows, stats, and reviews
+- free connectors supply weather, crypto, exchange rates, FRED, NASA, quotes, Wikipedia, and other utility data
+
+See [Connectors.md](Connectors.md) for the full connector inventory.
+
+## Channels
+
+Channels let external messages enter the app through Telegram, WhatsApp, Discord, or Slack.
+
+The current architecture is important:
+
+- `ChannelEngine` polls the remote service in the main process
+- incoming messages are forwarded to the renderer through `channel-incoming`
+- the renderer runs the full chat agent loop
+- the renderer replies through `channel-reply`
+- the main process sends the final text back to the originating platform
+
+This means channel replies use the same AI stack as normal chat:
+
+- selected provider/model
+- current system prompt
+- tool access
+- usage tracking
+
+They are not handled by a separate lightweight bot implementation.
+
+See [Channels.md](Channels.md) for platform-specific configuration details.
+
+## MCP And Browser Preview
+
+Evelina includes live MCP support and an embedded browser preview.
+
+Current MCP capabilities:
+
+- custom MCP servers over `stdio`
+- custom MCP servers over `http`
+- a built-in browser server exposed as `builtin_browser`
+- runtime merging of MCP tools into the chat tool registry
+
+The built-in browser server is special because it is connected to the in-app browser preview. When the assistant uses browser tools, the navigation can be shown inside the app instead of disappearing into an invisible headless flow.
+
+See [MCP.md](MCP.md) for the connection and tool-surfacing model.
 
 ## Usage Analytics
 
-The Usage page tracks every API call made through Evelina.
+Usage tracking is local and persisted in `Data/Usage.json`.
 
-### What's Tracked
-Per call: timestamp, provider, model, model name, input tokens, output tokens, chat ID.
+The current system records:
 
-Data is stored locally in `Data/Usage.json`. Up to 20,000 records are kept (oldest are dropped when the limit is reached).
+- timestamp
+- provider
+- model
+- model display name
+- input tokens
+- output tokens
+- chat id when applicable
 
-### Analytics
-- **Summary cards** — total tokens, API calls, estimated cost, avg cost/call, models used
-- **Daily bar chart** — token usage over time (stacked input/output)
-- **Auto insights** — most-used model, peak hour, busiest day, token ratio analysis, cost efficiency ranking, weekend vs weekday patterns, provider cost breakdown, response verbosity
-- **Hourly heatmap** — 24-hour activity distribution
-- **Day of week breakdown** — call volume and cost per weekday
-- **Cost table** — top 10 models by spend with share of total
-- **Model breakdown** — tokens and cost per model with visual bar
-- **Provider cards** — tokens, cost, calls per provider
-- **Recent activity** — last 50 API calls with timing
+Agent runs also write usage records, but they do so with `chatId: null`.
 
-### Filters
-Filter by Today / 7 days / 30 days / All time using the range buttons at the top right. All charts and tables update immediately.
+The Usage page is therefore the shared accounting layer for:
 
----
+- normal chat sessions
+- scheduled agent runs
 
-## Settings
+## Settings And Setup
 
-Accessed via the avatar button (bottom-left of sidebar) → Settings.
+The first-run setup shell is still separate from the main app shell. After setup:
 
-### User Tab
-- **Name** — displayed in the welcome screen and avatar
-- **Memory** — persistent notes injected into every conversation (e.g. "I am Joel Jolly, my mom's name is Jessie")
-- **Custom Instructions** — AI behaviour rules (e.g. "You should be sweet and kind to me")
+- provider keys and provider settings are read from `User.json`
+- the main app loads `Public/index.html`
+- ongoing configuration is handled from the Settings modal rather than a dedicated setup-only route
 
-### Providers Tab
-Add or update API keys for each AI provider. Keys are stored in `Data/User.json` under `api_keys`. Changes trigger a model list reload and system prompt cache invalidation.
+Current provider families include:
 
-### Connectors Tab
-Manage Gmail and GitHub connections, plus free API toggles and optional keys. See [Connectors.md](Connectors.md).
+- Anthropic
+- OpenAI
+- Google
+- OpenRouter
+- Mistral
+- NVIDIA
+- DeepSeek
+- MiniMax
+- Ollama
+- LM Studio
 
----
+Local providers use normalized OpenAI-compatible `/v1/chat/completions` endpoints and require both an endpoint and a model id to be truly usable.
 
-## Themes
+## How These Features Work Together
 
-Five themes are available via the theme toggle button (sun/moon icon in the sidebar):
+The most important thing to understand about the current codebase is that these features are not isolated products:
 
-| Theme | Character |
-|---|---|
-| Dark | Warm charcoal with terracotta accent (default) |
-| Light | Off-white editorial with brick accent |
-| Midnight | Deep navy with electric blue accent |
-| Forest | Dark green with emerald accent |
-| Pinky | Deep rose with hot pink accent |
+- projects influence chat persistence and workspace tools
+- connectors power chat, automations, agents, and prompt enrichment
+- personas and enabled skills alter the system prompt used by chat and channel replies
+- MCP extends the chat tool surface dynamically
+- the browser preview exists largely to support browser MCP actions
+- events summarize automation and agent runtime state
+- usage tracks both interactive chat and scheduled AI work
 
-Theme selection is persisted to `localStorage` and applied immediately on next launch without a flash.
-
----
-
-## Chat History (Library)
-
-All conversations are automatically saved to `Data/Chats/`. Open the Library (book icon in sidebar) to browse and search past conversations.
-
-- Search by title (first user message, truncated to 70 chars)
-- Click any chat to reload it, including restoring the provider/model used
-- Delete individual chats from the library list
-- Loading a chat on another page (automations, skills, etc.) uses `localStorage` as a pending redirect
-
----
-
-## Window Controls
-
-Evelina uses a frameless window with custom titlebar controls. The minimize, maximize/restore, and close buttons are in the top-right corner. The drag region is the titlebar area.
+That shared architecture is why stale docs become misleading quickly. If you change one subsystem, it often changes the behavior of several others.

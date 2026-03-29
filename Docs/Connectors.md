@@ -1,120 +1,310 @@
 # Connectors
 
-Connectors link Evelina to external services. There are two types: service connectors (Gmail, GitHub) that require credentials, and free API connectors that are enabled by default.
+Connectors are the app's integration layer. They provide the external accounts, APIs, and service credentials that power chat tools, automations, agents, and prompt enrichment.
 
----
+There are two different connector concepts in the current codebase:
 
-## Gmail
+- AI providers configured through `User.json` and `Models.json`
+- service/data connectors persisted through `Data/Connectors.json`
 
-Gmail uses OAuth 2.0. You need a Google Cloud project with OAuth credentials to connect — this takes about 5 minutes and is free.
+Both matter, but they solve different problems.
 
-### Setup Steps
+## 1. AI Providers
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or use an existing one)
-3. Enable the **Gmail API**: APIs & Services → Enable APIs → search "Gmail API" → Enable
-4. Create OAuth credentials: APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID
-   - Application type: **Desktop app**
-   - Name it anything (e.g. "Evelina")
-5. Download or copy the **Client ID** and **Client Secret**
-6. In Evelina: Settings → Connectors → Gmail → paste Client ID and Client Secret → Sign in with Google
-7. Approve the permissions in the browser window that opens
+AI providers define where model completions come from. They are not stored in `Connectors.json`; they are resolved from:
 
-### Scopes Requested
-- `gmail.readonly` — read emails
-- `gmail.send` — send emails
-- `userinfo.email` — verify your email address
+- `Data/Models.json`
+- `Data/User.json`
 
-### Token Refresh
-Access tokens expire after 1 hour. Evelina automatically refreshes them using the stored refresh token — you don't need to reconnect. The refreshed token is immediately persisted to `Data/Connectors.json`.
+### Current provider ids
 
-### Reconnecting
-If Gmail stops working (refresh token revoked, credentials changed), go to Settings → Connectors → Gmail → Disconnect, then reconnect.
+- `anthropic`
+- `openai`
+- `google`
+- `openrouter`
+- `mistral`
+- `nvidia`
+- `deepseek`
+- `minimax`
+- `ollama`
+- `lmstudio`
 
-### What Gmail Enables
-- **In chat:** "Read my unread emails", "Search for emails from [name]", "Send an email to [address]"
-- **In automations:** email brief notification, unread count, search & notify, send email
+### How provider configuration works
 
----
+For hosted providers, the current setup is:
 
-## GitHub
+- endpoint comes from `Models.json`
+- API key comes from `User.json`
+- available models come from `Models.json`
 
-GitHub uses a Personal Access Token (PAT). Classic tokens are easiest; fine-grained tokens work too with the right permissions.
+For local providers:
 
-### Setup Steps
+- the provider does not require a cloud API key
+- the endpoint is normalized to an OpenAI-compatible `/v1/chat/completions` URL
+- a concrete `modelId` must be saved in provider settings
+- the model catalog is synthesized at runtime from that chosen `modelId`
 
-1. Go to [GitHub Settings → Tokens](https://github.com/settings/tokens/new?scopes=repo,read:user,notifications)
-2. Create a **classic** Personal Access Token
-3. Required scopes:
-   - `repo` — read repos, issues, PRs, commits, files
-   - `read:user` — get your username and profile
-   - `notifications` — read GitHub notifications
-4. Copy the generated token (starts with `ghp_`)
-5. In Evelina: Settings → Connectors → GitHub → paste the token → Connect GitHub
+### Local provider normalization
 
-### What GitHub Enables
-**System prompt context:** Your GitHub username and last 20 repos (name, description, language) are automatically included in every chat. Ask "what are my repos?" and the AI already knows.
+Current defaults:
 
-**In chat:** list repos, get issues/PRs, load file contents, load file tree, get notifications  
-**In automations:** check PRs/issues/commits/releases, create issues, open repo in browser
+- `ollama` defaults to `http://127.0.0.1:11434/v1/chat/completions`
+- `lmstudio` defaults to `http://127.0.0.1:1234/v1/chat/completions`
 
-### Token Rotation
-If you need to rotate your PAT, just paste the new token in Settings → Connectors → GitHub → Update credentials.
+If the saved endpoint ends with:
 
----
+- `/v1/chat/completions`, it is used directly
+- `/v1`, `/chat/completions` is appended
+- anything else, `/v1/chat/completions` is appended
 
-## Free API Connectors
+### Where providers are used
 
-These connectors are enabled by default and require no setup. Manage them in Settings → Connectors → Free APIs.
+Provider configuration affects:
 
-### Open-Meteo 🌤️
-Real-time weather and forecast for any city. No key needed.  
-`get_weather` tool. Ask: "What's the weather in Mumbai?"
+- interactive chat
+- channel replies
+- agent model calls
+- model selection UI
+- usage accounting labels
 
-### CoinGecko 🦎
-Live crypto prices for 10,000+ tokens. No key needed.  
-`get_crypto_price`, `get_crypto_trending` tools.  
-Ask: "What's the price of Bitcoin in INR?" or "What's trending?"
+## 2. Service And Data Connectors
 
-### Exchange Rates 💱
-Real-time rates for 160+ currencies via open.er-api.com. No key needed.  
-`get_exchange_rate` tool. Ask: "Convert 500 EUR to JPY"
+The connector engine persists integration state in `Data/Connectors.json`.
 
-### US Treasury 🏛️
-Official US fiscal data from fiscaldata.treasury.gov. No key needed.  
-`get_treasury_data` tool. Three types: `debt`, `rates`, `balance`.  
-Ask: "What's the US national debt right now?"
+Current categories:
 
-### FRED (Federal Reserve) 📊
-Economic data from the St. Louis Fed — 800,000+ series.  
-`get_fred_data` tool.  
-**Optional API key** from [fred.stlouisfed.org/docs/api/api_key.html](https://fred.stlouisfed.org/docs/api/api_key.html) (free) — unlocks full access and higher rate limits. Without a key, public access works for most series.
+- service connectors with credentials
+- free API/data connectors
 
-Common series: `GDP`, `UNRATE`, `CPIAUCSL` (CPI/inflation), `FEDFUNDS`, `DGS10`, `SP500`, `MORTGAGE30US`.
+The connector engine exposes summary information such as:
 
-Ask: "Show me the unemployment rate history" or "What's current inflation?"
+- enabled state
+- connection timestamp
+- whether a connector is free
+- whether it needs an API key
 
-### OpenWeatherMap 🌦️
-Detailed weather with hourly forecasts and air quality. Requires a free API key from [openweathermap.org/api](https://openweathermap.org/api) — free tier allows 1,000 calls/day.
+## Service Connectors
 
-Works alongside Open-Meteo. When a key is saved and the connector is enabled, the AI can use it for richer weather data.
+The current service connectors are:
 
-### Unsplash 📷
-Search millions of high-quality photos. Requires a free Access Key from [unsplash.com/developers](https://unsplash.com/developers) — free tier allows 50 requests/hour.
+- `gmail`
+- `github`
 
-`search_photos` tool. Returns photo URLs, descriptions, and photographer credits.  
-Ask: "Find me photos of a minimalist desk setup"
+### Gmail
 
----
+Gmail is used by:
 
-## Connector State
+- chat tools
+- automations
+- agent data sources
+- system prompt enrichment
 
-Connector data lives in `Data/Connectors.json`. The `ConnectorEngine` manages this file.
+Current Gmail OAuth scopes include:
 
-**Service connectors** store: `enabled`, `credentials` (tokens, keys), `connectedAt`.  
-**Free connectors** store: `enabled`, optional `credentials.apiKey`.
+- `https://www.googleapis.com/auth/gmail.readonly`
+- `https://www.googleapis.com/auth/gmail.send`
+- `https://www.googleapis.com/auth/gmail.modify`
+- `https://www.googleapis.com/auth/userinfo.email`
 
-`ConnectorEngine.getAll()` returns status info for all connectors **without exposing credentials** — this is what the UI sees. The full credentials object is only returned to IPC handlers that need it (GmailIPC, GithubIPC, AutomationEngine).
+The OAuth callback flow is started from the `gmail-oauth-start` IPC handler.
 
-### Token Security
-Credentials are stored in plaintext in `Data/Connectors.json` on your local machine. The file is gitignored by default. Do not commit `Data/` to a public repository.
+#### Current Gmail capabilities exposed through IPC/tooling
+
+- get unread brief
+- unread count
+- search messages
+- send email
+- reply
+- forward
+- create draft
+- mark all read
+- archive read
+- trash by query
+- mark one message read or unread
+- archive one message
+- trash one message
+- list labels
+- create label
+- look up a label id
+- modify message labels
+- compute inbox stats
+
+That means Gmail is no longer just a read-only inbox connector. It now supports substantial mailbox mutation.
+
+### GitHub
+
+GitHub is also used by:
+
+- chat tools
+- automations
+- agent data sources
+- system prompt enrichment
+
+#### Current GitHub capabilities exposed through IPC/tooling
+
+- list repos
+- fetch repo files
+- fetch repo trees
+- get issues
+- get pull requests
+- get notifications
+- search code
+- get commits
+- get repo stats
+- get releases / latest release
+- star or unstar repos
+- create issues
+- close or reopen issues
+- comment on issues
+- add labels
+- assign users
+- create PRs
+- merge PRs
+- close PRs
+- get PR diff/details/checks/comments
+- create PR reviews
+- trigger workflows
+- inspect workflow runs
+- create gists
+- list branches
+- mark notifications read
+
+In other words, GitHub is a broad operational connector, not just a repo browser.
+
+## Free Connectors
+
+The connector engine currently initializes these free connectors:
+
+- `open_meteo`
+- `coingecko`
+- `exchange_rate`
+- `treasury`
+- `wikipedia`
+- `ipgeo`
+- `funfacts`
+- `jokeapi`
+- `quotes`
+- `restcountries`
+- `hackernews`
+- `cleanuri`
+- `nasa`
+- `fred`
+- `openweathermap`
+- `unsplash`
+
+### Default enablement
+
+Enabled by default:
+
+- `open_meteo`
+- `coingecko`
+- `exchange_rate`
+- `treasury`
+- `wikipedia`
+- `ipgeo`
+- `funfacts`
+- `jokeapi`
+- `quotes`
+- `restcountries`
+- `hackernews`
+- `cleanuri`
+- `nasa`
+- `fred`
+
+Disabled by default until configured:
+
+- `openweathermap`
+- `unsplash`
+
+### Free connectors and API keys
+
+Some free connectors truly require no key:
+
+- `open_meteo`
+- `coingecko`
+- `exchange_rate`
+- `treasury`
+- `wikipedia`
+- `ipgeo`
+- `funfacts`
+- `jokeapi`
+- `quotes`
+- `restcountries`
+- `hackernews`
+- `cleanuri`
+
+Some support or require an API key:
+
+- `nasa`
+- `fred`
+- `openweathermap`
+- `unsplash`
+
+For free connectors with keys:
+
+- the key is stored in the connector credentials object
+- saving a non-empty key enables the connector if it is not a no-key connector
+
+## How Connector State Is Stored
+
+The connector engine stores state per connector with concepts like:
+
+- `enabled`
+- `isFree`
+- `noKey`
+- `credentials`
+- `connectedAt`
+
+Service connectors keep their credentials inside `credentials`.
+
+Free connectors may also keep an API key in `credentials.apiKey` when needed.
+
+## Where Connector State Is Used
+
+### Chat
+
+Chat capability modules check whether relevant connectors are available before executing Gmail, GitHub, or free-API-backed tools.
+
+### Automations
+
+Automation actions call Gmail and GitHub integrations directly, but rely on connector credentials to do so.
+
+### Agents
+
+Agent data sources and outputs read Gmail or GitHub credentials from the connector engine.
+
+### System prompt
+
+The system prompt builder uses connector state to enrich the assistant context with connected account identity and repository awareness.
+
+## Validation And Editing
+
+The connector IPC surface supports:
+
+- get all connectors
+- save connector
+- remove connector
+- validate connector
+- get free connector config
+- toggle free connector
+- save free connector key
+
+That separation is important:
+
+- service connectors are "connected" and "removed"
+- free connectors are mostly toggled and optionally given an API key
+
+## Important Current Caveats
+
+- `local_system` may exist in some older conceptual docs, but it is not a persisted connector in the current connector engine.
+- AI providers and service connectors are related from a product perspective, but they are configured and persisted through different subsystems.
+- Connector availability affects multiple parts of the app at once, so stale connector docs tend to break chat, automations, and agents mentally at the same time.
+
+## Practical Guidance
+
+Configure at least one AI provider first. After that:
+
+- connect Gmail if you want email workflows or inbox-aware prompts
+- connect GitHub if you want repo, PR, notification, or review tooling
+- leave no-key free connectors enabled unless you have a reason to reduce surface area
+- add `openweathermap` or `unsplash` keys only if you need those specific capabilities

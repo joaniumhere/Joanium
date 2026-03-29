@@ -1,223 +1,398 @@
 # Automations
 
-Evelina's automation engine lets you schedule sequences of actions — no code required.
+Automations are scheduled, deterministic action chains that run in the main process. They are for "do these steps at these times" workflows, not for open-ended AI reasoning.
 
----
+## What An Automation Is
 
-## How It Works
+Each automation record combines:
 
-Automations are stored in `Data/Automations.json`. The `AutomationEngine` (a singleton in the main process) loads them on startup and runs a tick every 60 seconds to check scheduled triggers.
+- metadata such as name, description, and enabled state
+- one trigger
+- an ordered list of actions
+- run history
+- `lastRun`
 
-On startup, all `on_startup` automations run immediately. Scheduled automations are checked every minute — the engine compares the trigger definition against the current time and `lastRun` timestamp.
+Automations are persisted to `Data/Automations.json` and executed by `Packages/Automation/Core/AutomationEngine.js`.
 
-After each successful execution, `lastRun` is updated and persisted. This prevents an automation from running twice in the same scheduled window (e.g., a daily automation won't re-run if you restart the app later the same day).
+## Execution Model
 
----
+The automation engine starts with the app and does two kinds of execution:
 
-## Triggers
+- immediate startup runs for automations whose trigger type is `on_startup`
+- scheduled checks every 60 seconds for other trigger types
 
-### On Startup
-Runs every time Evelina is launched. Useful for morning briefings, workspace setup, or opening your daily tools.
+When an automation is due:
 
-### Every N Minutes
-`interval` trigger. Set any interval from 1 to 1440 minutes. The engine uses elapsed time since `lastRun` — if the app was closed, it runs immediately on next launch if the interval has passed.
+1. the engine evaluates `shouldRunNow()`
+2. actions run in order
+3. the run result is recorded in automation history
+4. `lastRun` is updated
 
-### Every Hour
-Runs at minute 0 of each hour while the app is open. Does not catch up on missed hours.
+## Important Current Semantics
 
-### Daily at Time
-Runs once per day at a specific `HH:MM` time. The engine compares `hour` and `minute` — if the app is open at that time, the automation fires. If the app was closed, it will NOT run retroactively.
+These details matter because they are easy to document incorrectly:
 
-### Weekly on Day
-Runs once per week on a specific day and time. Same caveat as daily — the app must be running at the scheduled time.
+- Actions run sequentially.
+- If an action throws, the automation run stops at that action.
+- The engine does not continue to later actions after a failure.
+- History is capped to the most recent 30 entries per automation.
+- `lastRun` is updated after the attempt, even if the run ended in an error.
 
----
+So an automation is effectively a serial transaction-like chain with best-effort persistence, not an independent fire-and-forget batch of actions.
 
-## All Available Actions
+## Trigger Types
 
-### System Actions
+The current scheduler supports these trigger types:
+
+- `on_startup`
+- `interval`
+- `hourly`
+- `daily`
+- `weekly`
+
+The shared scheduler implementation is also reused by agents, which keeps the mental model consistent across both systems.
+
+### `on_startup`
+
+Runs once when the engine starts and the automation is enabled.
+
+Use it for:
+
+- opening your work environment
+- warming up dashboards
+- running local maintenance scripts
+
+### `interval`
+
+Runs every N minutes according to the scheduler config stored on the automation.
+
+Use it for:
+
+- periodic reminders
+- simple polling
+- repeated cleanup jobs
+
+### `hourly`
+
+Runs on an hourly cadence, typically at a specific minute.
+
+### `daily`
+
+Runs once per day at the configured time.
+
+### `weekly`
+
+Runs on specific weekday/time combinations.
+
+## Storage Shape
+
+The exact JSON can evolve, but an automation record conceptually contains:
+
+```json
+{
+  "id": "morning-startup",
+  "name": "Morning Startup",
+  "enabled": true,
+  "trigger": {
+    "type": "on_startup"
+  },
+  "actions": [
+    { "type": "open_site", "url": "https://mail.google.com" },
+    { "type": "open_folder", "path": "D:\\Projects\\OpenWorld" }
+  ],
+  "lastRun": "2026-03-29T09:00:00.000Z",
+  "history": []
+}
+```
+
+The top-level file stores an array of automation objects.
+
+## Current Action Catalog
+
+The current engine supports three broad action families:
+
+- local/system actions
+- Gmail actions
+- GitHub actions
+
+### Local and system actions
 
 #### `open_site`
-Opens a URL in the default browser.
-- **url** (required) — full URL, e.g. `https://github.com`
+
+Opens one URL.
+
+Key fields:
+
+- `url`
 
 #### `open_multiple_sites`
-Opens multiple URLs, one per line, with a 400ms delay between each.
-- **urls** (required) — one URL per line
+
+Opens several URLs in one action.
+
+Key fields:
+
+- `urls`
 
 #### `open_folder`
-Opens a folder in Finder/Explorer.
-- **path** (required) — absolute folder path
-- **openTerminal** (optional checkbox) — also open a terminal at that path
-- **terminalCommand** (optional) — command to run in that terminal
+
+Opens a local folder in the OS shell.
+
+Key fields:
+
+- `path`
 
 #### `run_command`
+
 Runs a shell command.
-- **command** (required) — e.g. `npm run build`
-- **silent** (optional) — run in background without a terminal window
-- **notifyOnFinish** (optional) — send a system notification when done
+
+Key fields:
+
+- `command`
+- optional shell/runtime flags depending on UI configuration
+
+Use when the action is a one-liner and you do not need a dedicated script file.
 
 #### `run_script`
-Runs a script file.
-- **scriptPath** (required) — absolute path to the script
-- **args** (optional) — command-line arguments
-- **silent** / **notifyOnFinish** — same as `run_command`
+
+Runs a local script file.
+
+Key fields:
+
+- `scriptPath`
+- optional arguments depending on configuration
 
 #### `open_app`
-Opens an application.
-- **appPath** (required) — e.g. `/Applications/VS Code.app` or `C:\...\code.exe`
+
+Launches a local application.
+
+Key fields:
+
+- `app`
+- optional arguments
 
 #### `send_notification`
-Shows a system notification.
-- **notifTitle** (required) — notification title
-- **notifBody** (optional) — notification body text
-- **clickUrl** (optional, via checkbox) — URL to open when notification is clicked
+
+Shows a desktop notification.
+
+Key fields:
+
+- `title`
+- `body`
+- optional `clickUrl`
 
 #### `copy_to_clipboard`
+
 Copies text to the clipboard.
-- **text** (required) — text to copy
+
+Key fields:
+
+- `text`
 
 #### `write_file`
-Writes (or appends) text to a file. Creates parent directories if they don't exist.
-- **filePath** (required) — absolute file path
-- **content** (optional) — file content
-- **append** (optional checkbox) — append instead of overwrite
+
+Writes text content to a file path.
+
+Key fields:
+
+- `filePath`
+- `content`
+- optional overwrite/append behavior depending on the UI payload
 
 #### `move_file`
-Moves or renames a file.
-- **sourcePath** (required)
-- **destPath** (required)
+
+Moves a file or folder.
+
+Key fields:
+
+- `from`
+- `to`
 
 #### `copy_file`
-Copies a file to a new location.
-- **sourcePath** (required)
-- **destPath** (required)
+
+Copies a file or folder.
+
+Key fields:
+
+- `from`
+- `to`
 
 #### `delete_file`
-Permanently deletes a file. **No undo.**
-- **filePath** (required)
+
+Deletes a file or folder.
+
+Key fields:
+
+- `path`
+
+Because this is destructive, docs and UI changes around this action should be reviewed carefully.
 
 #### `create_folder`
-Creates a directory (and any missing parents).
-- **path** (required)
+
+Creates a directory.
+
+Key fields:
+
+- `path`
 
 #### `lock_screen`
-Locks the computer screen.
-- macOS: `pmset displaysleepnow`
-- Windows: `LockWorkStation`
-- Linux: `xdg-screensaver lock` (with fallbacks)
+
+Locks the current machine session.
+
+This action generally needs no additional payload.
 
 #### `http_request`
-Makes an HTTP request to any URL (great for webhooks).
-- **url** (required)
-- **httpMethod** (required) — GET, POST, PUT, PATCH, DELETE, HEAD
-- **httpHeaders** (optional, via checkbox) — `Key: Value` pairs, one per line
-- **httpBody** (optional, via checkbox) — request body (JSON, form data, etc.)
-- **notify** (optional) — send notification with response status
 
----
+Makes an HTTP request from the main process.
 
-### Gmail Actions
-*Requires Gmail connected in Settings → Connectors.*
+Key fields:
 
-#### `gmail_send_email`
-Sends an email from your connected Gmail account.
-- **to** (required) — recipient email
-- **subject** (required) — email subject
-- **gmailBody** (required) — email body
-- **cc** / **bcc** (optional, via checkbox)
+- `method`
+- `url`
+- optional `headers`
+- optional `body`
+- optional `notify`
 
-#### `gmail_get_brief`
-Fetches unread emails and shows a system notification with subjects.
-- **maxResults** (optional, default 10)
+This is the current generic webhook/integration escape hatch for automation flows.
 
-#### `gmail_get_unread_count`
-Shows a notification with just the unread count. No body preview.
+### Gmail actions
 
-#### `gmail_search_notify`
-Searches your inbox and shows matching results in a notification.
-- **query** (required) — Gmail search query (e.g. `from:boss`, `subject:invoice`)
-- **maxResults** (optional, default 5)
+All Gmail actions require the Gmail connector to be configured and enabled.
 
----
+Current supported Gmail actions:
 
-### GitHub Actions
-*Requires GitHub connected in Settings → Connectors.*
+- `gmail_send_email`
+- `gmail_get_brief`
+- `gmail_get_unread_count`
+- `gmail_search_notify`
+- `gmail_reply`
+- `gmail_forward`
+- `gmail_create_draft`
+- `gmail_mark_all_read`
+- `gmail_archive_read`
+- `gmail_trash_by_query`
+- `gmail_inbox_stats`
+- `gmail_label_emails`
 
-#### `github_open_repo`
-Opens a GitHub repository in the browser.
-- **owner** (required)
-- **repo** (required)
+Typical fields used across these actions include:
 
-#### `github_check_prs`
-Shows a notification with open (or closed/all) PRs.
-- **owner** + **repo** (required)
-- **state** (optional, default `open`) — open, closed, all
+- `to`
+- `subject`
+- `body`
+- `query`
+- `maxResults`
+- `labelName`
+- message or thread ids depending on the action
 
-#### `github_check_issues`
-Shows a notification with open issues.
-- **owner** + **repo** (required)
-- **state** (optional, default `open`)
+Practical examples:
 
-#### `github_check_commits`
-Shows a notification with recent commits.
-- **owner** + **repo** (required)
-- **maxResults** (optional, default 5)
+- send a morning digest email
+- archive already-read mail at night
+- create a draft from a saved template
+- label matched mail after a query
 
-#### `github_check_releases`
-Shows a notification with the latest release tag and date.
-- **owner** + **repo** (required)
+### GitHub actions
 
-#### `github_check_notifs`
-Shows a notification with your unread GitHub notification count.
+All GitHub actions require the GitHub connector to be configured and enabled.
 
-#### `github_create_issue`
-Creates a new issue in a repository.
-- **owner** + **repo** (required)
-- **issueTitle** (required)
-- **issueBody** (optional)
-- **labels** (optional) — comma-separated, e.g. `bug, enhancement`
+Current supported GitHub actions:
 
----
+- `github_open_repo`
+- `github_check_prs`
+- `github_check_issues`
+- `github_check_commits`
+- `github_check_releases`
+- `github_check_notifs`
+- `github_create_issue`
+- `github_repo_stats`
+- `github_star_repo`
+- `github_create_pr`
+- `github_merge_pr`
+- `github_close_issue`
+- `github_comment_issue`
+- `github_add_labels`
+- `github_assign`
+- `github_mark_notifs_read`
+- `github_trigger_workflow`
+- `github_workflow_status`
+- `github_create_gist`
 
-## Example Automations
+Typical fields used across GitHub actions include:
 
-### Morning Workspace Setup
-**Trigger:** On startup  
-**Actions:**
-1. `open_site` → `https://github.com`
-2. `open_site` → `https://mail.google.com`
-3. `gmail_get_brief` (maxResults: 10)
-4. `github_check_notifs`
+- `owner`
+- `repo`
+- `title`
+- `body`
+- `head`
+- `base`
+- `issueNumber`
+- `prNumber`
+- `labels`
+- `assignees`
+- workflow identifiers
 
-### Daily Standup Reminder
-**Trigger:** Daily at 09:45  
-**Actions:**
-1. `send_notification` — title: "Standup in 15 minutes", body: "Prepare what you did yesterday, today's plan, and blockers"
+Practical examples:
 
-### Auto-backup on Startup
-**Trigger:** On startup  
-**Actions:**
-1. `run_command` — `rsync -a ~/Projects/ ~/Backups/Projects/ --delete`
-2. `send_notification` — title: "Backup complete"
+- check whether open PRs need attention
+- create a draft PR on a schedule
+- mark notifications as read after a reporting pass
+- trigger a workflow against a repo
 
-### Weekly PR Review
-**Trigger:** Weekly, Monday at 09:00  
-**Actions:**
-1. `github_check_prs` — owner: `your-org`, repo: `your-repo`
-2. `github_check_issues` — owner: `your-org`, repo: `your-repo`
+## Run History
 
-### Webhook Ping
-**Trigger:** Every 30 minutes  
-**Actions:**
-1. `http_request` — POST to your health check or data pipeline endpoint
+Each automation stores a recent history array. The exact UI wording can vary, but history is meant to answer:
 
----
+- when did this run
+- did it succeed or fail
+- what summary or error should be shown
 
-## Debugging Automations
+History length is capped at 30 entries to keep the JSON bounded.
 
-- **Check the app console** — the AutomationEngine logs every action it runs (or fails on) to `console.log` / `console.error`. Open DevTools (`Ctrl+Shift+I`) while the main window is open.
-- **Last run timestamp** — visible on each automation card. If it's outdated, the trigger might not be matching.
-- **Gmail / GitHub not connected** — actions that require connectors will throw a clear error: "Gmail not connected — connect in Settings → Connectors".
-- **Toggle off/on** — disable an automation and re-enable it to reset its state.
-- **IPC** — if you suspect the UI isn't saving correctly, check `Data/Automations.json` directly.
+## Enabling, Disabling, And Editing
+
+The automation IPC layer supports:
+
+- reading all automations
+- saving an automation
+- deleting an automation
+- toggling enabled state
+
+This means the persisted automation object is meant to be edited in place. Histories are preserved across normal edits unless the automation is removed or history is explicitly cleared.
+
+## Relationship To Events
+
+The Events page does not duplicate automation data into a separate store. It reads automation history from the automation engine and combines it with agent history.
+
+Clearing events history therefore clears automation histories at the source.
+
+## Choosing Automations Vs Agents
+
+Choose an automation when:
+
+- the task is deterministic
+- you already know the exact steps
+- you do not need interpretation or summarization
+- you want strong predictability
+
+Choose an agent when:
+
+- you need the app to read data first
+- you want the model to decide whether anything is worth acting on
+- the output should be generated from interpretation, not a hard-coded action chain
+
+## Extension Notes
+
+To add a new automation action end-to-end, you usually need to update:
+
+- the action executor in the automation engine
+- the automation page UI/editor
+- the action renderer used to display or edit config fields
+- docs in this file and related feature docs
+
+Because the engine halts on the first thrown error, new action implementations should return clear errors and avoid partial ambiguous side effects when possible.
+
+## Common Pitfalls
+
+- Documenting an action as "best effort continue-on-error" is wrong for the current engine.
+- Assuming automations use AI is wrong; they do not plan or summarize.
+- Treating the Events page as a separate automation store is wrong; it is an aggregated view.
+- Forgetting connector prerequisites leads to confusing runtime failures for Gmail and GitHub actions.

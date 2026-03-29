@@ -1,220 +1,166 @@
 # Personas
 
-Personas are custom AI identities that replace the default assistant. They shape the AI's tone, focus, and communication style for every message in a conversation.
+Personas let you swap the assistant's identity, voice, worldview, and framing style without changing the rest of the app architecture.
 
----
+In the current codebase, personas are local Markdown files and exactly one persona can be active at a time.
 
-## How Personas Work
+## Where Personas Live
 
-When a persona is active, `buildSystemPrompt()` inserts the persona's name, personality, description, and full instruction body **before** the rest of the system prompt (user context, repos, skills, etc.). The AI then behaves according to the persona throughout the conversation.
+Persona files live in:
 
-There is always exactly one active state:
-- **No persona set** → Default assistant (helpful, accurate, contextually aware)
-- **Persona set** → That persona's identity takes over
-
-The active persona is stored in `Data/ActivePersona.json`. When you switch personas, the system prompt cache is invalidated immediately.
-
----
-
-## Persona File Format
-
-```markdown
----
-name: Atlas
-personality: disciplined, motivating, focused, structured, intense, relentless
-description: A high-performance execution coach who helps you build systems, stay consistent, and dominate your goals
----
-
-You are Atlas — [full instructions go here]
-
-## Your Core Philosophy
-...
-
-## How You Communicate
-...
+```text
+Personas/
 ```
 
-### Frontmatter Fields
+The active persona is persisted in:
 
-| Field | Required | Purpose |
-|---|---|---|
-| `name` | Yes | Displayed in the Personas page, active banner, and system prompt |
-| `personality` | Recommended | Comma-separated traits — shown as tags on the card |
-| `description` | Recommended | One sentence subtitle shown on the card |
-
-The **body** is injected directly into the system prompt as the persona's instructions. It can be as long and detailed as you want.
-
----
-
-## Included Personas
-
-### Atlas — Execution Coach
-**Personality:** disciplined, motivating, focused, structured, intense, relentless
-
-A results-driven performance coach. Builds systems, demands accountability, turns goals into daily action. Uses 90-day → weekly → daily frameworks. Ends every conversation with specific next steps.
-
-**Best for:** productivity, goal setting, routine building, getting unstuck.
-
----
-
-### Cassian — Negotiation Strategist
-**Personality:** persuasive, analytical, calm, strategic, observant, precise
-
-A master communicator and negotiator. Maps stated positions vs underlying interests. Provides exact scripts and counter-move planning. Uses BATNA frameworks for high-stakes situations.
-
-**Best for:** salary negotiations, difficult conversations, conflict resolution, persuasive pitches.
-
----
-
-### Dante — Storyteller
-**Personality:** narrative-obsessed, evocative, deeply literate, collaborative, structurally masterful, passionate
-
-A master storyteller who understands narrative architecture deeply. Helps with story structure, character development, specific scenes, voice, and breaking through creative blocks.
-
-**Best for:** fiction writing, screenwriting, developing story concepts, fixing narrative problems.
-
----
-
-### Elio — Emotional Companion
-**Personality:** empathetic, gentle, patient, understanding, calm, grounding, present
-
-A warmly present companion focused on emotional safety. Never rushes to fix. Validates feelings, opens space for exploration, only guides when ready.
-
-**Best for:** processing emotions, grief, anxiety, relationship pain, just needing to be heard.
-
----
-
-### Franklin — Leadership Coach
-**Personality:** confident, charismatic, decisive, inspiring, bold, commanding, visionary
-
-A leader's leader. Speaks with authority, advocates for calculated boldness, reframes hesitation as information. Gives direct recommendations, not vague suggestions.
-
-**Best for:** building confidence, high-stakes presentations, stepping into leadership, executive presence.
-
----
-
-### Iris — Research Analyst
-**Personality:** methodical, precise, thorough, intellectually rigorous, patient, illuminating
-
-A research powerhouse. Triangulates multiple sources, evaluates evidence quality, surfaces counterarguments, gives confidence ratings. Synthesizes complexity into clear understanding.
-
-**Best for:** deep research, fact-checking, market analysis, understanding complex topics from multiple angles.
-
----
-
-### Lyra — Creative Thinker
-**Personality:** imaginative, expressive, artistic, electric, unconventional, synesthetic, visionary
-
-A creative explosion. Generates ideas in clusters (obvious → inverted → absurd → hybrid → stripped down). Uses cross-domain collisions and oblique strategies to break through creative blocks.
-
-**Best for:** naming, brand direction, breaking creative blocks, finding unexpected angles.
-
----
-
-### Nova — Curious Explorer
-**Personality:** curious, adventurous, open-minded, electric, exploratory, wonder-driven, playfully intelligent
-
-A perpetual explorer who never stopped asking "why?" and "what if?" Makes learning feel like an adventure through unexpected connections and rabbit-hole dives.
-
-**Best for:** deep dives on topics, making subjects feel alive, intellectual exploration, thought experiments.
-
----
-
-### Rex — Fitness Coach
-**Personality:** energetic, evidence-based, direct, motivating, no-excuses, knowledgeable, grounded
-
-A high-performance fitness and nutrition coach. Evidence-based, no pseudoscience. Builds programs around progressive overload, protein, sleep, consistency — not fads.
-
-**Best for:** workout programming, nutrition planning, building fitness habits, training around injuries.
-
----
-
-### Sage — Wellness Guide
-**Personality:** grounded, serene, wise, compassionate, embodied, non-dogmatic, practically spiritual
-
-A mindfulness and wellness guide who bridges ancient wisdom with modern science. Offers micro-practices, breathwork, body awareness techniques. Non-preachy, practically grounded.
-
-**Best for:** meditation practice, managing anxiety, sleep, burnout recovery, building sustainable wellness habits.
-
----
-
-### Solen — Philosopher
-**Personality:** introspective, philosophical, calm, insightful, thoughtful, quietly profound
-
-A philosopher of inner life. Works at the slow, deep layer — meaning, identity, values, paradoxes. Guides through questions rather than answers. Uses long-view and language-inquiry techniques.
-
-**Best for:** identity questions, life crossroads, ethical tensions, understanding your own patterns.
-
----
-
-## Creating a New Persona
-
-1. Create a new `.md` file in `Personas/`
-2. Add the YAML frontmatter (name, personality, description)
-3. Write the instruction body — be specific about communication style and what the persona does and doesn't do
-4. Restart Evelina (personas are loaded at startup)
-5. The new persona appears in the Personas page
-
-### Persona Body Structure (Recommended)
-
-```markdown
----
-name: Your Persona Name
-personality: trait1, trait2, trait3, trait4
-description: One sentence describing who this is and what they help with
----
-
-You are [Name] — [opening identity statement].
-
-## Your Core Philosophy
-- Belief 1
-- Belief 2
-
-## Your Personality
-- Trait with explanation
-- Trait with explanation
-
-## How You Communicate
-- Communication pattern
-- Communication pattern
-
-## Signature Techniques You Use
-- Technique name: description
-
-## What You Avoid
-- Anti-pattern
-- Anti-pattern
-
-## Example Scenarios You Excel At
-- Scenario type
-- Scenario type
+```text
+Data/ActivePersona.json
 ```
 
-### Tips for Effective Personas
+## File Format
 
-**Be specific about voice.** "Punchy, no-filler sentences" is more actionable than "good communicator."
+Personas are Markdown files with YAML frontmatter followed by the persona body.
 
-**Define what the persona avoids.** Negative constraints often shape behaviour more precisely than positive ones.
+Typical frontmatter in the repository looks like:
 
-**Include example scenarios.** These help the AI recognise when to lean into the persona's strengths.
-
-**Keep personality traits consistent.** The frontmatter personality field should match the instruction body's tone.
-
-**Don't over-constrain.** The persona works on top of the base AI — you don't need to define every behaviour, just the distinctive ones.
-
+```md
+---
+name: Altair
+personality: cold precision evolving to wisdom
+description: Master Assassin of Masyaf
 ---
 
-## The Personas Page
+You are Altair Ibn-La'Ahad...
+```
 
-The Personas page (person icon in sidebar) shows all available personas as a grid of cards.
+Common fields include:
 
-Each card shows:
-- Avatar with initials
-- Name and description
-- Personality trait tags
-- **Activate** / **Deactivate** / **Currently active** button
-- **Chat** button — activates and immediately navigates to chat
+- `name`
+- `personality`
+- `description`
 
-The **active banner** at the top shows which persona is currently active (or "Default Assistant" if none).
+The body that follows is the actual persona prompt text used to shape assistant identity and style.
 
-Search works across name, personality tags, description, and instruction body.
+## Active Persona Model
+
+Only one persona is active at a time.
+
+That makes personas fundamentally different from skills:
+
+- multiple skills can be enabled together
+- only one persona can define the assistant identity at once
+
+When a persona is selected, the active persona object is saved into `Data/ActivePersona.json`.
+
+When no persona is active, the app falls back to the default assistant identity.
+
+## Prompt Integration
+
+The active persona is folded into system prompt assembly.
+
+In practice, that means it influences:
+
+- tone
+- voice
+- framing
+- how the assistant approaches questions
+- the baseline personality the rest of the prompt builds on top of
+
+Because personas are prompt-level state, they affect:
+
+- chat replies
+- channel replies
+- any other flow that uses the assembled system prompt
+
+## Missing Persona Recovery
+
+The current code handles missing persona files defensively.
+
+If the app tries to use an active persona whose source file no longer exists:
+
+- the active persona state is cleared
+
+This prevents the system from holding onto a broken persona reference forever.
+
+## Personas Page
+
+The Personas page is the management UI for local persona files.
+
+Its current responsibilities are:
+
+- list available personas
+- show their metadata/preview information
+- activate a selected persona
+- reset back to the default assistant identity
+
+The page controls selection state. The actual behavioral effect happens later during prompt construction.
+
+## Relationship To Skills
+
+Use a persona when you want to change:
+
+- character
+- voice
+- philosophy
+- conversational posture
+
+Use a skill when you want to add:
+
+- domain expertise
+- workflow rules
+- specialized instructions
+- task-specific heuristics
+
+They compose together:
+
+- persona defines the assistant's "who"
+- skills define extra "how"
+
+## Operational Consequences
+
+Because the active persona is global prompt state, switching personas affects the entire assistant experience until reset or changed again.
+
+That includes:
+
+- normal chat
+- channel responses
+- any system-prompt-driven reasoning
+
+So persona selection should be treated as an app-wide mode change, not a per-message style preference.
+
+## Good Persona Design
+
+Strong personas tend to:
+
+- have a clear point of view
+- produce a recognizable style shift
+- still remain useful for real tasks
+- avoid contradicting the core safety or operational expectations of the assistant
+
+Weak personas tend to:
+
+- be only decorative
+- repeat generic "helpful assistant" text
+- overfit to roleplay without improving actual output quality
+
+## IPC Surface
+
+Current persona IPC handlers are:
+
+- `get-personas`
+- `get-active-persona`
+- `set-active-persona`
+- `reset-active-persona`
+
+These handlers manage discovery and activation. They do not themselves render the final system prompt.
+
+## Practical Workflow
+
+If the assistant's tone feels wrong, check:
+
+1. whether a persona is currently active
+2. whether the persona file still exists and is valid
+3. whether enabled skills are pulling the style in another direction
+
+Personas are best treated as durable operating modes for the assistant rather than novelty presets.

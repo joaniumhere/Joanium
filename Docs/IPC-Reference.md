@@ -1,607 +1,478 @@
 # IPC Reference
 
-Every IPC channel exposed by Evelina. All channels use `ipcRenderer.invoke()` (request/response) unless noted as `ipcRenderer.send()` (fire-and-forget).
+This document lists the current main-process IPC surface registered from `Packages/Main/IPC/`. It reflects the handlers present in this repository today.
 
-The preload script (`Packages/Electron/Preload.js`) exposes all channels as `window.electronAPI.*` methods. The renderer never calls ipcRenderer directly.
+## IPC Architecture
 
----
+The current app uses Electron IPC as the bridge between:
 
-## User & Profile
+- renderer-only UI and orchestration code
+- main-process services, engines, filesystem access, and Electron APIs
 
-### `get-user`
-Returns the full user object from `Data/User.json`.
+The renderer should not call `ipcRenderer` directly. It goes through the preload bridge and the exported `window.electronAPI` methods.
 
-```typescript
-const user = await window.electronAPI.getUser()
-// Returns: { name, setup_complete, created_at, api_keys, preferences }
-```
+## Handler Style
 
-### `save-user`
-Writes a user object (used by setup wizard).
+Two patterns are used:
 
-```typescript
-await window.electronAPI.saveUser({
-  name: 'Joel',
-  setup_complete: true,
-  created_at: new Date().toISOString(),
-  preferences: { theme: 'dark', default_provider: 'anthropic', default_model: null }
-})
-```
+- `ipcMain.handle(...)` for request/response operations
+- `ipcMain.on(...)` for fire-and-forget window actions
 
-### `save-user-profile`
-Updates only the user's display name.
+Most of the app uses `handle`.
 
-```typescript
-const result = await window.electronAPI.saveUserProfile({ name: 'Joel Jolly' })
-// Returns: { ok: boolean, user?: object, error?: string }
-```
+## Main IPC Domains
 
-### `save-api-keys`
-Saves one or more provider API keys. Pass `null` to delete a key.
+### Setup IPC
 
-```typescript
-await window.electronAPI.saveAPIKeys({ anthropic: 'sk-ant-...', openai: null })
-// Returns: { ok: boolean, user?: object, error?: string }
-```
+Registered handlers:
 
-### `get-api-key`
-Returns the stored API key for a specific provider.
+- `save-user`
+- `save-api-keys`
+- `save-provider-configs`
+- `launch-main`
+- `launch-skills`
+- `launch-personas`
 
-```typescript
-const key = await window.electronAPI.getAPIKey('anthropic')
-// Returns: string | null
-```
+Purpose:
 
-### `get-models`
-Returns all providers from `Data/Models.json`, each augmented with the stored API key.
+- first-run setup flow
+- initial persistence of user profile and provider configuration
+- moving from setup shell into the main app or library views
 
-```typescript
-const models = await window.electronAPI.getModels()
-// Returns: Array<{ provider, label, endpoint, auth_header, models: {...}, api: string|null }>
-```
+### User IPC
 
-### `get-custom-instructions` / `save-custom-instructions`
-Read and write `Data/CustomInstructions.md`.
-
-```typescript
-const instructions = await window.electronAPI.getCustomInstructions()
-await window.electronAPI.saveCustomInstructions('You should be concise.')
-// save returns: { ok: boolean }
-```
+Registered handlers:
 
-### `get-memory` / `save-memory`
-Read and write `Data/Memory.md`.
-
-```typescript
-const memory = await window.electronAPI.getMemory()
-await window.electronAPI.saveMemory('I am Joel Jolly, I work in AI engineering.')
-// save returns: { ok: boolean }
-```
-
----
-
-## System Prompt
-
-### `get-system-prompt`
-Builds and returns the full system prompt (cached, refreshed on settings change).
+- `get-user`
+- `get-models`
+- `get-api-key`
+- `save-user-profile`
+- `get-custom-instructions`
+- `save-custom-instructions`
+- `get-memory`
+- `save-memory`
 
-```typescript
-const systemPrompt = await window.electronAPI.getSystemPrompt()
-// Returns: string (the full prompt)
-```
-
-The prompt includes: persona, user context, time/OS/country, GitHub repos, Gmail email, memory, custom instructions, skills.
+Purpose:
 
----
+- read and write user profile data
+- read the static model catalog
+- manage long-lived text files like `CustomInstructions.md` and `Memory.md`
 
-## Chat
+Important current detail:
 
-### `save-chat`
-Persists a chat conversation to `Data/Chats/{id}.json`.
+- custom instructions and memory are stored as local text files under `Data/`
 
-```typescript
-await window.electronAPI.saveChat({
-  id: '2024-01-15_10-30-00',
-  title: 'How does TCP/IP work',
-  updatedAt: new Date().toISOString(),
-  provider: 'anthropic',
-  model: 'claude-sonnet-4-6',
-  messages: [
-    { role: 'user', content: '...', attachments: [] },
-    { role: 'assistant', content: '...', attachments: [] }
-  ]
-})
-```
-
-### `get-chats`
-Returns all saved chats, sorted newest-first.
-
-```typescript
-const chats = await window.electronAPI.getChats()
-// Returns: Array<{ id, title, updatedAt, provider, model, messages }>
-```
-
-### `load-chat`
-Returns a single chat by ID.
-
-```typescript
-const chat = await window.electronAPI.loadChat('2024-01-15_10-30-00')
-// Returns: chat object | null
-```
-
-### `delete-chat`
-Deletes a chat file.
-
-```typescript
-await window.electronAPI.deleteChat('2024-01-15_10-30-00')
-// Returns: { ok: boolean }
-```
-
----
-
-## Automations
-
-### `get-automations`
-Returns all automations from `Data/Automations.json`.
-
-```typescript
-const result = await window.electronAPI.getAutomations()
-// Returns: { ok: boolean, automations: Array<AutomationObject> }
-```
-
-### `save-automation`
-Creates or updates an automation.
-
-```typescript
-const result = await window.electronAPI.saveAutomation({
-  id: 'auto_1234_xyz',
-  name: 'Morning Setup',
-  description: 'Opens tools on startup',
-  enabled: true,
-  trigger: { type: 'on_startup' },
-  actions: [{ type: 'open_site', url: 'https://github.com' }],
-  lastRun: null
-})
-// Returns: { ok: boolean, automation?: object, error?: string }
-```
-
-### `delete-automation`
-Deletes an automation by ID.
-
-```typescript
-await window.electronAPI.deleteAutomation('auto_1234_xyz')
-// Returns: { ok: boolean }
-```
-
-### `toggle-automation`
-Enables or disables an automation without editing it.
-
-```typescript
-await window.electronAPI.toggleAutomation('auto_1234_xyz', false)
-// Returns: { ok: boolean }
-```
-
-### `launch-automations`
-Navigates the window to `Automations.html`.
-
-```typescript
-await window.electronAPI.launchAutomations()
-```
-
----
-
-## Connectors
-
-### `get-connectors`
-Returns status of all connectors (no credentials exposed).
-
-```typescript
-const connectors = await window.electronAPI.getConnectors()
-// Returns: {
-//   gmail: { enabled, connectedAt, isFree, noKey },
-//   github: { enabled, connectedAt, isFree, noKey },
-//   open_meteo: { enabled, ... },
-//   ...
-// }
-```
-
-### `save-connector`
-Saves credentials for a service connector (Gmail, GitHub).
-
-```typescript
-await window.electronAPI.saveConnector('github', { token: 'ghp_...' })
-// Returns: { ok: boolean, enabled: true, connectedAt: string }
-```
-
-### `remove-connector`
-Disconnects a service connector and clears its credentials.
-
-```typescript
-await window.electronAPI.removeConnector('github')
-// Returns: { ok: boolean }
-```
-
-### `validate-connector`
-Tests stored credentials against the live API.
-
-```typescript
-const result = await window.electronAPI.validateConnector('github')
-// Returns: { ok: boolean, username?: string, avatar?: string, error?: string }
-// For gmail: { ok: boolean, email?: string, error?: string }
-```
-
-### `get-free-connector-config`
-Returns the full config for a free API connector, including stored API key.
-
-```typescript
-const config = await window.electronAPI.getFreeConnectorConfig('fred')
-// Returns: { enabled, isFree, noKey, credentials: { apiKey: '...' } }
-```
-
-### `toggle-free-connector`
-Enables or disables a free connector.
-
-```typescript
-await window.electronAPI.toggleFreeConnector('coingecko', false)
-// Returns: { ok: boolean }
-```
-
-### `save-free-connector-key`
-Saves an optional API key for a free connector (FRED, Unsplash, OpenWeatherMap).
-
-```typescript
-await window.electronAPI.saveFreeConnectorKey('fred', 'your-api-key')
-// Returns: { ok: boolean }
-```
-
----
-
-## Gmail
-
-### `gmail-oauth-start`
-Initiates the OAuth flow. Opens a browser window, starts a local callback server on port 42813.
-
-```typescript
-const result = await window.electronAPI.gmailOAuthStart(clientId, clientSecret)
-// Returns: { ok: boolean, email?: string, error?: string }
-```
-
-### `gmail-get-brief`
-Fetches unread emails and returns count + formatted text.
+### System IPC
 
-```typescript
-const brief = await window.electronAPI.gmailGetBrief(15)
-// Returns: { ok: boolean, count: number, text: string, error?: string }
-```
-
-### `gmail-get-unread`
-Returns full unread email objects.
+Registered handlers:
 
-```typescript
-const result = await window.electronAPI.gmailGetUnread(20)
-// Returns: { ok: boolean, emails: Array<{ id, subject, from, snippet }> }
-```
-
-### `gmail-send`
-Sends an email via the connected Gmail account.
-
-```typescript
-const result = await window.electronAPI.gmailSend('to@example.com', 'Subject', 'Body text')
-// Returns: { ok: boolean, error?: string }
-```
-
-### `gmail-search`
-Searches Gmail with a query string.
-
-```typescript
-const result = await window.electronAPI.gmailSearch('from:boss subject:urgent', 10)
-// Returns: { ok: boolean, emails: Array<{ id, subject, from, snippet }> }
-```
-
----
-
-## GitHub
-
-### `github-get-repos`
-Returns the user's repositories (sorted by last updated, up to 30).
-
-```typescript
-const result = await window.electronAPI.githubGetRepos()
-// Returns: { ok: boolean, repos: Array<repo> }
-```
-
-### `github-get-file`
-Returns the content of a file from a repository.
-
-```typescript
-const result = await window.electronAPI.githubGetFile('withinJoel', 'Evelina', 'README.md')
-// Returns: { ok: boolean, path, name, content, sha, size, url }
-```
-
-### `github-get-tree`
-Returns the file tree of a repository.
-
-```typescript
-const result = await window.electronAPI.githubGetTree('withinJoel', 'Evelina', 'main')
-// Returns: { ok: boolean, tree: Array<{ path, type, sha }> }
-```
-
-### `github-get-issues`
-Returns issues for a repository.
-
-```typescript
-const result = await window.electronAPI.githubGetIssues('withinJoel', 'Evelina', 'open')
-// Returns: { ok: boolean, issues: Array<issue> }
-```
-
-### `github-get-prs`
-Returns pull requests for a repository.
-
-```typescript
-const result = await window.electronAPI.githubGetPRs('withinJoel', 'Evelina', 'open')
-// Returns: { ok: boolean, prs: Array<pr> }
-```
-
-### `github-get-notifications`
-Returns unread GitHub notifications.
-
-```typescript
-const result = await window.electronAPI.githubGetNotifications()
-// Returns: { ok: boolean, notifications: Array<notification> }
-```
-
-### `github-get-commits`
-Returns recent commits for a repository.
-
-```typescript
-const result = await window.electronAPI.githubGetCommits('withinJoel', 'Evelina')
-// Returns: { ok: boolean, commits: Array<commit> }
-```
-
----
-
-## Local Dev & Terminal
-
-These channels back the chat agent's local workspace tools.
-
-### `inspect-workspace`
-Summarises the current codebase: languages, frameworks, scripts, test signals, CI, and infra hints.
-
-```typescript
-const result = await window.electronAPI.inspectWorkspace({ rootPath: 'D:\\Projects\\OpenWorld' })
-// Returns: { ok: boolean, summary: { path, languages, frameworks, packageScripts, testing, infra, ... } }
-```
-
-### `search-workspace`
-Searches text across the workspace and returns matching files with line snippets.
-
-```typescript
-const result = await window.electronAPI.searchWorkspace({
-  rootPath: 'D:\\Projects\\OpenWorld',
-  query: 'apply_file_patch',
-  maxResults: 20
-})
-// Returns: { ok: boolean, root, matches: Array<{ path, lineNumber, line }> }
-```
-
-### `read-local-file` / `read-file-chunk`
-Reads a full text file preview or a specific line range.
-
-```typescript
-await window.electronAPI.readLocalFile({ filePath: 'D:\\Projects\\OpenWorld\\App.js', maxLines: 150 })
-await window.electronAPI.readFileChunk({ filePath: 'D:\\Projects\\OpenWorld\\App.js', startLine: 1, lineCount: 80 })
-```
-
-### `extract-document-text`
-Extracts readable text from a local path or an uploaded binary document buffer. Supports PDF, DOCX, XLSX/XLS/ODS, PPTX, RTF, and plain text formats.
-
-```typescript
-await window.electronAPI.extractDocumentText({
-  filePath: 'D:\\Projects\\OpenWorld\\Docs\\Roadmap.pdf'
-})
-
-await window.electronAPI.extractDocumentText({
-  fileName: 'proposal.docx',
-  mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  buffer: arrayBuffer
-})
-// Returns: { ok: boolean, kind?: string, summary?: string, text?: string, lines?: number, warnings?: string[], error?: string }
-```
-
-### `read-multiple-local-files`
-Reads several text files in one round trip for compare-and-edit workflows.
-
-```typescript
-const result = await window.electronAPI.readMultipleLocalFiles({
-  paths: 'D:\\Projects\\OpenWorld\\App.js,D:\\Projects\\OpenWorld\\package.json',
-  maxLinesPerFile: 120
-})
-// Returns: { ok: boolean, files: Array<{ ok, path, content?, totalLines?, sizeBytes?, error? }> }
-```
-
-### `list-directory` / `list-directory-tree`
-Lists one folder flat or as a shallow recursive tree.
-
-```typescript
-await window.electronAPI.listDirectory({ dirPath: 'D:\\Projects\\OpenWorld\\Packages' })
-await window.electronAPI.listDirectoryTree({ dirPath: 'D:\\Projects\\OpenWorld\\Packages', maxDepth: 3, maxEntries: 200 })
-```
-
-### `write-ai-file` / `apply-file-patch`
-Writes a full file or performs exact-text replacement in place.
-
-```typescript
-await window.electronAPI.writeAIFile({ filePath: 'D:\\Projects\\OpenWorld\\tmp.txt', content: 'hello' })
-await window.electronAPI.applyFilePatch({
-  filePath: 'D:\\Projects\\OpenWorld\\App.js',
-  search: 'old text',
-  replace: 'new text'
-})
-```
-
-### `replace-lines-in-file` / `insert-into-file`
-Supports surgical edits by line range or by insertion target.
-
-```typescript
-await window.electronAPI.replaceLinesInFile({
-  filePath: 'D:\\Projects\\OpenWorld\\App.js',
-  startLine: 10,
-  endLine: 14,
-  replacement: 'const value = 42;'
-})
-
-await window.electronAPI.insertIntoFile({
-  filePath: 'D:\\Projects\\OpenWorld\\App.js',
-  content: '\\nimport fs from \"fs\";\\n',
-  anchor: "import { app, BrowserWindow } from 'electron';",
-  position: 'after'
-})
-```
-
-### `copy-item` / `move-item` / `create-directory` / `delete-item`
-Copies, renames, creates, or deletes files and folders.
-
-```typescript
-await window.electronAPI.copyItem({ sourcePath: 'D:\\Projects\\OpenWorld\\.env.example', destinationPath: 'D:\\Projects\\OpenWorld\\.env' })
-await window.electronAPI.moveItem({ sourcePath: 'D:\\Projects\\OpenWorld\\old.js', destinationPath: 'D:\\Projects\\OpenWorld\\new.js' })
-await window.electronAPI.createDirectory({ dirPath: 'D:\\Projects\\OpenWorld\\tmp\\reports' })
-await window.electronAPI.deleteItem({ itemPath: 'D:\\Projects\\OpenWorld\\tmp\\old-report.txt' })
-```
-
-### `run-shell-command` / `assess-command-risk` / `run-project-checks`
-Runs short-lived commands, assesses destructive risk, and executes detected lint/test/build scripts.
-
-```typescript
-await window.electronAPI.assessCommandRisk({ command: 'git push --force' })
-await window.electronAPI.runShellCommand({ command: 'npm run lint', cwd: 'D:\\Projects\\OpenWorld', timeout: 30000 })
-await window.electronAPI.runProjectChecks({ working_directory: 'D:\\Projects\\OpenWorld' })
-```
-
-### `git-status` / `git-diff` / `git-create-branch`
-Exposes lightweight Git operations for local review and workflow setup.
-
-```typescript
-await window.electronAPI.gitStatus({ workingDir: 'D:\\Projects\\OpenWorld' })
-await window.electronAPI.gitDiff({ workingDir: 'D:\\Projects\\OpenWorld', staged: false })
-await window.electronAPI.gitCreateBranch({ workingDir: 'D:\\Projects\\OpenWorld', branchName: 'codex/new-tools' })
-```
-
-### `pty-spawn` / `pty-write` / `pty-kill`
-Starts a long-running process whose output is streamed into the embedded chat terminal.
-
-```typescript
-const { pid } = await window.electronAPI.spawnPty({ command: 'npm run dev', cwd: 'D:\\Projects\\OpenWorld' })
-await window.electronAPI.writePty(pid, 'rs\n')
-await window.electronAPI.killPty(pid)
-```
-
----
-
-## Skills & Personas
-
-### `get-skills`
-Returns all installed skills from the `Skills/` folder.
-
-```typescript
-const result = await window.electronAPI.getSkills()
-// Returns: { ok: boolean, skills: Array<{ filename, name, trigger, description, body, raw }> }
-```
-
-### `get-personas`
-Returns all installed personas from the `Personas/` folder.
-
-```typescript
-const result = await window.electronAPI.getPersonas()
-// Returns: { ok: boolean, personas: Array<{ filename, name, personality, description, instructions }> }
-```
-
-### `get-active-persona`
-Returns the currently active persona (or null if using default).
-
-```typescript
-const result = await window.electronAPI.getActivePersona()
-// Returns: { ok: boolean, persona: PersonaObject | null }
-```
-
-### `set-active-persona`
-Sets a persona as active. Pass the full persona object from `get-personas`.
-
-```typescript
-await window.electronAPI.setActivePersona(personaObject)
-// Returns: { ok: boolean }
-```
-
-### `reset-active-persona`
-Returns to the default assistant (removes `ActivePersona.json`).
-
-```typescript
-await window.electronAPI.resetActivePersona()
-// Returns: { ok: boolean }
-```
-
----
-
-## Usage
-
-### `track-usage`
-Records one API call's token usage.
-
-```typescript
-await window.electronAPI.trackUsage({
-  provider: 'anthropic',
-  model: 'claude-sonnet-4-6',
-  modelName: 'Claude Sonnet 4.6',
-  inputTokens: 1234,
-  outputTokens: 567,
-  chatId: '2024-01-15_10-30-00'
-})
-```
-
-### `get-usage`
-Returns all usage records.
-
-```typescript
-const result = await window.electronAPI.getUsage()
-// Returns: { ok: boolean, records: Array<UsageRecord> }
-```
-
-### `clear-usage`
-Deletes all usage records.
-
-```typescript
-await window.electronAPI.clearUsage()
-// Returns: { ok: boolean }
-```
-
-### `launch-usage`
-Navigates to the Usage page.
-
-```typescript
-await window.electronAPI.launchUsage()
-```
-
----
-
-## Navigation
-
-All launch/navigate channels load a new HTML page in the same BrowserWindow:
-
-```typescript
-await window.electronAPI.launchMain()        // → Public/Chat.html
-await window.electronAPI.launchAutomations() // → Public/Automations.html
-await window.electronAPI.launchSkills()      // → Public/Skills.html
-await window.electronAPI.launchPersonas()    // → Public/Personas.html
-await window.electronAPI.launchUsage()       // → Public/Usage.html
-```
-
----
-
-## Window Controls
-
-These use `ipcRenderer.send()` (one-way), not `invoke()`.
-
-```typescript
-window.electronAPI.minimize()  // ipcMain.on('window-minimize')
-window.electronAPI.maximize()  // ipcMain.on('window-maximize') — toggles maximize/restore
-window.electronAPI.close()     // ipcMain.on('window-close')
-```
+- `get-system-prompt`
+
+Purpose:
+
+- retrieve the fully assembled current system prompt
+
+This is useful for debugging prompt assembly or verifying the effects of personas, skills, memory, and connector state.
+
+### Chat IPC
+
+Registered handlers:
+
+- `save-chat`
+- `get-chats`
+- `load-chat`
+- `delete-chat`
+
+Purpose:
+
+- persist global or project-scoped chats
+- list saved chats
+- reload a transcript
+- delete a chat file
+
+Important current behavior:
+
+- project scope is resolved from provided project metadata and changes the target directory on disk
+
+### Project IPC
+
+Registered handlers:
+
+- `get-projects`
+- `get-project`
+- `create-project`
+- `update-project`
+- `delete-project`
+- `validate-project`
+
+Purpose:
+
+- project CRUD
+- workspace path validation
+- loading recent project list for the UI
+
+### Automation IPC
+
+Registered handlers:
+
+- `launch-automations`
+- `get-automations`
+- `save-automation`
+- `delete-automation`
+- `toggle-automation`
+
+Purpose:
+
+- open the automations experience
+- read persisted automation definitions
+- save, delete, or enable/disable automations
+
+### Agents IPC
+
+Registered handlers:
+
+- `launch-agents`
+- `launch-events`
+- `get-agents`
+- `get-running-jobs`
+- `clear-events-history`
+- `save-agent`
+- `delete-agent`
+- `toggle-agent`
+- `run-agent-now`
+
+Purpose:
+
+- manage agents and jobs
+- show currently running jobs
+- manually trigger agent execution
+- clear aggregated event history
+
+Important current detail:
+
+- `clear-events-history` also clears automation history, not just agents
+
+### Connector IPC
+
+Registered handlers:
+
+- `get-connectors`
+- `save-connector`
+- `remove-connector`
+- `validate-connector`
+- `get-free-connector-config`
+- `toggle-free-connector`
+- `save-free-connector-key`
+
+Purpose:
+
+- manage Gmail/GitHub service connectors
+- manage free connector enablement and keys
+- validate credentials before save when supported
+
+### Gmail IPC
+
+Registered handlers:
+
+- `gmail-oauth-start`
+- `gmail-get-brief`
+- `gmail-get-unread`
+- `gmail-search`
+- `gmail-inbox-stats`
+- `gmail-send`
+- `gmail-reply`
+- `gmail-forward`
+- `gmail-create-draft`
+- `gmail-mark-all-read`
+- `gmail-archive-read`
+- `gmail-trash-by-query`
+- `gmail-mark-as-read`
+- `gmail-mark-as-unread`
+- `gmail-archive-message`
+- `gmail-trash-message`
+- `gmail-list-labels`
+- `gmail-create-label`
+- `gmail-get-label-id`
+- `gmail-modify-message`
+
+Purpose:
+
+- launch OAuth
+- perform mailbox queries
+- send or draft mail
+- mutate message state and labels
+
+### GitHub IPC
+
+Registered handlers cover repo, issue, PR, review, notification, workflow, and gist operations.
+
+Current handler groups include operations for:
+
+- listing repos
+- fetching repo file contents
+- fetching repo trees
+- reading issues
+- reading pull requests
+- reading notifications
+- searching code
+- reading commits
+- reading releases
+- reading branches
+- starring or unstarring repos
+- repo stats
+- PR creation/merge/close
+- issue creation/close/reopen/comment
+- label and assignee mutation
+- PR diff/details/checks/comments
+- PR reviews
+- workflow trigger and workflow-run inspection
+- gist creation
+- marking notifications read
+
+Purpose:
+
+- power chat tools
+- support automations
+- support agent outputs like PR review comments
+
+Representative handler names in the current file include:
+
+- `github-get-repos`
+- `github-get-file`
+- `github-get-tree`
+- `github-get-issues`
+- `github-get-prs`
+- `github-get-notifications`
+- `github-search-code`
+- `github-get-commits`
+- `github-get-pr-diff`
+- `github-create-pr-review`
+- `github-get-pr-details`
+- `github-get-pr-checks`
+- `github-get-pr-comments`
+- `github-get-workflow-runs`
+- `github-get-repo-stats`
+- `github-create-issue`
+- `github-close-issue`
+- `github-reopen-issue`
+- `github-comment-issue`
+- `github-add-labels`
+- `github-add-assignees`
+- `github-create-pr`
+- `github-merge-pr`
+- `github-close-pr`
+- `github-star-repo`
+- `github-unstar-repo`
+- `github-get-releases`
+- `github-get-latest-release`
+- `github-trigger-workflow`
+- `github-get-latest-workflow-run`
+- `github-create-gist`
+- `github-get-branches`
+- `github-mark-notifs-read`
+
+### Skills IPC
+
+Registered handlers:
+
+- `get-skills`
+- `toggle-skill`
+- `enable-all-skills`
+- `disable-all-skills`
+
+Purpose:
+
+- enumerate installed skill files
+- manage the enablement map in `Data/Skills.json`
+
+### Personas IPC
+
+Registered handlers:
+
+- `get-personas`
+- `get-active-persona`
+- `set-active-persona`
+- `reset-active-persona`
+
+Purpose:
+
+- enumerate persona files
+- manage the active persona selection
+
+### Usage IPC
+
+Registered handlers:
+
+- `launch-usage`
+- `track-usage`
+- `get-usage`
+- `clear-usage`
+
+Purpose:
+
+- open the usage page
+- read aggregated token/cost records
+- append manual usage entries when needed
+- clear history
+
+### Channels IPC
+
+Registered handlers:
+
+- `get-channels`
+- `get-channel-config`
+- `save-channel`
+- `remove-channel`
+- `toggle-channel`
+- `validate-channel`
+- `channel-reply`
+
+Purpose:
+
+- manage external channel credentials and enabled state
+- provide safe partial config back to the UI
+- return renderer-generated replies to the channel engine
+
+Important current detail:
+
+- `validate-channel` currently exposes Telegram and WhatsApp validation paths, but not Discord or Slack
+
+### MCP IPC
+
+Registered handlers:
+
+- `mcp-list-servers`
+- `mcp-save-server`
+- `mcp-remove-server`
+- `mcp-connect-server`
+- `mcp-disconnect-server`
+- `mcp-get-tools`
+- `mcp-call-tool`
+
+Purpose:
+
+- manage MCP server definitions
+- establish live MCP connections
+- surface tool metadata
+- execute MCP tools
+
+### Browser Preview IPC
+
+Registered handlers:
+
+- `browser-preview-get-state`
+- `browser-preview-set-visible`
+- `browser-preview-set-bounds`
+
+Purpose:
+
+- synchronize the renderer-side preview layout with the main-process `BrowserView`
+
+### Terminal IPC
+
+Registered handlers:
+
+- `find-file-by-name`
+- `select-directory`
+- `pty-spawn`
+- `pty-write`
+- `pty-resize`
+- `pty-kill`
+- `assess-command-risk`
+- `run-shell-command`
+- `read-local-file`
+- `extract-document-text`
+- `read-file-chunk`
+- `read-multiple-local-files`
+- `list-directory`
+- `list-directory-tree`
+- `search-workspace`
+- `write-ai-file`
+- `apply-file-patch`
+- `replace-lines-in-file`
+- `insert-into-file`
+- `create-directory`
+- `copy-item`
+- `move-item`
+- `inspect-workspace`
+- `git-status`
+- `git-diff`
+- `git-create-branch`
+- `run-project-checks`
+- `open-folder-os`
+- `open-terminal-os`
+- `delete-item`
+
+Purpose:
+
+- PTY-backed terminal sessions
+- direct shell execution
+- file reads/writes
+- directory inspection
+- git helpers
+- workspace inspection and file mutation
+
+Important current detail:
+
+- this IPC surface is the backbone for workspace-aware chat tooling
+
+### Window IPC
+
+These are registered with `ipcMain.on(...)` rather than `handle(...)`:
+
+- `window-minimize`
+- `window-maximize`
+- `window-close`
+
+Purpose:
+
+- frameless custom titlebar controls
+
+## Event-Like Renderer Messages
+
+Some messages are not classic renderer-invoked request/response APIs. One key example is the channel handoff:
+
+- main process sends `channel-incoming` to the renderer
+- renderer later responds through the `channel-reply` handler
+
+This is effectively part of the IPC contract even though one side begins with `webContents.send(...)`.
+
+## Persistence Mapping
+
+Many IPC handlers are thin wrappers over files under `Data/`.
+
+Common mappings:
+
+- chats -> `Data/Chats/` or `Data/Projects/<id>/Chats/`
+- projects -> `Data/Projects/`
+- automations -> `Data/Automations.json`
+- agents -> `Data/Agents.json`
+- channels -> `Data/Channels.json`
+- skills enablement -> `Data/Skills.json`
+- active persona -> `Data/ActivePersona.json`
+- usage -> `Data/Usage.json`
+- user/profile/instructions/memory -> `Data/User.json`, `CustomInstructions.md`, `Memory.md`
+
+## Practical Guidance For Extending IPC
+
+When adding a new capability, keep the boundary clean:
+
+- renderer concerns stay in the renderer
+- filesystem, Electron, OS, and background runtime concerns stay in the main process
+- preload exports only the specific methods the renderer needs
+
+Usually an end-to-end IPC feature requires updates in three places:
+
+1. the main IPC registration file
+2. the preload bridge
+3. the renderer caller
+
+And often a fourth:
+
+4. a service or engine implementation in the main process
+
+## Common Documentation Mistakes To Avoid
+
+- Do not describe the app as if only chat/setup IPC exist; the current surface is much broader.
+- Do not omit project, agent, channel, MCP, or browser preview IPC; they are core runtime features now.
+- Do not imply the renderer has direct filesystem access; it does not.

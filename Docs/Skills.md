@@ -1,170 +1,180 @@
 # Skills
 
-Skills are markdown files that give the AI domain-specific knowledge and frameworks. They live in the `Skills/` folder at the project root.
+Skills are local Markdown prompt modules that can be turned on or off. When enabled, their full contents are injected into the system prompt builder.
 
----
+This is the most important fact about the current skill system:
 
-## How Skills Work
+- enabled skills are active prompt content
+- disabled skills are ignored
 
-1. All `.md` files in `Skills/` (except `Debug.md`) are loaded at startup via `SkillsIPC.js`
-2. When you send a message, `Agent.js → planRequest()` calls the AI with a catalogue of all skill names, triggers, and descriptions
-3. The planner decides which skills (if any) are relevant to your request
-4. Relevant skills are logged in the agent log bubble before the response (e.g. `[SKILL] Copywriting`)
-5. The skill content is NOT injected into the system prompt on every message — only the metadata is. The AI uses its training knowledge guided by the skill's structure.
+They are not just tags, labels, or examples stored for later manual reading.
 
-> **Note:** The skill selection is AI-driven. If you want to force a skill, just mention it explicitly: "Use the API Design skill to help me design this REST API."
+## Where Skills Live
 
----
+Skill files live in:
 
-## Skill File Format
-
-```markdown
----
-name: Copywriting
-trigger: write copy, marketing text, landing page, ad, headline, tagline, email campaign, product description, sales page, CTA, brand voice
-description: Write high-converting, distinctive, emotionally intelligent copy for any medium and audience. Use when producing any persuasive or marketing-oriented text.
----
-
-The actual skill content goes here. This is what the AI reads
-and applies when this skill is active...
+```text
+Skills/
 ```
 
-### Frontmatter Fields
+Each skill is a Markdown file, typically with YAML frontmatter followed by free-form guidance text.
 
-| Field | Required | Purpose |
-|---|---|---|
-| `name` | Yes | Unique identifier, shown in the Skills page and agent log |
-| `trigger` | Recommended | Comma-separated keywords that signal when this skill applies |
-| `description` | Recommended | One sentence explaining what the skill does and when to use it |
+The enablement state lives separately in:
 
-The **body** (everything after the closing `---`) is the skill content itself. It can use any markdown — headers, code blocks, bullet lists, tables.
-
-### What Goes in the Body
-
-Write the body as a structured reference the AI should follow. Think of it as a domain expert's playbook:
-
-- **Frameworks and checklists** — step-by-step processes
-- **Code patterns** — language-specific examples with comments
-- **Decision tables** — when to use X vs Y
-- **Common errors and fixes** — diagnostic patterns
-- **Quality standards** — what "good" looks like
-
----
-
-## Installed Skills
-
-| Skill | When it applies |
-|---|---|
-| API Design | REST API design, endpoints, schemas, versioning, OpenAPI |
-| CICD Pipeline | CI/CD, GitHub Actions, Docker builds, deployment, release |
-| Code Review | Code review, PR review, feedback on code |
-| Content Strategy | Content plan, editorial calendar, blog strategy, content pillars |
-| Copywriting | Marketing text, landing page, ad copy, headlines, email campaigns |
-| Data Analysis | Data analysis, statistics, SQL queries, visualization |
-| Database Design | Schema design, data modeling, normalization, indexes |
-| Debug — Docker/Kubernetes | Docker crashes, pod errors, K8s debugging |
-| Debug — FastAPI/Django | FastAPI 422 errors, Django ORM, migrations, DRF |
-| Debug — Go | Nil panics, goroutine leaks, race conditions, Go errors |
-| Debug — JavaScript/TypeScript | JS/TS runtime errors, type errors, async bugs |
-| Debug — Node.js/Express | Node crashes, Express middleware, event loop |
-| Debug — PostgreSQL/SQL | Slow queries, EXPLAIN, locking, migration errors |
-| Debug — Python | Python exceptions, import errors, memory, async |
-| Debug — React/Next.js | React errors, hooks, SSR, hydration |
-| Debug — React Native/Expo | Mobile build errors, native module issues |
-| Debug — Redis/Queues | Redis connection, BullMQ, queue stalls |
-| Debug — REST/GraphQL | HTTP errors, auth, CORS, GraphQL resolvers, N+1 |
-| Debug — Rust/C++ | Borrow checker, lifetimes, segfaults, UB |
-| Email Marketing | Email campaigns, subject lines, sequences |
-| Frontend Design | UI/UX, web components, CSS, visual design |
-| Hiring & Interviewing | Job descriptions, interview questions, candidate evaluation |
-| Meeting Facilitation | Meeting design, agenda, facilitation techniques |
-| Monitoring & Observability | Metrics, logging, alerting, tracing |
-| OKR Goal Setting | Objectives, key results, goal frameworks |
-| Performance Optimization | Code performance, profiling, caching |
-| Personal Branding | Personal brand, LinkedIn, thought leadership |
-| Pitch Deck | Investor pitch, presentation structure |
-| Product Requirements | PRD, user stories, acceptance criteria, feature specs |
-| Prompt Engineering | Writing better AI prompts, system prompts |
-| Refactoring | Code restructuring, clean code, design patterns |
-| Research & Summarize | Research synthesis, summarization |
-| Sales Outreach | Cold email, sales sequences, prospecting |
-| Scenario Planning | Strategic planning, future scenarios, risk analysis |
-| Security Audit | OWASP, SQL injection, XSS, auth vulnerabilities |
-| SEO Strategy | Keyword research, on-page SEO, link building |
-| System Design | Distributed systems, architecture patterns |
-| Technical Writing | Documentation, API docs, user guides |
-| Testing Strategy | Unit tests, integration tests, E2E, TDD |
-| UX Research | User interviews, usability testing, research synthesis |
-
----
-
-## Writing a New Skill
-
-1. Create a new `.md` file in `Skills/`
-2. Add the YAML frontmatter (name, trigger, description)
-3. Write the skill body — be specific and structured
-4. Restart Evelina (skills are loaded at startup)
-5. The new skill will appear in the Skills page and be available to the planner
-
-### Tips for Good Skills
-
-**Be specific in the trigger.** The planner matches skill triggers against the user's request. More specific triggers = more accurate selection. `"write copy, marketing text, landing page"` is better than `"writing"`.
-
-**Structure the body hierarchically.** Use `##` headers to break the skill into phases or categories. The AI navigates the structure more effectively with clear sections.
-
-**Include code examples** for technical skills. Concrete examples are more useful than abstract descriptions.
-
-**Keep the body focused.** A skill covering one specific domain (e.g. "Debug — Redis") will be more reliable than one covering a broad area (e.g. "All debugging").
-
-**Use checklists** for things where completeness matters:
-```markdown
-## Security Checklist
-[ ] Authentication on all endpoints
-[ ] Input validation before processing
-[ ] No secrets in code
+```text
+Data/Skills.json
 ```
 
-### Example: Minimal New Skill
+## File Format
 
-```markdown
+The current skill files are plain Markdown with frontmatter like:
+
+```md
 ---
-name: Email Etiquette
-trigger: write an email, professional email, email tone, email format, how to phrase this email
-description: Write clear, professional, appropriately-toned emails for any professional context.
+name: AccessibilityA11y
+trigger: accessibility, a11y, WCAG, keyboard navigation
+description: Build and audit accessible interfaces.
 ---
 
-## Core Rules
-- Subject line: specific, scannable, < 60 characters
-- Open with context, not pleasantries
-- One email = one ask
-- Action item: explicit and bolded if there's a next step
-
-## Tone Guide
-- To leadership: direct, no fluff, bottom line first
-- To peers: collegial, collaborative framing
-- To reports: clear expectations, specific next steps
-- To clients: professional warmth, solution-focused
-
-## Common Patterns
-
-### The Request Email
-"I need [X] by [date] because [reason]. Could you [specific action]? Let me know if you need anything from my end."
-
-### The Update Email
-"Update on [project]: [current status]. Next milestone: [date]. No blockers. / Current blocker: [X], working to resolve by [date]."
-
-### The Decline Email
-"Thanks for thinking of me. I can't take this on right now because [reason]. Consider [alternative] instead."
+# ROLE
+...
 ```
 
----
+Common frontmatter fields in the repository today include:
 
-## The Skills Page
+- `name`
+- `trigger`
+- `description`
 
-The Skills page (star icon in sidebar) shows all installed skills as browsable cards. Each card shows:
-- Skill name and badge
-- **When** trigger (what situations this applies to)
-- Description
-- **Read** button — opens the full skill content in a modal
+After the frontmatter, the remainder of the file is the instruction body that becomes part of the system prompt when enabled.
 
-Skills can be searched by name, trigger, description, or body content.
+## Enablement Model
+
+`Data/Skills.json` stores which skills are enabled.
+
+Current behavior:
+
+- skill files can exist without being enabled
+- toggling a skill updates the enablement map
+- "Enable all" and "Disable all" update the map in bulk
+- only enabled skill bodies are loaded into the prompt
+
+This is why docs should not claim that all files in `Skills/` are always active.
+
+## Prompt Integration
+
+The system prompt builder reads skill files from disk and includes the full text of enabled skills.
+
+That means an enabled skill can influence:
+
+- planning behavior
+- response structure
+- domain-specific advice
+- code review emphasis
+- writing style in a specialized task
+
+Disabled skills have no prompt-time effect.
+
+## Important Current Details
+
+### Enabled skills are loaded by body, not by metadata only
+
+Older descriptions of the project sometimes framed skills as lightweight descriptors. That is not accurate anymore. The instruction body itself is the feature.
+
+### Skills affect the global system prompt
+
+Because they are injected into prompt assembly, enabled skills affect the assistant globally rather than only one page or one button.
+
+### Prompt changes are cache-sensitive
+
+The built system prompt is cached by `SystemPromptService`, so prompt-affecting changes need cache invalidation to take effect quickly. The current codebase already invalidates prompt cache when appropriate system configuration changes happen.
+
+### `Debug.md` is skipped
+
+The current skills loading logic skips `Debug.md` if it is present. That file should not be documented as a normal user-facing skill.
+
+## Skills Page
+
+The Skills page is the management UI for installed skill files.
+
+Its current responsibilities are:
+
+- list discovered skills
+- show their metadata
+- toggle an individual skill
+- enable all skills
+- disable all skills
+
+The page is a management surface only. The actual runtime effect happens later during system prompt construction.
+
+## How Skills Differ From Personas
+
+Skills:
+
+- are additive
+- are usually domain- or workflow-specific
+- multiple can be enabled at once
+
+Personas:
+
+- define the assistant identity and tone
+- only one is active at a time
+
+In practice:
+
+- a persona changes who the assistant is
+- a skill changes what extra guidance the assistant has
+
+## Good Skill Design
+
+Skills work best when they are:
+
+- focused on one domain or workflow
+- instruction-heavy rather than marketing-heavy
+- written as reusable guidance
+- specific enough to change behavior in useful ways
+
+Strong examples:
+
+- accessibility review guidance
+- API design heuristics
+- CI/CD debugging playbooks
+- copywriting frameworks
+
+Weak examples:
+
+- vague motivational text
+- duplicate generic assistant behavior
+- one-off notes that belong in memory instead
+
+## Operational Consequences
+
+Because enabled skill bodies are inserted into the prompt, large or overlapping skills can:
+
+- increase prompt size
+- create contradictory guidance
+- muddy the assistant's priorities
+
+That does not make the feature bad. It just means skill curation matters.
+
+## IPC Surface
+
+Current skill-related IPC handlers are:
+
+- `get-skills`
+- `toggle-skill`
+- `enable-all-skills`
+- `disable-all-skills`
+
+These handlers manage the library and enablement state. They do not themselves assemble the system prompt.
+
+## Practical Workflow
+
+If a skill exists but the assistant is not behaving as expected, check:
+
+1. whether the skill is enabled in the Skills page
+2. whether the prompt cache has been invalidated after relevant changes
+3. whether another enabled skill conflicts with it
+4. whether the active persona is pushing behavior in a different direction
+
+Skills are powerful precisely because they operate at prompt level, but that also means they should be treated as live behavioral configuration.
