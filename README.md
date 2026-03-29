@@ -1,124 +1,95 @@
-# Evelina
+# Joanium
 
-> One interface. Every AI. Think clearly. Build faster. Create freely.
+> One desktop AI workspace for chat, projects, automations, agents, and tools.
 
-Evelina is a personal desktop AI platform built on Electron. It brings together multiple AI providers, a powerful automation engine, Gmail and GitHub integrations, custom AI personas, and a skill system — all in a single offline-first app where your data stays on your machine.
+**Website:** [Joanium.com](https://joanium.com)
 
----
+Joanium is a local-first desktop AI app built with Electron. It brings together multi-model chat, project-aware workspace tools, scheduled automations, AI agents, channels, MCP servers, skills, personas, and usage tracking in one place.
 
-## What It Does
+It is built for people who want a serious AI workspace, not a pile of disconnected tabs, scripts, and dashboards.
 
-- **Chat with any AI** — Claude, GPT-4, Gemini, Mistral, DeepSeek, and more. Switch models mid-conversation. Automatic failover keeps you unblocked when one API goes down.
-- **Automate your world** — Schedule actions (open sites, send emails, run scripts, create GitHub issues, hit webhooks) on startup, hourly, daily, or weekly.
-- **Connect Gmail and GitHub** — Ask "read my unread emails" or "show my open PRs" directly in chat. The AI has full context of your inbox and repos.
-- **Personas** — Swap AI personalities (Atlas the execution coach, Cassian the negotiator, Elio the empath, etc.) to match the kind of help you need.
-- **Skills** — Markdown-defined capabilities the AI applies automatically — debugging guides, API design patterns, copywriting frameworks, and more.
-- **Usage analytics** — Full token tracking, cost breakdowns by model and provider, hourly heatmaps, and auto-generated insights.
-- **Free APIs out of the box** — Weather, crypto prices, exchange rates, US Treasury data, FRED economic indicators, and Unsplash photos — no key required for most.
-- **Built-in utility tools** — Math, unit conversions, timezone lookup, UUID generation, hashing, Base64 encode/decode, JSON formatting, and text transformations without any connector setup.
+## What Joanium Does
 
----
+- Chat with different AI models from one interface.
+- Work inside real project folders with file, terminal, git, and browser-aware tooling.
+- Run scheduled automations for deterministic tasks.
+- Run scheduled AI agents for monitoring, summaries, triage, and recurring analysis.
+- Connect services like Gmail and GitHub to bring live context into chat and background jobs.
+- Extend the app with MCP servers, skills, and personas.
+- Keep data stored locally under `Data/` instead of treating your desktop like a browser tab.
+
+## Why It Feels Different
+
+- **Local-first by default** - chats, settings, projects, usage, and runtime state live on your machine.
+- **Built for real workflows** - chat is connected to projects, tools, automations, and agents instead of existing as an isolated prompt box.
+- **Modular architecture** - main process services, renderer features, automations, agents, channels, and MCP stay cleanly separated.
+- **Expandable without chaos** - connectors, skills, personas, and docs make it easier to grow the app without turning it into a mess.
 
 ## Quick Start
 
 ```bash
-# Prerequisites: Node.js 18+, npm
+# Prerequisites: Node.js 18+ and npm
 
-git clone https://github.com/withinJoel/Evelina
-cd Evelina
+git clone <repository-url>
+cd <repository-folder>
 npm install
 npm start
 ```
 
-On first launch, a setup wizard walks you through adding your API keys. Everything is stored locally in `Data/` — nothing leaves your machine.
+On first launch, Joanium walks through setup and stores its local app data inside `Data/`.
 
----
+## Core Areas
 
-## Project Layout
+- **Chat** - multi-model conversations with local tools, connectors, and MCP support.
+- **Projects** - workspace-aware context with project-scoped chats and tooling.
+- **Automations** - scheduled action chains for repeatable tasks.
+- **Agents** - scheduled AI jobs that collect data, reason over it, and produce outputs.
+- **Events** - a live operational timeline for runs, failures, skips, and active jobs.
+- **Skills** - local Markdown-based behavior packs that shape how the assistant works.
+- **Personas** - switch the assistant's identity, tone, and framing.
+- **Usage** - local tracking for model activity and cost visibility.
 
+## Project Structure
+
+```text
+Joanium/
+|-- App.js
+|-- package.json
+|-- Packages/
+|   |-- Main/          # Electron-facing services, IPC, paths, windows
+|   |-- Renderer/      # SPA shell, pages, shared state, feature modules
+|   |-- Automation/    # Scheduler and action execution
+|   |-- Agents/        # Scheduled AI jobs and job history
+|   |-- Channels/      # External channel responders
+|   |-- Connectors/    # AI providers, Gmail, GitHub, and other integrations
+|   |-- MCP/           # MCP runtime support
+|   `-- System/        # Shared system prompt and app-level logic
+|-- Public/            # App shells and static assets
+|-- Data/              # Local user data, chats, projects, usage, config
+|-- Skills/            # Installed skill definitions
+|-- Personas/          # Persona definitions
+`-- Docs/              # Architecture and feature documentation
 ```
-Evelina/
-├── App.js                        # Electron main process entry point
-├── package.json
-│
-├── Packages/
-│   ├── Main/                     # Main process logic
-│   │   ├── IPC/                  # IPC handler modules (one file per domain)
-│   │   ├── Services/             # Business logic (UserService, ChatService, etc.)
-│   │   ├── Paths.js              # All file-system paths in one place
-│   │   └── Window.js             # BrowserWindow management
-│   ├── Automation/               # Automation engine + action executors
-│   ├── Connectors/               # ConnectorEngine (credentials, free APIs)
-│   └── System/                   # SystemPrompt builder, app properties
-│
-├── Public/                       # Static renderer assets (HTML + CSS)
-│   ├── index.html                # Landing Page shell
-│   ├── Automations.html
-│   ├── Skills.html
-│   ├── Personas.html
-│   ├── Usage.html
-│   ├── Setup.html
-│   └── Assets/
-│       └── Styles/               # CSS (one file per feature area)
-│
-├── Packages/Renderer/            # Renderer process JavaScript package
-│   ├── Main.js                   # SPA/bootstrap entry point
-│   ├── Pages/                    # Folder-based page modules (`index.js` + local helpers)
-│   ├── Features/                 # Feature modules (Chat, ModelSelector, etc.)
-│   └── Shared/                   # State, DOM refs, utils, modals, sidebar
-│
-├── Data/                         # All user data (gitignored in prod)
-│   ├── User.json
-│   ├── Models.json
-│   ├── Connectors.json
-│   ├── Automations.json
-│   ├── ActivePersona.json
-│   ├── Usage.json
-│   ├── Memory.md
-│   ├── CustomInstructions.md
-│   └── Chats/                    # One JSON file per chat session
-│
-├── Skills/                       # Skill definition files (.md with frontmatter)
-├── Personas/                     # Persona definition files (.md with frontmatter)
-└── Docs/                         # Documentation (you are here)
-```
-
----
-
-## Supported AI Providers
-
-| Provider | Models | Requires |
-|---|---|---|
-| Anthropic | Claude Opus 4.6, Sonnet 4.6, Haiku 4.5 | API key |
-| OpenAI | GPT-4o, o1, GPT-4 Turbo, o3-mini, GPT-4o Mini | API key |
-| Google | Gemini 1.5 Pro, 2.0 Flash, 1.5 Flash | API key |
-| OpenRouter | DeepSeek R1, Mistral Large, Llama 3.3, Qwen 2.5, Gemma 3 | API key |
-| Mistral AI | Mistral Large, Codestral, Mistral Small | API key |
-| NVIDIA | Kimi K2 Thinking, DeepSeek V3.2 | API key |
-| DeepSeek | DeepSeek Reasoner, DeepSeek Chat | API key |
-| MiniMax | MiniMax M2.5, M2.5 High-Speed, M2.1 | API key |
-| Ollama | Any pulled local model | Local server |
-| LM Studio | Any loaded local model | Local server |
-
----
 
 ## Documentation
 
-See the `Docs/` folder for everything:
+The [`Docs/`](Docs/) folder covers the current runtime and feature set in depth.
 
-| Doc | What it covers |
-|---|---|
-| [Architecture.md](Docs/Architecture.md) | How the app is structured, data flow, IPC model |
-| [Features.md](Docs/Features.md) | Every feature explained in depth |
-| [Automations.md](Docs/Automations.md) | Building and debugging automations |
-| [Connectors.md](Docs/Connectors.md) | Gmail, GitHub, and free API setup |
-| [Skills.md](Docs/Skills.md) | Writing and installing new skills |
-| [Personas.md](Docs/Personas.md) | Creating custom AI personas |
-| [IPC-Reference.md](Docs/IPC-Reference.md) | All IPC channels and their signatures |
-| [Development.md](Docs/Development.md) | Dev environment, adding features, conventions |
+- [`Docs/Architecture.md`](Docs/Architecture.md) - startup flow, package boundaries, renderer routing, and persistence
+- [`Docs/Features.md`](Docs/Features.md) - chat, projects, automations, agents, events, skills, personas, and usage
+- [`Docs/Projects.md`](Docs/Projects.md) - workspace behavior and project-scoped chat storage
+- [`Docs/Automations.md`](Docs/Automations.md) - triggers, actions, and execution rules
+- [`Docs/Agents.md`](Docs/Agents.md) - scheduled AI jobs, inputs, outputs, and history
+- [`Docs/Connectors.md`](Docs/Connectors.md) - providers, Gmail, GitHub, and connector setup
+- [`Docs/Channels.md`](Docs/Channels.md) - external channel reply flow
+- [`Docs/MCP.md`](Docs/MCP.md) - MCP server support and tool surfacing
+- [`Docs/Development.md`](Docs/Development.md) - extension patterns and implementation guidance
 
----
+## Status
 
-## Built by
+Joanium is actively being built and refined. The current codebase already includes the app shell, project-aware workflows, scheduled runtimes, connector support, and local persistence model that the product is built around.
 
-[Joel Jolly](https://joeljolly.vercel.app) — Licensed MIT
+## Built By
+
+[Joel Jolly](https://joeljolly.vercel.app)  
+MIT License
