@@ -53,7 +53,9 @@
       "App.js",
       "Packages/**/*",
       "Public/**/*",
-      "Data/**/*"
+      "Icons/Logo.ico",
+      "Icons/Logo.icns",
+      "Icons/Logo.png"
     ],
     "win": {
       "icon": "Icons/Logo.ico"
