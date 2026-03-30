@@ -451,6 +451,23 @@
           "input": 0.27,
           "output": 0.27
         }
+      },
+      "llama-3.3-70b-instruct": {
+        "name": "meta/llama-3.3-70b-instruct",
+        "description": "Meta's Llama 3.3 70B Instruct model",
+        "rank": 6,
+        "context_window": 131072,
+        "max_output": 8192,
+        "inputs": {
+          "text": true,
+          "image": false,
+          "pdf": false,
+          "docx": false
+        },
+        "pricing": {
+          "input": 0.1,
+          "output": 0.2
+        }
       }
     }
   },
