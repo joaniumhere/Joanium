@@ -1,6 +1,5 @@
-import { state } from '../../../../Shared/Core/State.js';
-import { GMAIL_TOOLS } from '../Gmail/Tools.js';
-import { GITHUB_TOOLS } from '../Github/Tools.js';
+﻿import { state } from '../../../../Shared/Core/State.js';
+import { getFeatureBoot } from '../../../Core/FeatureBoot.js';
 import { WEATHER_TOOLS } from '../Weather/Tools.js';
 import { CRYPTO_TOOLS } from '../Crypto/Tools.js';
 import { FINANCE_TOOLS } from '../Finance/Tools.js';
@@ -15,28 +14,20 @@ import { ASTRONOMY_TOOLS } from '../Astronomy/Tools.js';
 import { HACKERNEWS_TOOLS } from '../HackerNews/Tools.js';
 import { URL_TOOLS } from '../Url/Tools.js';
 import { TERMINAL_TOOLS } from '../Terminal/Tools.js';
-import { REVIEW_TOOLS } from '../Review/Tools.js';
 import { UTILITY_TOOLS } from '../Utility/Tools.js';
 import { SEARCH_TOOLS } from '../Search/Tools.js';
 import { DICTIONARY_TOOLS } from '../Dictionary/Tools.js';
 import { DATETIME_TOOLS } from '../DateTime/Tools.js';
 import { PASSWORD_TOOLS } from '../Password/Tools.js';
-import { DRIVE_TOOLS } from '../Drive/Tools.js';
-import { CALENDAR_TOOLS } from '../Calendar/Tools.js';
 
 export {
-  GMAIL_TOOLS, GITHUB_TOOLS, WEATHER_TOOLS, CRYPTO_TOOLS, FINANCE_TOOLS, PHOTO_TOOLS,
+  WEATHER_TOOLS, CRYPTO_TOOLS, FINANCE_TOOLS, PHOTO_TOOLS,
   WIKI_TOOLS, GEO_TOOLS, FUN_TOOLS, JOKE_TOOLS, QUOTE_TOOLS, COUNTRY_TOOLS,
-  ASTRONOMY_TOOLS, HACKERNEWS_TOOLS, URL_TOOLS, TERMINAL_TOOLS, REVIEW_TOOLS,
+  ASTRONOMY_TOOLS, HACKERNEWS_TOOLS, URL_TOOLS, TERMINAL_TOOLS,
   UTILITY_TOOLS, SEARCH_TOOLS, DICTIONARY_TOOLS, DATETIME_TOOLS, PASSWORD_TOOLS,
-  DRIVE_TOOLS, CALENDAR_TOOLS,
 };
 
 export const STATIC_TOOLS = [
-  ...GMAIL_TOOLS,
-  ...GITHUB_TOOLS,
-  ...DRIVE_TOOLS,
-  ...CALENDAR_TOOLS,
   ...WEATHER_TOOLS,
   ...CRYPTO_TOOLS,
   ...FINANCE_TOOLS,
@@ -51,7 +42,6 @@ export const STATIC_TOOLS = [
   ...HACKERNEWS_TOOLS,
   ...URL_TOOLS,
   ...TERMINAL_TOOLS,
-  ...REVIEW_TOOLS,
   ...UTILITY_TOOLS,
   ...SEARCH_TOOLS,
   ...DICTIONARY_TOOLS,
@@ -59,56 +49,39 @@ export const STATIC_TOOLS = [
   ...PASSWORD_TOOLS,
 ];
 
-// Legacy export retained for existing imports; dynamic MCP tools are layered in via getAvailableTools().
 export const TOOLS = STATIC_TOOLS;
 
-/*
- * Maps tool category → connector name in ConnectorEngine.
- *
- * IMPORTANT: All Google services (Gmail, Drive, Calendar) are now served by
- * the unified 'google' connector. The old standalone 'gmail' connector key
- * no longer exists — this was the root cause of Gmail tools being silently
- * filtered out in chat.
- *
- * null means no connector required — tool is always available.
- */
 const CATEGORY_TO_CONNECTOR = {
-  // Google Workspace — all three services gate on the unified 'google' connector
-  gmail:    'google',
-  drive:    'google',
+  gmail: 'google',
+  drive: 'google',
   calendar: 'google',
-
-  // GitHub
   github: 'github',
   github_review: 'github',
-
-  // Free APIs
-  open_meteo:    'open_meteo',
-  coingecko:     'coingecko',
+  open_meteo: 'open_meteo',
+  coingecko: 'coingecko',
   exchange_rate: 'exchange_rate',
-  treasury:      'treasury',
-  fred:          'fred',
-  openweathermap:'openweathermap',
-  unsplash:      'unsplash',
-  wikipedia:     'wikipedia',
-  ipgeo:         'ipgeo',
-  funfacts:      'funfacts',
-  jokeapi:       'jokeapi',
-  quotes:        'quotes',
+  treasury: 'treasury',
+  fred: 'fred',
+  openweathermap: 'openweathermap',
+  unsplash: 'unsplash',
+  wikipedia: 'wikipedia',
+  ipgeo: 'ipgeo',
+  funfacts: 'funfacts',
+  jokeapi: 'jokeapi',
+  quotes: 'quotes',
   restcountries: 'restcountries',
-  nasa:          'nasa',
-  hackernews:    'hackernews',
-  cleanuri:      'cleanuri',
-
-  // No connector required — always available
-  search:     null,
+  nasa: 'nasa',
+  hackernews: 'hackernews',
+  cleanuri: 'cleanuri',
+  search: null,
   dictionary: null,
-  translate:  null,
-  news:       null,
-  datetime:   null,
-  security:   null,
-  utility:    null,
-  terminal:   null,
+  translate: null,
+  news: null,
+  datetime: null,
+  security: null,
+  utility: null,
+  terminal: null,
+  mcp: null,
 };
 
 const WORKSPACE_SCOPED_TOOL_NAMES = new Set([
@@ -132,7 +105,7 @@ function normalizeSchemaType(type = 'string') {
 
 function schemaPropToParameter(prop = {}, required = false) {
   const fallbackType = Array.isArray(prop.anyOf)
-    ? prop.anyOf.find(v => v?.type)?.type
+    ? prop.anyOf.find(value => value?.type)?.type
     : prop.type;
 
   return {
@@ -153,34 +126,30 @@ function normalizeMCPTool(tool) {
     category: 'mcp',
     source: 'mcp',
     parameters: Object.fromEntries(
-      Object.entries(properties).map(([key, value]) => [
-        key,
-        schemaPropToParameter(value, required.has(key)),
-      ]),
+      Object.entries(properties).map(([key, value]) => [key, schemaPropToParameter(value, required.has(key))]),
     ),
   };
 }
 
 function dedupeTools(tools = []) {
-  const seen = new Set();
-  const result = [];
-
+  const byName = new Map();
   for (const tool of tools) {
-    if (!tool?.name || seen.has(tool.name)) continue;
-    seen.add(tool.name);
-    result.push(tool);
+    if (!tool?.name) continue;
+    if (!byName.has(tool.name)) byName.set(tool.name, tool);
   }
+  return [...byName.values()];
+}
 
-  return result;
+function getConnectorName(tool = {}) {
+  if (tool.connectorId) return tool.connectorId;
+  return CATEGORY_TO_CONNECTOR[tool.category];
 }
 
 function filterToolListByConnectors(tools = [], connectorStatuses = {}) {
   return tools.filter(tool => {
-    const connectorName = CATEGORY_TO_CONNECTOR[tool.category];
-    // null means no connector required — always available
-    if (connectorName === null || connectorName === undefined) return true;
-    const status = connectorStatuses?.[connectorName];
-    return status?.enabled === true;
+    const connectorName = getConnectorName(tool);
+    if (connectorName == null) return true;
+    return connectorStatuses?.[connectorName]?.enabled === true;
   });
 }
 
@@ -197,17 +166,22 @@ export async function getAvailableTools() {
   let connectorStatuses = {};
   try {
     connectorStatuses = await window.electronAPI?.getConnectors?.() ?? {};
-  } catch { /* non-fatal */ }
+  } catch {}
 
   let mcpTools = [];
   try {
     const res = await window.electronAPI?.mcpGetTools?.();
-    if (res?.ok) {
-      mcpTools = (res.tools ?? []).map(normalizeMCPTool).filter(Boolean);
-    }
-  } catch { /* non-fatal */ }
+    if (res?.ok) mcpTools = (res.tools ?? []).map(normalizeMCPTool).filter(Boolean);
+  } catch {}
+
+  let featureTools = [];
+  try {
+    const boot = await getFeatureBoot();
+    featureTools = boot?.chat?.tools ?? [];
+  } catch {}
 
   return dedupeTools([
+    ...filterToolListByWorkspace(filterToolListByConnectors(featureTools, connectorStatuses)),
     ...filterToolListByWorkspace(filterToolListByConnectors(STATIC_TOOLS, connectorStatuses)),
     ...mcpTools,
   ]);
@@ -215,12 +189,12 @@ export async function getAvailableTools() {
 
 export function buildToolsPrompt(tools = TOOLS) {
   return tools.map(tool => {
-    const params = Object.entries(tool.parameters ?? {}).map(([key, p]) =>
-      `    - ${key} (${p.type}${p.required ? ', required' : ', optional'}): ${p.description}`,
-    ).join('\n');
+    const params = Object.entries(tool.parameters ?? {}).map(([key, value]) => (
+      `    - ${key} (${value.type}${value.required ? ', required' : ', optional'}): ${value.description}`
+    )).join('\n');
 
     return [
-      `• ${tool.name}`,
+      `* ${tool.name}`,
       `  Description: ${tool.description}`,
       params ? `  Parameters:\n${params}` : '  Parameters: none',
     ].join('\n');

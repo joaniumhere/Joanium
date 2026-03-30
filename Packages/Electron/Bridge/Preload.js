@@ -1,8 +1,9 @@
-import { contextBridge, ipcRenderer } from 'electron';
+﻿import { contextBridge, ipcRenderer } from 'electron';
 
 const ptyDataListeners = new Set();
 const ptyExitListeners = new Set();
 const browserPreviewListeners = new Set();
+const featureEventListeners = new Map();
 
 ipcRenderer.on('pty-data', (_e, pid, data) => {
   for (const callback of ptyDataListeners) {
@@ -23,6 +24,33 @@ ipcRenderer.on('browser-preview-state', (_e, payload) => {
     try { callback(payload); }
     catch (err) { console.warn('[Preload] Browser preview listener failed:', err); }
   }
+});
+
+ipcRenderer.on('feature:event', (_e, payload) => {
+  const key = `${payload?.featureId}:${payload?.event}`;
+  const listeners = featureEventListeners.get(key);
+  if (!listeners?.size) return;
+  for (const callback of listeners) {
+    try { callback(payload.payload); }
+    catch (err) { console.warn('[Preload] Feature listener failed:', err); }
+  }
+});
+
+contextBridge.exposeInMainWorld('featureAPI', {
+  getBoot: () => ipcRenderer.invoke('feature:get-boot'),
+  invoke: (featureId, method, payload) => ipcRenderer.invoke('feature:invoke', featureId, method, payload),
+  subscribe: (featureId, eventName, callback) => {
+    if (!featureId || !eventName || typeof callback !== 'function') return () => {};
+    const key = `${featureId}:${eventName}`;
+    const listeners = featureEventListeners.get(key) ?? new Set();
+    listeners.add(callback);
+    featureEventListeners.set(key, listeners);
+    return () => {
+      const current = featureEventListeners.get(key);
+      current?.delete(callback);
+      if (!current?.size) featureEventListeners.delete(key);
+    };
+  },
 });
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -73,98 +101,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteAutomation: (id) => ipcRenderer.invoke('delete-automation', id),
   toggleAutomation: (id, enabled) => ipcRenderer.invoke('toggle-automation', id, enabled),
 
-  // Connectors — service
+  // Connectors â€” service
   getConnectors: () => ipcRenderer.invoke('get-connectors'),
   saveConnector: (name, credentials) => ipcRenderer.invoke('save-connector', name, credentials),
   removeConnector: (name) => ipcRenderer.invoke('remove-connector', name),
   validateConnector: (name) => ipcRenderer.invoke('validate-connector', name),
 
-  // Connectors — free APIs
+  // Connectors â€” free APIs
   getFreeConnectorConfig: (name) => ipcRenderer.invoke('get-free-connector-config', name),
   toggleFreeConnector: (name, enabled) => ipcRenderer.invoke('toggle-free-connector', name, enabled),
   saveFreeConnectorKey: (name, apiKey) => ipcRenderer.invoke('save-free-connector-key', name, apiKey),
 
-  // ── Google Workspace auth ─────────────────────────────────────────────────────
-  googleOAuthStart: (clientId, clientSecret) => ipcRenderer.invoke('google-oauth-start', clientId, clientSecret),
-  googleDetectServices: () => ipcRenderer.invoke('google-detect-services'),
+  // â”€â”€ Google Workspace auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   getConnectorSafeCreds: (name) => ipcRenderer.invoke('get-connector-safe-creds', name),
 
-  // ── Google Drive ──────────────────────────────────────────────────────────────
-  driveListFiles: (opts) => ipcRenderer.invoke('drive-list-files', opts),
-  driveSearchFiles: (query, maxResults) => ipcRenderer.invoke('drive-search-files', query, maxResults),
-  driveGetFileInfo: (fileId) => ipcRenderer.invoke('drive-get-file-info', fileId),
-  driveReadFile: (fileId) => ipcRenderer.invoke('drive-read-file', fileId),
-  driveCreateFile: (name, content, mimeType, folderId) => ipcRenderer.invoke('drive-create-file', name, content, mimeType, folderId),
-  driveUpdateFile: (fileId, content, mimeType) => ipcRenderer.invoke('drive-update-file', fileId, content, mimeType),
-  driveListFolders: (maxResults) => ipcRenderer.invoke('drive-list-folders', maxResults),
-  driveGetQuota: () => ipcRenderer.invoke('drive-get-quota'),
 
-  // ── Google Calendar ───────────────────────────────────────────────────────────
-  calendarListCalendars: () => ipcRenderer.invoke('calendar-list-calendars'),
-  calendarListEvents: (calendarId, opts) => ipcRenderer.invoke('calendar-list-events', calendarId, opts),
-  calendarGetToday: () => ipcRenderer.invoke('calendar-get-today'),
-  calendarGetUpcoming: (days, maxResults) => ipcRenderer.invoke('calendar-get-upcoming', days, maxResults),
-  calendarSearchEvents: (query, maxResults) => ipcRenderer.invoke('calendar-search-events', query, maxResults),
-  calendarGetEvent: (calendarId, eventId) => ipcRenderer.invoke('calendar-get-event', calendarId, eventId),
-  calendarCreateEvent: (calendarId, eventData) => ipcRenderer.invoke('calendar-create-event', calendarId, eventData),
-  calendarUpdateEvent: (calendarId, eventId, updates) => ipcRenderer.invoke('calendar-update-event', calendarId, eventId, updates),
-  calendarDeleteEvent: (calendarId, eventId) => ipcRenderer.invoke('calendar-delete-event', calendarId, eventId),
-
-  // ── Gmail ─────────────────────────────────────────────────────────────────
-  gmailGetBrief: (maxResults) => ipcRenderer.invoke('gmail-get-brief', maxResults),
-  gmailGetUnread: (maxResults) => ipcRenderer.invoke('gmail-get-unread', maxResults),
-  gmailSend: (to, subject, body, cc, bcc) => ipcRenderer.invoke('gmail-send', to, subject, body, cc, bcc),
-  gmailSearch: (query, maxResults) => ipcRenderer.invoke('gmail-search', query, maxResults),
-  gmailInboxStats: () => ipcRenderer.invoke('gmail-inbox-stats'),
-  gmailReply: (messageId, replyBody) => ipcRenderer.invoke('gmail-reply', messageId, replyBody),
-  gmailForward: (messageId, forwardTo, note) => ipcRenderer.invoke('gmail-forward', messageId, forwardTo, note),
-  gmailCreateDraft: (to, subject, body, cc) => ipcRenderer.invoke('gmail-create-draft', to, subject, body, cc),
-  gmailMarkAllRead: () => ipcRenderer.invoke('gmail-mark-all-read'),
-  gmailArchiveRead: (maxResults) => ipcRenderer.invoke('gmail-archive-read', maxResults),
-  gmailTrashByQuery: (query, maxResults) => ipcRenderer.invoke('gmail-trash-by-query', query, maxResults),
-  gmailMarkAsRead: (messageId) => ipcRenderer.invoke('gmail-mark-as-read', messageId),
-  gmailMarkAsUnread: (messageId) => ipcRenderer.invoke('gmail-mark-as-unread', messageId),
-  gmailArchiveMessage: (messageId) => ipcRenderer.invoke('gmail-archive-message', messageId),
-  gmailTrashMessage: (messageId) => ipcRenderer.invoke('gmail-trash-message', messageId),
-  gmailListLabels: () => ipcRenderer.invoke('gmail-list-labels'),
-  gmailCreateLabel: (name, colors) => ipcRenderer.invoke('gmail-create-label', name, colors),
-  gmailGetLabelId: (labelName) => ipcRenderer.invoke('gmail-get-label-id', labelName),
-  gmailModifyMessage: (messageId, addLabels, removeLabels) => ipcRenderer.invoke('gmail-modify-message', messageId, addLabels, removeLabels),
-
-  // ── GitHub ────────────────────────────────────────────────────────────────
-  githubGetRepos: () => ipcRenderer.invoke('github-get-repos'),
-  githubGetFile: (owner, repo, filePath) => ipcRenderer.invoke('github-get-file', owner, repo, filePath),
-  githubGetTree: (owner, repo, branch) => ipcRenderer.invoke('github-get-tree', owner, repo, branch),
-  githubGetIssues: (owner, repo, state) => ipcRenderer.invoke('github-get-issues', owner, repo, state),
-  githubGetPRs: (owner, repo, state) => ipcRenderer.invoke('github-get-prs', owner, repo, state),
-  githubGetNotifications: () => ipcRenderer.invoke('github-get-notifications'),
-  githubGetCommits: (owner, repo) => ipcRenderer.invoke('github-get-commits', owner, repo),
-  githubSearchCode: (owner, repo, query) => ipcRenderer.invoke('github-search-code', owner, repo, query),
-  githubGetPRDiff: (owner, repo, prNumber) => ipcRenderer.invoke('github-get-pr-diff', owner, repo, prNumber),
-  githubGetPRDetails: (owner, repo, prNumber) => ipcRenderer.invoke('github-get-pr-details', owner, repo, prNumber),
-  githubCreatePRReview: (owner, repo, prNumber, review) => ipcRenderer.invoke('github-create-pr-review', owner, repo, prNumber, review),
-  githubGetPRChecks: (owner, repo, prNumber) => ipcRenderer.invoke('github-get-pr-checks', owner, repo, prNumber),
-  githubGetWorkflowRuns: (owner, repo, branch, event, perPage) => ipcRenderer.invoke('github-get-workflow-runs', owner, repo, branch, event, perPage),
-  githubGetPRComments: (owner, repo, prNumber) => ipcRenderer.invoke('github-get-pr-comments', owner, repo, prNumber),
-  githubGetRepoStats: (owner, repo) => ipcRenderer.invoke('github-get-repo-stats', owner, repo),
-  githubStarRepo: (owner, repo) => ipcRenderer.invoke('github-star-repo', owner, repo),
-  githubUnstarRepo: (owner, repo) => ipcRenderer.invoke('github-unstar-repo', owner, repo),
-  githubGetReleases: (owner, repo, perPage) => ipcRenderer.invoke('github-get-releases', owner, repo, perPage),
-  githubGetLatestRelease: (owner, repo) => ipcRenderer.invoke('github-get-latest-release', owner, repo),
-  githubCreatePR: (owner, repo, options) => ipcRenderer.invoke('github-create-pr', owner, repo, options),
-  githubMergePR: (owner, repo, prNumber, mergeMethod, commitTitle) => ipcRenderer.invoke('github-merge-pr', owner, repo, prNumber, mergeMethod, commitTitle),
-  githubClosePR: (owner, repo, prNumber) => ipcRenderer.invoke('github-close-pr', owner, repo, prNumber),
-  githubCreateIssue: (owner, repo, title, body, labels) => ipcRenderer.invoke('github-create-issue', owner, repo, title, body, labels),
-  githubCloseIssue: (owner, repo, issueNumber, reason) => ipcRenderer.invoke('github-close-issue', owner, repo, issueNumber, reason),
-  githubReopenIssue: (owner, repo, issueNumber) => ipcRenderer.invoke('github-reopen-issue', owner, repo, issueNumber),
-  githubCommentIssue: (owner, repo, issueNumber, body) => ipcRenderer.invoke('github-comment-issue', owner, repo, issueNumber, body),
-  githubAddLabels: (owner, repo, issueNumber, labels) => ipcRenderer.invoke('github-add-labels', owner, repo, issueNumber, labels),
-  githubAddAssignees: (owner, repo, issueNumber, assignees) => ipcRenderer.invoke('github-add-assignees', owner, repo, issueNumber, assignees),
-  githubMarkNotifsRead: () => ipcRenderer.invoke('github-mark-notifs-read'),
-  githubTriggerWorkflow: (owner, repo, workflowId, ref, inputs) => ipcRenderer.invoke('github-trigger-workflow', owner, repo, workflowId, ref, inputs),
-  githubGetLatestWorkflowRun: (owner, repo, workflowId, branch) => ipcRenderer.invoke('github-get-latest-workflow-run', owner, repo, workflowId, branch),
-  githubCreateGist: (description, files, isPublic) => ipcRenderer.invoke('github-create-gist', description, files, isPublic),
-  githubGetBranches: (owner, repo) => ipcRenderer.invoke('github-get-branches', owner, repo),
 
   // Skills
   getSkills: () => ipcRenderer.invoke('get-skills'),
@@ -275,3 +226,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   offPtyExit: (callback) => ptyExitListeners.delete(callback),
 });
+
+
+
+
+

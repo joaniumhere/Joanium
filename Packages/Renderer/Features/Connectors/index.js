@@ -1,4 +1,4 @@
-import { CONNECTORS, FREE_CONNECTORS } from './Catalog/ConnectorDefs.js';
+﻿import { CONNECTORS, FREE_CONNECTORS, loadFeatureConnectorDefs } from './Catalog/ConnectorDefs.js';
 import { buildFreeCard, setStatus, setConnectBtnState } from './Catalog/ConnectorCards.js';
 
 export const cxState = {
@@ -9,10 +9,10 @@ export const cxState = {
   loaded:      false,
 };
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SERVICE BADGE RENDERER
-   Shows Gmail ✓ / Drive ✓ / Calendar ✗ after connect
-══════════════════════════════════════════ */
+   Shows Gmail âœ“ / Drive âœ“ / Calendar âœ— after connect
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function buildServiceBadges(def, services = {}) {
   if (!def.subServices?.length) return null;
 
@@ -34,7 +34,7 @@ function buildServiceBadges(def, services = {}) {
     `;
 
     const dot = document.createElement('span');
-    dot.textContent = enabled ? '●' : '○';
+    dot.textContent = enabled ? 'â—' : 'â—‹';
     dot.style.fontSize = '8px';
 
     const label = document.createElement('span');
@@ -57,9 +57,9 @@ function buildServiceBadges(def, services = {}) {
   return wrap;
 }
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SETUP STEPS (shown before connecting)
-══════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function buildSetupSteps(def) {
   if (!def.setupSteps?.length) return null;
 
@@ -81,10 +81,10 @@ function buildSetupSteps(def) {
   return wrap;
 }
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    UNIFIED CONNECTOR CARD
    Handles both OAuth (Google) and token-based (GitHub) connectors
-══════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function buildCard(def, cxState, onConnect, onDisconnect) {
   const status = cxState.statuses[def.id] ?? { enabled: false };
   const isConnected = Boolean(status.enabled);
@@ -94,7 +94,7 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
   card.className = `cx-card${isConnected ? ' cx-connected' : ''}`;
   card.id = `cx-card-${def.id}`;
 
-  /* ── Header ── */
+  /* â”€â”€ Header â”€â”€ */
   const header = document.createElement('div');
   header.className = 'cx-card-header';
   header.innerHTML = `
@@ -104,11 +104,11 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
       <p>${def.description}</p>
     </div>
     <span class="cx-badge ${isConnected ? 'cx-badge--on' : 'cx-badge--off'}">
-      ${isConnected ? '● Connected' : '○ Not connected'}
+      ${isConnected ? 'â— Connected' : 'â—‹ Not connected'}
     </span>`;
   card.appendChild(header);
 
-  /* ── Capabilities ── */
+  /* â”€â”€ Capabilities â”€â”€ */
   const caps = document.createElement('div');
   caps.className = 'cx-capabilities';
   (def.capabilities ?? []).forEach(cap => {
@@ -119,7 +119,7 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
   });
   card.appendChild(caps);
 
-  /* ── Account info ── */
+  /* â”€â”€ Account info â”€â”€ */
   if (isConnected && status.accountInfo) {
     const info = document.createElement('div');
     info.className = 'cx-account-info';
@@ -128,7 +128,7 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
     card.appendChild(info);
   }
 
-  /* ── Service badges (Google only — shown when connected) ── */
+  /* â”€â”€ Service badges (Google only â€” shown when connected) â”€â”€ */
   if (isConnected && def.subServices?.length) {
     const badgesEl = buildServiceBadges(def, services);
     if (badgesEl) {
@@ -145,9 +145,9 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
       refreshBtn.style.cssText = 'font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;';
       refreshBtn.textContent = 'Re-check services';
       refreshBtn.addEventListener('click', async () => {
-        refreshBtn.textContent = 'Checking…';
+        refreshBtn.textContent = 'Checkingâ€¦';
         refreshBtn.disabled = true;
-        const res = await window.electronAPI?.googleDetectServices?.();
+        const res = await window.featureAPI?.invoke?.('google-workspace', 'detectServices', {});
         if (res?.ok) {
           cxState.statuses[def.id] = { ...cxState.statuses[def.id], services: res.services };
           renderPanel();
@@ -161,7 +161,7 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
     }
   }
 
-  /* ── Automations ── */
+  /* â”€â”€ Automations â”€â”€ */
   if (def.automations?.length) {
     const autoSec = document.createElement('div');
     autoSec.className = 'cx-auto-section';
@@ -169,19 +169,19 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
     def.automations.forEach(a => {
       const item = document.createElement('div');
       item.className = 'cx-auto-item';
-      item.innerHTML = `<strong>${a.name}</strong> — <span>${a.description}</span>`;
+      item.innerHTML = `<strong>${a.name}</strong> â€” <span>${a.description}</span>`;
       autoSec.appendChild(item);
     });
     card.appendChild(autoSec);
   }
 
-  /* ── Status message ── */
+  /* â”€â”€ Status message â”€â”€ */
   const statusEl = document.createElement('div');
   statusEl.className = 'cx-status-msg';
   statusEl.id = `cx-status-${def.id}`;
   card.appendChild(statusEl);
 
-  /* ── Fields (only shown when not connected or when updating) ── */
+  /* â”€â”€ Fields (only shown when not connected or when updating) â”€â”€ */
   const fieldsWrap = document.createElement('div');
   fieldsWrap.className = 'cx-fields';
   fieldsWrap.id = `cx-fields-${def.id}`;
@@ -243,7 +243,7 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
 
   card.appendChild(fieldsWrap);
 
-  /* ── Actions row ── */
+  /* â”€â”€ Actions row â”€â”€ */
   const actions = document.createElement('div');
   actions.className = 'cx-actions';
 
@@ -288,9 +288,9 @@ function buildCard(def, cxState, onConnect, onDisconnect) {
   return card;
 }
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    RENDER PANEL
-══════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function renderPanel() {
   const list = document.getElementById('connector-list');
   if (!list) return;
@@ -299,7 +299,7 @@ function renderPanel() {
   const svcHeader = document.createElement('div');
   svcHeader.className = 'cx-section-header';
   svcHeader.innerHTML = `
-    <div class="cx-section-title"><span class="cx-section-icon">🔌</span> Service Connectors</div>
+    <div class="cx-section-title"><span class="cx-section-icon">ðŸ”Œ</span> Service Connectors</div>
     <div class="cx-section-sub">Requires authentication</div>`;
   list.appendChild(svcHeader);
 
@@ -308,16 +308,16 @@ function renderPanel() {
   const freeHeader = document.createElement('div');
   freeHeader.className = 'cx-section-header cx-section-header--free';
   freeHeader.innerHTML = `
-    <div class="cx-section-title"><span class="cx-section-icon">⚡</span> Free APIs</div>
-    <div class="cx-section-sub">Enabled by default · Toggle to disable</div>`;
+    <div class="cx-section-title"><span class="cx-section-icon">âš¡</span> Free APIs</div>
+    <div class="cx-section-sub">Enabled by default Â· Toggle to disable</div>`;
   list.appendChild(freeHeader);
 
   FREE_CONNECTORS.forEach(def => list.appendChild(buildFreeCard(def, cxState)));
 }
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    CONNECT HANDLERS
-══════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 async function handleConnect(id, def) {
   if (def.oauthType === 'google') {
     await handleGoogleConnect(id, def);
@@ -333,11 +333,11 @@ async function handleGoogleConnect(id, def) {
     setStatus(id, `Please fill in: ${missing.map(f => f.label).join(', ')}`, 'error'); return;
   }
 
-  setConnectBtnState(id, true, 'Opening Google sign-in…');
-  setStatus(id, 'A browser window will open — sign in and grant access, then return here.');
+  setConnectBtnState(id, true, 'Opening Google sign-inâ€¦');
+  setStatus(id, 'A browser window will open â€” sign in and grant access, then return here.');
 
   try {
-    const result = await window.electronAPI?.googleOAuthStart?.(credentials.clientId, credentials.clientSecret);
+    const result = await window.featureAPI?.invoke?.('google-workspace', 'oauthStart', { clientId: credentials.clientId, clientSecret: credentials.clientSecret });
     if (!result?.ok) throw new Error(result?.error ?? 'OAuth failed');
 
     const enabledCount = Object.values(result.services ?? {}).filter(Boolean).length;
@@ -348,7 +348,7 @@ async function handleGoogleConnect(id, def) {
       services: result.services ?? {},
     };
     cxState.pending[id] = {};
-    setStatus(id, `Connected as ${result.email} — ${enabledCount} service${enabledCount !== 1 ? 's' : ''} detected ✓`, 'success');
+    setStatus(id, `Connected as ${result.email} â€” ${enabledCount} service${enabledCount !== 1 ? 's' : ''} detected âœ“`, 'success');
     setTimeout(renderPanel, 800);
   } catch (err) {
     setStatus(id, `Failed: ${err.message}`, 'error');
@@ -363,7 +363,7 @@ async function handleTokenConnect(id, def) {
     setStatus(id, `Please fill in: ${missing.map(f => f.label).join(', ')}`, 'error'); return;
   }
 
-  setConnectBtnState(id, true, 'Connecting…');
+  setConnectBtnState(id, true, 'Connectingâ€¦');
   setStatus(id, '');
 
   try {
@@ -399,15 +399,16 @@ async function handleDisconnect(id) {
   }
 }
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    LOAD PANEL
-══════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export async function loadConnectorsPanel() {
   const list = document.getElementById('connector-list');
   if (!list) return;
-  if (!cxState.loaded) list.innerHTML = '<div class="cx-loading">Loading connectors…</div>';
+  if (!cxState.loaded) list.innerHTML = '<div class="cx-loading">Loading connectorsâ€¦</div>';
 
   try {
+    await loadFeatureConnectorDefs();
     const statuses = await window.electronAPI?.getConnectors?.() ?? {};
     cxState.statuses = {};
 
@@ -428,8 +429,8 @@ export async function loadConnectorsPanel() {
           }
           // For google, also load stored service detection state
           if (name === 'google') {
-            const creds = await window.electronAPI?.getRawConnectorCredentials?.('google').catch(() => null);
-            if (creds?.services) cxState.statuses[name].services = creds.services;
+            const creds = await window.electronAPI?.getConnectorSafeCreds?.('google').catch(() => null);
+            if (creds?.ok && creds.services) cxState.statuses[name].services = creds.services;
           }
         }),
     );
@@ -452,3 +453,4 @@ export async function loadConnectorsPanel() {
     if (list) list.innerHTML = `<div class="cx-loading">Could not load connectors: ${err.message}</div>`;
   }
 }
+

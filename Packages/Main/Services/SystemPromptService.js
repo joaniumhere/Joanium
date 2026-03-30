@@ -3,49 +3,48 @@ import * as GithubAPI from '../../Automation/Integrations/Github.js';
 import { buildSystemPrompt } from '../../System/Prompting/SystemPrompt.js';
 import Paths from '../Core/Paths.js';
 
-const TTL_MS = 5 * 60_000; // 5 minutes
+const TTL_MS = 5 * 60_000;
 
 let _cache = null;
 let _cacheTime = 0;
 
-/** Discard the cached prompt so the next call rebuilds it fresh. */
 export function invalidate() {
   _cache = null;
   _cacheTime = 0;
 }
 
-/**
- * Return the system prompt, building (and caching) it if needed.
- *
- * @param {object} opts
- * @param {object}          opts.user
- * @param {string}          opts.customInstructions
- * @param {string}          opts.memory
- * @param {ConnectorEngine} opts.connectorEngine
- * @returns {Promise<string>}
- */
-export async function get({ user, customInstructions, memory, connectorEngine }) {
+export async function get({ user, customInstructions, memory, connectorEngine, featureRegistry = null }) {
   const now = Date.now();
   if (_cache && now - _cacheTime < TTL_MS) return _cache;
 
   const githubCreds = connectorEngine.getCredentials('github');
-  // Gmail lives inside the unified 'google' connector now
   const googleCreds = connectorEngine.getCredentials('google');
 
   let githubUsername = null;
   let githubRepos = [];
+  let featurePromptContext = { connectedServices: [], sections: [] };
 
-  if (githubCreds?.token) {
+  if (featureRegistry?.buildPromptContext) {
+    try {
+      featurePromptContext = await featureRegistry.buildPromptContext({
+        connectorEngine,
+        invalidateSystemPrompt: invalidate,
+      });
+    } catch (error) {
+      console.warn('[SystemPromptService] Feature prompt context failed:', error.message);
+    }
+  }
+
+  if (!featurePromptContext.sections?.length && githubCreds?.token) {
     try {
       const ghUser = await GithubAPI.getUser(githubCreds);
       githubUsername = ghUser.login;
       githubRepos = await GithubAPI.getRepos(githubCreds, 20);
-    } catch (e) {
-      console.warn('[SystemPromptService] GitHub fetch failed:', e.message);
+    } catch (error) {
+      console.warn('[SystemPromptService] GitHub fetch failed:', error.message);
     }
   }
 
-  // Load active persona (if any)
   let activePersona = null;
   try {
     if (fs.existsSync(Paths.ACTIVE_PERSONA_FILE)) {
@@ -61,9 +60,10 @@ export async function get({ user, customInstructions, memory, connectorEngine })
     memory,
     githubUsername,
     githubRepos,
-    // Pass the gmail email from the google connector if available
     gmailEmail: googleCreds?.email ?? null,
     activePersona,
+    connectedServices: featurePromptContext.connectedServices ?? [],
+    extraContextSections: featurePromptContext.sections ?? [],
   });
   _cacheTime = now;
 

@@ -1,7 +1,7 @@
 // Each entry in CONNECTORS produces one card in the UI.
 // Add new Google services by just adding to google.subServices — zero new auth code needed.
 
-export const CONNECTORS = [
+export const STATIC_CONNECTORS = [
   {
     id: 'google',
     name: 'Google Workspace',
@@ -82,7 +82,7 @@ export const CONNECTORS = [
   },
 ];
 
-export const FREE_CONNECTORS = [
+export const STATIC_FREE_CONNECTORS = [
   { id: 'open_meteo', name: 'Open-Meteo', icon: '🌤️', description: 'Real-time weather for any city — temperature, humidity, wind, and 3-day forecast.', noKey: true, docsUrl: 'https://open-meteo.com', toolHint: 'Ask: "What\'s the weather in Tokyo?"' },
   { id: 'coingecko', name: 'CoinGecko', icon: '🦎', description: 'Live crypto prices, market caps, 24h changes, and trending coins. 10,000+ tokens.', noKey: true, docsUrl: 'https://coingecko.com', toolHint: 'Ask: "What\'s the price of Ethereum?"' },
   { id: 'exchange_rate', name: 'Exchange Rates', icon: '💱', description: 'Real-time currency exchange rates for 160+ currencies.', noKey: true, docsUrl: 'https://open.er-api.com', toolHint: 'Ask: "Convert 100 USD to INR"' },
@@ -100,3 +100,35 @@ export const FREE_CONNECTORS = [
   { id: 'hackernews', name: 'Hacker News', icon: '🔶', description: 'Top stories from Hacker News — the leading tech and startup news aggregator.', noKey: true, docsUrl: 'https://news.ycombinator.com', toolHint: 'Ask: "What\'s on Hacker News?"' },
   { id: 'cleanuri', name: 'URL Shortener', icon: '🔗', description: 'Shorten any long URL into a compact, shareable link.', noKey: true, docsUrl: 'https://cleanuri.com', toolHint: 'Ask: "Shorten this URL: ..."' },
 ];
+
+export let CONNECTORS = [...STATIC_CONNECTORS];
+export let FREE_CONNECTORS = [...STATIC_FREE_CONNECTORS];
+
+function dedupeById(items = []) {
+  const map = new Map();
+  for (const item of items) {
+    if (!item?.id || map.has(item.id)) continue;
+    map.set(item.id, item);
+  }
+  return [...map.values()];
+}
+
+export async function loadFeatureConnectorDefs() {
+  if (!window.featureAPI?.getBoot) {
+    CONNECTORS = [...STATIC_CONNECTORS];
+    FREE_CONNECTORS = [...STATIC_FREE_CONNECTORS];
+    return { services: CONNECTORS, free: FREE_CONNECTORS };
+  }
+
+  try {
+    const boot = await window.featureAPI.getBoot();
+    CONNECTORS = dedupeById([...(boot?.connectors?.services ?? []), ...STATIC_CONNECTORS]);
+    FREE_CONNECTORS = dedupeById([...(boot?.connectors?.free ?? []), ...STATIC_FREE_CONNECTORS]);
+  } catch (error) {
+    console.warn('[ConnectorDefs] Failed to load feature connector defs:', error);
+    CONNECTORS = [...STATIC_CONNECTORS];
+    FREE_CONNECTORS = [...STATIC_FREE_CONNECTORS];
+  }
+
+  return { services: CONNECTORS, free: FREE_CONNECTORS };
+}

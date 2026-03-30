@@ -1,3 +1,4 @@
+import { loadAutomationFeatureRegistry } from './Config/Constants.js';
 import { escapeHtml, formatActionsSummary, formatLastRun, formatTrigger, generateId } from './Utils/Utils.js';
 import { createActionRow, collectActionFromRow } from './Components/ActionRenderer.js';
 import { getAutomationsHTML } from './Templates/Template.js';
@@ -202,10 +203,11 @@ export function mount(outlet) {
   document.addEventListener('keydown', onKeydown);
 
   // ── Load data ─────────────────────────────────────────────────────────────
-  loadAutomations();
+  loadAutomationFeatureRegistry().then(loadAutomations).catch(error => { console.warn('[Automations] Feature registry load failed:', error); loadAutomations(); });
 
   // ── Return cleanup ─────────────────────────────────────────────────────────
   return function unmount() {
     document.removeEventListener('keydown', onKeydown);
   };
 }
+

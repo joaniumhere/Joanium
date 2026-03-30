@@ -3,10 +3,7 @@ import * as UserService from '../Services/UserService.js';
 import * as SystemPromptService from '../Services/SystemPromptService.js';
 import Paths from '../Core/Paths.js';
 
-/**
- * @param {ConnectorEngine} connectorEngine
- */
-export function register(connectorEngine) {
+export function register(connectorEngine, featureRegistry = null) {
   ipcMain.handle('get-system-prompt', async () => {
     try {
       return await SystemPromptService.get({
@@ -14,6 +11,7 @@ export function register(connectorEngine) {
         customInstructions: UserService.readText(Paths.CUSTOM_INSTRUCTIONS_FILE),
         memory: UserService.readText(Paths.MEMORY_FILE),
         connectorEngine,
+        featureRegistry,
       });
     } catch (err) {
       console.error('[SystemIPC] build error:', err);

@@ -1,3 +1,5 @@
+﻿import { ACTION_META } from '../Config/Constants.js';
+
 export function escapeHtml(v) {
     return String(v ?? '')
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -25,24 +27,11 @@ export function formatTrigger(trigger) {
 export function formatActionsSummary(actions = []) {
     if (!actions.length) return 'No actions configured';
     const label = actions.length === 1 ? '1 action' : `${actions.length} actions`;
-    const LABELS = {
-        open_site: 'open site', open_multiple_sites: 'open sites', open_folder: 'open folder',
-        run_command: 'run command', run_script: 'run script', open_app: 'open app',
-        send_notification: 'notification', copy_to_clipboard: 'copy to clipboard',
-        write_file: 'write file', move_file: 'move file', copy_file: 'copy file',
-        delete_file: 'delete file', create_folder: 'create folder', lock_screen: 'lock screen',
-        http_request: 'HTTP request',
-        gmail_send_email: '📧 send email', gmail_get_brief: '📧 email brief',
-        gmail_get_unread_count: '📧 unread count', gmail_search_notify: '📧 search & notify',
-        github_open_repo: '🐙 open repo', github_check_prs: '🐙 check PRs',
-        github_check_issues: '🐙 check issues', github_check_commits: '🐙 check commits',
-        github_check_notifs: '🐙 notifications', github_create_issue: '🐙 create issue',
-        github_check_releases: '🐙 check releases',
-    };
-    const types = [...new Set(actions.map(a => {
-        const base = LABELS[a.type] || a.type;
-        if (a.type === 'open_folder') return base + (a.openTerminal ? ' + terminal' : '');
-        if (a.type === 'run_command') return base + (a.silent ? ' (silent)' : '');
+    const types = [...new Set(actions.map(action => {
+        const meta = ACTION_META[action.type];
+        const base = meta?.label || action.type;
+        if (action.type === 'open_folder') return base + (action.openTerminal ? ' + terminal' : '');
+        if (action.type === 'run_command') return base + (action.silent ? ' (silent)' : '');
         return base;
     }))];
     return `${label}: ${types.join(', ')}`;

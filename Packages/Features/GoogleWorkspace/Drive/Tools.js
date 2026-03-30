@@ -13,7 +13,7 @@ export const DRIVE_TOOLS = [
     description: "Search for files in the user's Google Drive by name or content.",
     category: 'drive',
     parameters: {
-      query: { type: 'string', required: true, description: 'Search term — matches file names and content.' },
+      query: { type: 'string', required: true, description: 'Search term - matches file names and content.' },
       max_results: { type: 'number', required: false, description: 'Max number of results (default: 20).' },
     },
   },
@@ -27,7 +27,7 @@ export const DRIVE_TOOLS = [
   },
   {
     name: 'drive_get_storage',
-    description: "Check the user's Google Drive storage quota — how much space is used and available.",
+    description: "Check the user's Google Drive storage quota - how much space is used and available.",
     category: 'drive',
     parameters: {},
   },

@@ -1,4 +1,4 @@
-import { DATA_SOURCE_TYPES } from './Config/Constants.js';
+import { DATA_SOURCE_TYPES, loadAgentsFeatureRegistry } from './Config/Constants.js';
 import { createConfirmDialog } from './Components/ConfirmDialog.js';
 import { renderAgentsGrid } from './Components/Grid.js';
 import { createHistoryModal } from './Components/HistoryModal.js';
@@ -230,6 +230,7 @@ export function mount(outlet) {
   document.addEventListener('keydown', onEscapeKey);
 
   async function load() {
+    await loadAgentsFeatureRegistry();
     await loadModels();
     state.agents = await fetchAgents();
     renderGrid();
@@ -260,3 +261,4 @@ export function mount(outlet) {
     responseViewer.destroy();
   };
 }
+

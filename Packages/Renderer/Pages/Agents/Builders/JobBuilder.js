@@ -1,4 +1,4 @@
-import {
+﻿import {
   DATA_SOURCE_TYPES,
   INSTRUCTION_TEMPLATES,
   MAX_JOBS,
@@ -322,31 +322,101 @@ export function createJobsController({
     });
   }
 
+  function getDataSourceDefinition(type) {
+    return DATA_SOURCE_TYPES.find(item => item.value === type) ?? null;
+  }
+
+  function getOutputDefinition(type) {
+    return OUTPUT_TYPES.find(item => item.value === type) ?? null;
+  }
+
+  function renderParamControl(param, value) {
+    const type = param.type ?? 'text';
+    const attrs = [
+      `data-param-key="${param.key}"`,
+      `data-param-type="${type}"`,
+      `class="${type === 'textarea' ? 'job-param-textarea' : type === 'select' ? 'job-param-select' : type === 'checkbox' ? 'job-param-checkbox' : 'job-param-input'}"`,
+    ];
+
+    if (param.placeholder) attrs.push(`placeholder="${escapeHtml(param.placeholder)}"`);
+    if (param.min != null) attrs.push(`min="${param.min}"`);
+    if (param.max != null) attrs.push(`max="${param.max}"`);
+    if (param.parse) attrs.push(`data-param-parse="${param.parse}"`);
+
+    const resolvedValue = value ?? param.defaultValue ?? (type === 'checkbox' ? false : '');
+
+    if (type === 'select') {
+      const options = (param.options ?? []).map(option => (
+        `<option value="${escapeHtml(String(option))}" ${String(option) === String(resolvedValue) ? 'selected' : ''}>${escapeHtml(String(option))}</option>`
+      )).join('');
+      return `<label class="job-param-label">${escapeHtml(param.label ?? param.key)}</label><select ${attrs.join(' ')}>${options}</select>`;
+    }
+
+    if (type === 'textarea') {
+      return `<label class="job-param-label">${escapeHtml(param.label ?? param.key)}</label><textarea rows="${param.rows ?? 3}" ${attrs.join(' ')}>${escapeHtml(String(resolvedValue ?? ''))}</textarea>`;
+    }
+
+    if (type === 'checkbox') {
+      return `<label class="job-param-checkbox-row"><input type="checkbox" ${attrs.join(' ')} ${resolvedValue ? 'checked' : ''}/> <span>${escapeHtml(param.label ?? param.key)}</span></label>`;
+    }
+
+    return `<label class="job-param-label">${escapeHtml(param.label ?? param.key)}</label><input type="${type === 'number' ? 'number' : type}" value="${escapeHtml(String(resolvedValue ?? ''))}" ${attrs.join(' ')}/>`;
+  }
+
+  function buildGenericParamFields(definition, values = {}) {
+    const params = definition?.params ?? [];
+    if (!params.length) return '';
+    return `<div class="job-param-fields">${params.map(param => `<div class="job-param-field">${renderParamControl(param, values?.[param.key])}</div>`).join('')}</div>`;
+  }
+
+  function bindGenericParamEvents(container, values, definition) {
+    const params = definition?.params ?? [];
+    if (!params.length) return false;
+
+    params.forEach(param => {
+      const input = container.querySelector(`[data-param-key="${param.key}"]`);
+      if (!input) return;
+      const eventName = param.type === 'select' || param.type === 'checkbox' ? 'change' : 'input';
+      input.addEventListener(eventName, event => {
+        if (param.type === 'checkbox') {
+          values[param.key] = Boolean(event.target.checked);
+          return;
+        }
+
+        if (param.type === 'number') {
+          const parsed = parseInt(event.target.value, 10);
+          values[param.key] = Number.isNaN(parsed) ? undefined : parsed;
+          return;
+        }
+
+        if (param.parse === 'json') {
+          const rawValue = event.target.value.trim();
+          if (!rawValue) {
+            values[param.key] = undefined;
+            return;
+          }
+          try {
+            values[param.key] = JSON.parse(rawValue);
+          } catch {
+            values[param.key] = rawValue;
+          }
+          return;
+        }
+
+        values[param.key] = param.type === 'textarea' ? event.target.value : event.target.value.trim();
+      });
+    });
+
+    return true;
+  }
+
   function buildDataSourceParams(dataSource) {
     const type = dataSource?.type ?? '';
+    const generic = buildGenericParamFields(getDataSourceDefinition(type), dataSource);
+    if (generic) return generic;
 
     switch (type) {
-      case 'gmail_inbox':
-        return `<input type="number" class="job-param-input ds-max-results" placeholder="Max emails (default 20)" value="${dataSource?.maxResults ?? 20}" min="1" max="50"/>`;
-      case 'gmail_search':
-        return `
-          <input type="text" class="job-param-input ds-query" placeholder="Gmail query, e.g: from:boss OR subject:urgent" value="${escapeHtml(dataSource?.query ?? '')}"/>
-          <input type="number" class="job-param-input ds-max-results" placeholder="Max results (default 10)" value="${dataSource?.maxResults ?? 10}" min="1" max="30"/>`;
-      case 'github_prs':
-      case 'github_issues':
-      case 'github_commits':
-        return `
-          <input type="text" class="job-param-input ds-owner" placeholder="GitHub owner / org" value="${escapeHtml(dataSource?.owner ?? '')}"/>
-          <input type="text" class="job-param-input ds-repo" placeholder="Repository name" value="${escapeHtml(dataSource?.repo ?? '')}"/>
-          ${type === 'github_commits'
-            ? `<input type="number" class="job-param-input ds-max-results" placeholder="Commits (default 10)" value="${dataSource?.maxResults ?? 10}" min="1" max="30"/>`
-            : `<select class="job-param-select ds-state">
-                 <option value="open" ${dataSource?.state === 'open' ? 'selected' : ''}>Open</option>
-                 <option value="closed" ${dataSource?.state === 'closed' ? 'selected' : ''}>Closed</option>
-                 <option value="all" ${dataSource?.state === 'all' ? 'selected' : ''}>All</option>
-               </select>`}`;
-      case 'github_repos':
-        return `<input type="number" class="job-param-input ds-max-results" placeholder="Max repos (default 30)" value="${dataSource?.maxResults ?? 30}" min="1" max="100"/>`;
+
       case 'rss_feed':
         return `
           <input type="url" class="job-param-input ds-url" placeholder="Feed URL, e.g. https://hnrss.org/frontpage" value="${escapeHtml(dataSource?.url ?? '')}"/>
@@ -393,6 +463,8 @@ export function createJobsController({
   }
 
   function wireDataSourceParamEvents(container, dataSource) {
+    if (bindGenericParamEvents(container, dataSource, getDataSourceDefinition(dataSource?.type))) return;
+
     const query = selector => container.querySelector(selector);
 
     query('.ds-max-results')?.addEventListener('input', event => {
@@ -400,15 +472,6 @@ export function createJobsController({
     });
     query('.ds-query')?.addEventListener('input', event => {
       dataSource.query = event.target.value.trim();
-    });
-    query('.ds-owner')?.addEventListener('input', event => {
-      dataSource.owner = event.target.value.trim();
-    });
-    query('.ds-repo')?.addEventListener('input', event => {
-      dataSource.repo = event.target.value.trim();
-    });
-    query('.ds-state')?.addEventListener('change', event => {
-      dataSource.state = event.target.value;
     });
     query('.ds-hn-count')?.addEventListener('input', event => {
       dataSource.count = parseInt(event.target.value, 10) || 10;
@@ -468,6 +531,9 @@ export function createJobsController({
   }
 
   function buildOutputParams(output) {
+    const generic = buildGenericParamFields(getOutputDefinition(output?.type), output);
+    if (generic) return generic;
+
     switch (output?.type) {
       case 'send_email':
         return `
@@ -484,7 +550,7 @@ export function createJobsController({
             Append to file (instead of overwrite)
           </label>`;
       case 'append_to_memory':
-        return '<div class="ds-info-note ds-info-note--accent"><strong>Agent insights become permanent AI knowledge.</strong><br>The AI\'s analysis is appended to your Memory and reused in future chats.</div>';
+        return '<div class="ds-info-note ds-info-note--accent"><strong>Agent insights become permanent AI knowledge.</strong><br>The AI analysis is appended to your Memory and reused in future chats.</div>';
       case 'http_webhook':
         return `
           <input type="url" class="job-param-input out-webhook-url" placeholder="Webhook URL, e.g. https://hooks.slack.com/..." value="${escapeHtml(output?.url ?? '')}"/>
@@ -512,6 +578,8 @@ export function createJobsController({
   }
 
   function wireOutputParamEvents(card, job) {
+    if (bindGenericParamEvents(card, job.output, getOutputDefinition(job.output?.type))) return;
+
     const query = selector => card.querySelector(selector);
 
     query('.out-to')?.addEventListener('input', event => {
@@ -539,21 +607,4 @@ export function createJobsController({
       job.output.method = event.target.value;
     });
   }
-
-  const onAddJob = () => {
-    if (state.jobs.length >= MAX_JOBS) return;
-
-    state.jobs.push(createNewJob());
-    renderJobsList();
-    modalBodyEl?.scrollTo({ top: 999999, behavior: 'smooth' });
-  };
-
-  addJobBtn?.addEventListener('click', onAddJob);
-
-  return {
-    renderJobsList,
-    cleanup() {
-      addJobBtn?.removeEventListener('click', onAddJob);
-    },
-  };
 }

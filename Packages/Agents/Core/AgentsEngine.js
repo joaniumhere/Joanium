@@ -1,11 +1,11 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { shouldRunNow } from '../../Automation/Scheduling/Scheduling.js';
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    USAGE TRACKING
-══════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 async function trackUsage({ provider, model, modelName, inputTokens, outputTokens }) {
   try {
     const Paths = (await import('../../Main/Core/Paths.js')).default;
@@ -16,7 +16,7 @@ async function trackUsage({ provider, model, modelName, inputTokens, outputToken
     let data = { records: [] };
     if (fs.existsSync(usageFile)) {
       try { data = JSON.parse(fs.readFileSync(usageFile, 'utf-8')); }
-      catch { /* corrupt — start fresh */ }
+      catch { /* corrupt â€” start fresh */ }
     }
     if (!Array.isArray(data.records)) data.records = [];
 
@@ -39,9 +39,9 @@ async function trackUsage({ provider, model, modelName, inputTokens, outputToken
   }
 }
 
-/* ══════════════════════════════════════════
-   AI CALLER  — returns { text, inputTokens, outputTokens }
-══════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   AI CALLER  â€” returns { text, inputTokens, outputTokens }
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 async function callModel(providerData, modelId, systemPrompt, userMessage) {
   if (!providerData?.configured) throw new Error(`Provider "${providerData?.provider}" is not configured`);
   const { provider: pid, endpoint, api, auth_header, auth_prefix = '' } = providerData;
@@ -148,104 +148,23 @@ async function callAIWithFailover(agent, systemPrompt, userMessage, allProviders
   throw lastErr ?? new Error('All models failed');
 }
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DATA SOURCE LABELS
-══════════════════════════════════════════ */
-const DS_LABELS = {
-  gmail_inbox: 'Gmail Inbox', gmail_search: 'Gmail Search',
-  github_notifications: 'GitHub Notifications', github_prs: 'GitHub Pull Requests',
-  github_issues: 'GitHub Issues', github_commits: 'GitHub Commits', github_repos: 'GitHub Repos',
-  hacker_news: 'Hacker News', rss_feed: 'RSS Feed', reddit_posts: 'Reddit',
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+const DS_LABELS = {  hacker_news: 'Hacker News', rss_feed: 'RSS Feed', reddit_posts: 'Reddit',
   read_file: 'File', system_stats: 'System Stats',
   weather: 'Weather', crypto_price: 'Crypto Prices', fetch_url: 'Web Page',
   custom_context: 'Custom Context',
 };
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SOURCE COLLECTOR
    NOTE: All Gmail sources read from the unified 'google' connector.
-══════════════════════════════════════════ */
-async function collectOneSource(ds, connectorEngine) {
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+export async function collectOneSource(ds, connectorEngine) {
   const type = ds?.type;
   switch (type) {
 
-    case 'gmail_inbox': {
-      // Gmail is now part of the unified Google Workspace connector
-      const creds = connectorEngine?.getCredentials('google');
-      if (!creds?.accessToken) return '⚠️ Google Workspace not connected.';
-      const { getEmailBrief } = await import('../../Automation/Integrations/Gmail.js');
-      const brief = await getEmailBrief(creds, ds.maxResults ?? 20);
-      if (!brief.count) return 'EMPTY: Gmail Inbox has no unread emails.';
-      return `Gmail Inbox — ${brief.count} unread email(s):\n\n${brief.text}`;
-    }
-
-    case 'gmail_search': {
-      const creds = connectorEngine?.getCredentials('google');
-      if (!creds?.accessToken) return '⚠️ Google Workspace not connected.';
-      if (!ds.query) return '⚠️ No search query specified.';
-      const { searchEmails } = await import('../../Automation/Integrations/Gmail.js');
-      const emails = await searchEmails(creds, ds.query, ds.maxResults ?? 10);
-      if (!emails.length) return `EMPTY: Gmail search "${ds.query}" returned no results.`;
-      return `Gmail Search "${ds.query}" — ${emails.length} result(s):\n\n` +
-        emails.map((e, i) => `${i + 1}. Subject: "${e.subject}" | From: ${e.from}\n   ${e.snippet}`).join('\n\n');
-    }
-
-    case 'github_notifications': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) return '⚠️ GitHub not connected.';
-      const { getNotifications } = await import('../../Automation/Integrations/Github.js');
-      const notifs = await getNotifications(creds);
-      if (!notifs?.length) return 'EMPTY: GitHub has no unread notifications.';
-      return `GitHub Notifications — ${notifs.length} unread:\n\n` +
-        notifs.slice(0, 15).map((n, i) =>
-          `${i + 1}. [${n.reason}] ${n.subject?.title} in ${n.repository?.full_name}`
-        ).join('\n');
-    }
-
-    case 'github_prs': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) return '⚠️ GitHub not connected.';
-      if (!ds.owner || !ds.repo) return '⚠️ GitHub owner/repo not specified.';
-      const { getPullRequests } = await import('../../Automation/Integrations/Github.js');
-      const prs = await getPullRequests(creds, ds.owner, ds.repo, ds.state ?? 'open', 20);
-      if (!prs.length) return `EMPTY: ${ds.owner}/${ds.repo} has no ${ds.state ?? 'open'} pull requests.`;
-      return `GitHub PRs (${ds.owner}/${ds.repo}) — ${prs.length}:\n\n` +
-        prs.map((p, i) => `${i + 1}. #${p.number}: "${p.title}" by ${p.user?.login}`).join('\n\n');
-    }
-
-    case 'github_issues': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) return '⚠️ GitHub not connected.';
-      if (!ds.owner || !ds.repo) return '⚠️ GitHub owner/repo not specified.';
-      const { getIssues } = await import('../../Automation/Integrations/Github.js');
-      const issues = await getIssues(creds, ds.owner, ds.repo, ds.state ?? 'open', 20);
-      if (!issues.length) return `EMPTY: ${ds.owner}/${ds.repo} has no ${ds.state ?? 'open'} issues.`;
-      return `GitHub Issues (${ds.owner}/${ds.repo}) — ${issues.length}:\n\n` +
-        issues.map((iss, i) => `${i + 1}. #${iss.number}: "${iss.title}" by ${iss.user?.login}`).join('\n\n');
-    }
-
-    case 'github_commits': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) return '⚠️ GitHub not connected.';
-      if (!ds.owner || !ds.repo) return '⚠️ GitHub owner/repo not specified.';
-      const { getCommits } = await import('../../Automation/Integrations/Github.js');
-      const commits = await getCommits(creds, ds.owner, ds.repo, ds.maxResults ?? 10);
-      if (!commits.length) return `EMPTY: ${ds.owner}/${ds.repo} has no commits.`;
-      return `GitHub Commits (${ds.owner}/${ds.repo}) — ${commits.length}:\n\n` +
-        commits.map((c, i) =>
-          `${i + 1}. ${c.commit.message.split('\n')[0]} — ${c.commit.author?.name}`
-        ).join('\n');
-    }
-
-    case 'github_repos': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) return '⚠️ GitHub not connected.';
-      const { getRepos } = await import('../../Automation/Integrations/Github.js');
-      const repos = await getRepos(creds, ds.maxResults ?? 30);
-      if (!repos.length) return 'EMPTY: No GitHub repositories found.';
-      return `GitHub Repositories — ${repos.length} repos:\n\n` +
-        repos.map((r, i) => `${i + 1}. ${r.full_name} [${r.language ?? 'unknown'}]`).join('\n');
-    }
 
     case 'hacker_news': {
       const count = ds.count ?? 10;
@@ -265,7 +184,7 @@ async function collectOneSource(ds, connectorEngine) {
     }
 
     case 'rss_feed': {
-      if (!ds.url) return '⚠️ No RSS feed URL specified.';
+      if (!ds.url) return 'âš ï¸ No RSS feed URL specified.';
       try {
         const xml = await fetch(ds.url, { headers: { 'User-Agent': 'romelson-agent/1.0' } }).then(r => r.text());
         const items = [];
@@ -283,11 +202,11 @@ async function collectOneSource(ds, connectorEngine) {
           if (title) items.push(`${items.length + 1}. ${title}`);
         }
         return items.length ? `RSS Feed:\n\n${items.join('\n')}` : 'EMPTY: RSS feed returned no items.';
-      } catch (err) { return `⚠️ RSS fetch failed: ${err.message}`; }
+      } catch (err) { return `âš ï¸ RSS fetch failed: ${err.message}`; }
     }
 
     case 'reddit_posts': {
-      if (!ds.subreddit?.trim()) return '⚠️ No subreddit specified.';
+      if (!ds.subreddit?.trim()) return 'âš ï¸ No subreddit specified.';
       try {
         const data = await fetch(
           `https://www.reddit.com/r/${ds.subreddit}/${ds.sort ?? 'hot'}.json?limit=${Math.min(ds.maxResults ?? 10, 25)}`,
@@ -297,14 +216,14 @@ async function collectOneSource(ds, connectorEngine) {
         if (!posts.length) return `EMPTY: r/${ds.subreddit} has no posts.`;
         return `r/${ds.subreddit}:\n\n` +
           posts.map((p, i) => `${i + 1}. ${p.data.title}`).join('\n\n');
-      } catch (err) { return `⚠️ Reddit fetch failed: ${err.message}`; }
+      } catch (err) { return `âš ï¸ Reddit fetch failed: ${err.message}`; }
     }
 
     case 'read_file': {
-      if (!ds.filePath) return '⚠️ No file path specified.';
-      if (!fs.existsSync(ds.filePath)) return `⚠️ File not found: ${ds.filePath}`;
+      if (!ds.filePath) return 'âš ï¸ No file path specified.';
+      if (!fs.existsSync(ds.filePath)) return `âš ï¸ File not found: ${ds.filePath}`;
       const stat = fs.statSync(ds.filePath);
-      if (stat.size > 500_000) return '⚠️ File too large (>500 KB).';
+      if (stat.size > 500_000) return 'âš ï¸ File too large (>500 KB).';
       const content = fs.readFileSync(ds.filePath, 'utf-8').trim();
       if (!content) return `EMPTY: File ${ds.filePath} is empty.`;
       return `File: ${ds.filePath}\n\n${content.slice(0, 6000)}`;
@@ -322,11 +241,11 @@ async function collectOneSource(ds, connectorEngine) {
     }
 
     case 'weather': {
-      if (!ds.location) return '⚠️ No location specified.';
+      if (!ds.location) return 'âš ï¸ No location specified.';
       const geo = await fetch(
         `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(ds.location)}&count=1&format=json`
       ).then(r => r.json());
-      if (!geo.results?.length) return `⚠️ Location not found: ${ds.location}`;
+      if (!geo.results?.length) return `âš ï¸ Location not found: ${ds.location}`;
       const { latitude, longitude, name, country, timezone } = geo.results[0];
       const units = ds.units ?? 'celsius';
       const w = await fetch(
@@ -334,7 +253,7 @@ async function collectOneSource(ds, connectorEngine) {
         `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,precipitation` +
         `&temperature_unit=${units}&wind_speed_unit=kmh&timezone=${encodeURIComponent(timezone ?? 'auto')}&forecast_days=1`
       ).then(r => r.json());
-      const c = w.current, deg = units === 'fahrenheit' ? '°F' : '°C';
+      const c = w.current, deg = units === 'fahrenheit' ? 'Â°F' : 'Â°C';
       return `Weather in ${name}, ${country}:\nTemp: ${c.temperature_2m}${deg}\nHumidity: ${c.relative_humidity_2m}%\nWind: ${c.wind_speed_10m} km/h`;
     }
 
@@ -352,7 +271,7 @@ async function collectOneSource(ds, connectorEngine) {
     }
 
     case 'fetch_url': {
-      if (!ds.url) return '⚠️ No URL specified.';
+      if (!ds.url) return 'âš ï¸ No URL specified.';
       try {
         const html = await fetch(ds.url, { headers: { 'User-Agent': 'romelson-agent/1.0' } }).then(r => r.text());
         const text = html
@@ -364,38 +283,47 @@ async function collectOneSource(ds, connectorEngine) {
           .slice(0, 6000);
         if (!text) return `EMPTY: No readable content found at ${ds.url}`;
         return `Content from ${ds.url}:\n\n${text}`;
-      } catch (err) { return `⚠️ Failed to fetch URL: ${err.message}`; }
+      } catch (err) { return `âš ï¸ Failed to fetch URL: ${err.message}`; }
     }
 
     case 'custom_context':
       return ds.context?.trim() || '(no context provided)';
 
     default:
-      return `⚠️ Unknown data source type: "${type}"`;
+      return `âš ï¸ Unknown data source type: "${type}"`;
   }
 }
 
-async function collectData(job, connectorEngine) {
+async function collectData(job, connectorEngine, featureRegistry = null) {
   const sources = Array.isArray(job.dataSources) && job.dataSources.length
     ? job.dataSources
     : (job.dataSource?.type ? [job.dataSource] : []);
   if (!sources.length) return '(no data source configured)';
-  if (sources.length === 1) return collectOneSource(sources[0], connectorEngine);
-  const results = await Promise.allSettled(sources.map(s => collectOneSource(s, connectorEngine)));
+
+  async function collectSource(source) {
+    const featureResult = await featureRegistry?.collectAgentDataSource?.(source, { connectorEngine });
+    if (featureResult?.handled) return featureResult.result;
+    return collectOneSource(source, connectorEngine);
+  }
+
+  if (sources.length === 1) return collectSource(sources[0]);
+
+  const results = await Promise.allSettled(sources.map(source => collectSource(source)));
   return results
     .map((result, i) => {
       const text = result.status === 'fulfilled'
         ? result.value
-        : `⚠️ Source failed: ${result.reason?.message ?? 'Unknown error'}`;
-      return `=== ${DS_LABELS[sources[i]?.type] ?? `Source ${i + 1}`} ===\n${text}`;
+        : `?? Source failed: ${result.reason?.message ?? 'Unknown error'}`;
+      const featureLabel = featureRegistry?.getAgentDataSourceDefinition?.(sources[i]?.type)?.label;
+      return `=== ${featureLabel ?? DS_LABELS[sources[i]?.type] ?? `Source ${i + 1}`} ===\n${text}`;
     })
     .join('\n\n');
 }
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    OUTPUT EXECUTORS
-══════════════════════════════════════════ */
-async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+export async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
@@ -408,7 +336,7 @@ async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
       const { sendEmail } = await import('../../Automation/Integrations/Gmail.js');
       const subject = output.subject?.trim()
         ? output.subject.replace('{{date}}', dateStr).replace('{{agent}}', agent.name).replace('{{job}}', job.name ?? '')
-        : `[${agent.name}] ${job.name ?? 'Report'} — ${dateStr}`;
+        : `[${agent.name}] ${job.name ?? 'Report'} â€” ${dateStr}`;
       await sendEmail(creds, output.to, subject, aiResponse, output.cc ?? '', output.bcc ?? '');
       break;
     }
@@ -417,7 +345,7 @@ async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
       const { sendNotification } = await import('../../Automation/Actions/Notification.js');
       sendNotification(
         output.title?.trim() || `${agent.name}: ${job.name ?? 'Report'}`,
-        aiResponse.slice(0, 200) + (aiResponse.length > 200 ? '…' : ''),
+        aiResponse.slice(0, 200) + (aiResponse.length > 200 ? 'â€¦' : ''),
         output.clickUrl ?? ''
       );
       break;
@@ -427,7 +355,7 @@ async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
       if (!output.filePath) throw new Error('write_file: no file path specified.');
       const dir = path.dirname(output.filePath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      const entry = `\n\n--- ${agent.name} / ${job.name ?? 'Job'} — ${now.toISOString()} ---\n${aiResponse}\n`;
+      const entry = `\n\n--- ${agent.name} / ${job.name ?? 'Job'} â€” ${now.toISOString()} ---\n${aiResponse}\n`;
       if (output.append) fs.appendFileSync(output.filePath, entry, 'utf-8');
       else fs.writeFileSync(output.filePath, aiResponse, 'utf-8');
       break;
@@ -461,32 +389,19 @@ async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
       break;
     }
 
-    case 'github_pr_review': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected.');
-      if (!output.owner || !output.repo || !output.prNumber) {
-        throw new Error('github_pr_review: owner, repo, and prNumber are required.');
-      }
-      const { createPRReview } = await import('../../Automation/Integrations/Github.js');
-      await createPRReview(creds, output.owner, output.repo, output.prNumber, {
-        body: aiResponse,
-        event: output.event ?? 'COMMENT',
-      });
-      break;
-    }
-
     default:
       console.warn(`[AgentsEngine] Unknown output type: "${output?.type}"`);
   }
 }
 
-/* ══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    AGENTS ENGINE CLASS
-══════════════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export class AgentsEngine {
-  constructor(agentsFilePath, connectorEngine = null) {
+  constructor(agentsFilePath, connectorEngine = null, featureRegistry = null) {
     this.filePath = agentsFilePath;
     this.connectorEngine = connectorEngine;
+    this.featureRegistry = featureRegistry;
     this.agents = [];
     this._ticker = null;
     this._running = new Map();
@@ -628,7 +543,7 @@ export class AgentsEngine {
     };
 
     try {
-      const dataText = await collectData(job, this.connectorEngine);
+      const dataText = await collectData(job, this.connectorEngine, this.featureRegistry);
 
       const { readModelsWithKeys } = await import('../../Main/Services/UserService.js');
       const allProviders = readModelsWithKeys();
@@ -667,7 +582,16 @@ export class AgentsEngine {
       } else {
         entry.fullResponse = trimmed;
         entry.summary = trimmed.slice(0, 400);
-        await executeOutput(job.output ?? {}, trimmed, agent, job, this.connectorEngine);
+        const featureOutput = await this.featureRegistry?.executeAgentOutput?.(
+          job.output ?? {},
+          { aiResponse: trimmed, agent, job },
+          { connectorEngine: this.connectorEngine },
+        );
+        if (featureOutput?.handled) {
+          await featureOutput.result;
+        } else {
+          await executeOutput(job.output ?? {}, trimmed, agent, job, this.connectorEngine);
+        }
         entry.acted = true;
       }
 
@@ -689,7 +613,13 @@ export class AgentsEngine {
       liveJob.lastRun = entry.timestamp;
       this._persist();
     } else {
-      console.warn(`[AgentsEngine] Agent/job ${agentId}/${jobId} not found after run — was it deleted?`);
+      console.warn(`[AgentsEngine] Agent/job ${agentId}/${jobId} not found after run â€” was it deleted?`);
     }
   }
 }
+
+
+
+
+
+

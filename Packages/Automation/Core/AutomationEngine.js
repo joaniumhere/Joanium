@@ -1,10 +1,8 @@
-import fs   from 'fs';
+﻿import fs   from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 
 // Automation Packages
-import * as GmailAPI  from '../Integrations/Gmail.js';
-import * as GithubAPI from '../Integrations/Github.js';
 import { openSite }                           from '../Actions/Site.js';
 import { openFolder }                         from '../Actions/Folder.js';
 import { openTerminalAtPath, openTerminalAndRun } from '../Actions/Terminal.js';
@@ -16,16 +14,13 @@ import { writeFile }                          from '../Actions/File.js';
 import { shouldRunNow } from '../Scheduling/Scheduling.js';
 
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  ACTION DISPATCHER
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function runAction(action, connectorEngine = null) {
   if (!action?.type) return;
 
-  // Gmail credentials now live in the unified 'google' connector
-  const gmailCreds = () => connectorEngine?.getCredentials('google');
-  const gmailNotConnected = () => { throw new Error('Google Workspace not connected — connect it in Settings → Connectors'); };
 
   switch (action.type) {
     // System / OS
@@ -54,7 +49,7 @@ export async function runAction(action, connectorEngine = null) {
           exec(action.command, (err) => {
             if (action.notifyOnFinish) {
               sendNotification(
-                err ? '❌ Command failed' : '✅ Command done',
+                err ? 'âŒ Command failed' : 'âœ… Command done',
                 action.command.slice(0, 80),
               );
             }
@@ -63,7 +58,7 @@ export async function runAction(action, connectorEngine = null) {
         });
       } else {
         await openTerminalAndRun(action.command);
-        if (action.notifyOnFinish) sendNotification('✅ Command launched', action.command.slice(0, 80));
+        if (action.notifyOnFinish) sendNotification('âœ… Command launched', action.command.slice(0, 80));
       }
       return;
     }
@@ -78,7 +73,7 @@ export async function runAction(action, connectorEngine = null) {
           exec(cmd, (err, stdout, stderr) => {
             if (action.notifyOnFinish) {
               sendNotification(
-                err ? '❌ Script failed' : '✅ Script done',
+                err ? 'âŒ Script failed' : 'âœ… Script done',
                 path.basename(action.scriptPath),
               );
             }
@@ -87,7 +82,7 @@ export async function runAction(action, connectorEngine = null) {
         });
       } else {
         await openTerminalAndRun(cmd);
-        if (action.notifyOnFinish) sendNotification('✅ Script launched', path.basename(action.scriptPath));
+        if (action.notifyOnFinish) sendNotification('âœ… Script launched', path.basename(action.scriptPath));
       }
       return;
     }
@@ -176,446 +171,17 @@ export async function runAction(action, connectorEngine = null) {
         const res = await fetch(action.url, opts);
         if (action.notify) {
           sendNotification(
-            `🌐 ${method} ${res.ok ? '✅' : '❌'} ${res.status}`,
+            `ðŸŒ ${method} ${res.ok ? 'âœ…' : 'âŒ'} ${res.status}`,
             action.url,
           );
         }
       } catch (err) {
-        if (action.notify) sendNotification('🌐 HTTP Request Failed', err.message);
+        if (action.notify) sendNotification('ðŸŒ HTTP Request Failed', err.message);
         throw err;
       }
       return;
     }
 
-    // ── Gmail (all via unified 'google' connector) ────────────────────────
-    case 'gmail_send_email': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      await GmailAPI.sendEmail(
-        creds,
-        action.to,
-        action.subject,
-        action.body ?? '',
-        action.cc  ?? '',
-        action.bcc ?? '',
-      );
-      return;
-    }
-
-    case 'gmail_get_brief': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      const brief = await GmailAPI.getEmailBrief(creds, action.maxResults ?? 10);
-      const preview = brief.emails
-        ? brief.emails.slice(0, 3).map(e => e.subject).filter(Boolean).join(' · ')
-        : '';
-      sendNotification(
-        `📬 Gmail — ${brief.count} unread`,
-        preview || 'No unread emails.',
-      );
-      return;
-    }
-
-    case 'gmail_get_unread_count': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      const brief = await GmailAPI.getEmailBrief(creds, 100);
-      sendNotification(
-        `📬 Gmail: ${brief.count} unread email${brief.count !== 1 ? 's' : ''}`,
-        brief.count === 0 ? 'Inbox is clear! 🎉' : `You have ${brief.count} unread emails.`,
-      );
-      return;
-    }
-
-    case 'gmail_search_notify': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      if (!action.query) throw new Error('gmail_search_notify: no query provided');
-      const emails = await GmailAPI.searchEmails(creds, action.query, action.maxResults ?? 5);
-      const count = emails.length;
-      const subjects = emails.slice(0, 3).map(e => e.subject).filter(Boolean).join(' · ');
-      sendNotification(
-        `🔍 "${action.query}" — ${count} result${count !== 1 ? 's' : ''}`,
-        subjects || 'No matching emails.',
-      );
-      return;
-    }
-
-    case 'gmail_reply': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      if (!action.messageId) throw new Error('gmail_reply: messageId required');
-      if (!action.body)      throw new Error('gmail_reply: body required');
-      await GmailAPI.replyToEmail(creds, action.messageId, action.body);
-      sendNotification('📤 Reply sent', `Replied to message ${action.messageId}`);
-      return;
-    }
-
-    case 'gmail_forward': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      if (!action.messageId) throw new Error('gmail_forward: messageId required');
-      if (!action.forwardTo) throw new Error('gmail_forward: forwardTo required');
-      await GmailAPI.forwardEmail(creds, action.messageId, action.forwardTo, action.note ?? '');
-      sendNotification('📤 Email forwarded', `Forwarded to ${action.forwardTo}`);
-      return;
-    }
-
-    case 'gmail_mark_all_read': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      const count = await GmailAPI.markAllRead(creds);
-      sendNotification(
-        count === 0 ? '📭 Already all read!' : `✅ Marked ${count} emails as read`,
-        count === 0 ? 'No unread emails found.' : `${count} messages marked as read.`,
-      );
-      return;
-    }
-
-    case 'gmail_archive_read': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      const count = await GmailAPI.archiveReadEmails(creds, action.maxResults ?? 100);
-      sendNotification(
-        count === 0 ? '📭 Inbox already clean' : `🗃️ Archived ${count} emails`,
-        count === 0 ? 'No read emails in inbox.' : `Moved ${count} read emails out of inbox.`,
-      );
-      return;
-    }
-
-    case 'gmail_trash_by_query': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      if (!action.query) throw new Error('gmail_trash_by_query: query required');
-      const count = await GmailAPI.trashEmailsByQuery(creds, action.query, action.maxResults ?? 50);
-      sendNotification(
-        `🗑️ Trashed ${count} email${count !== 1 ? 's' : ''}`,
-        `Query: "${action.query}"`,
-      );
-      return;
-    }
-
-    case 'gmail_create_draft': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      if (!action.to || !action.subject) throw new Error('gmail_create_draft: to and subject required');
-      await GmailAPI.createDraft(creds, action.to, action.subject, action.body ?? '', action.cc ?? '');
-      sendNotification('📝 Draft saved', `To: ${action.to} · Subject: ${action.subject}`);
-      return;
-    }
-
-    case 'gmail_inbox_stats': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      const stats = await GmailAPI.getInboxStats(creds);
-      sendNotification(
-        `📊 Inbox: ${stats.unreadEstimate} unread`,
-        `Inbox: ~${stats.inboxEstimate} msgs · Total: ${stats.totalMessages} · Threads: ${stats.totalThreads}`,
-      );
-      return;
-    }
-
-    case 'gmail_label_emails': {
-      const creds = gmailCreds();
-      if (!creds?.accessToken) gmailNotConnected();
-      if (!action.query)     throw new Error('gmail_label_emails: query required');
-      if (!action.labelName) throw new Error('gmail_label_emails: labelName required');
-
-      const labelId = await GmailAPI.getLabelId(creds, action.labelName);
-      if (!labelId) throw new Error(`gmail_label_emails: label "${action.labelName}" not found in Gmail`);
-
-      const emails = await GmailAPI.searchEmails(creds, action.query, action.maxResults ?? 20);
-      if (!emails.length) {
-        sendNotification('🏷️ No emails to label', `Query: "${action.query}"`);
-        return;
-      }
-
-      await Promise.all(emails.map(e =>
-        GmailAPI.modifyMessage(creds, e.id, { addLabels: [labelId] })
-      ));
-
-      sendNotification(
-        `🏷️ Labeled ${emails.length} email${emails.length !== 1 ? 's' : ''}`,
-        `Label: ${action.labelName} · Query: "${action.query}"`,
-      );
-      return;
-    }
-
-    // ── GitHub ────────────────────────────────────────────────────────────
-    case 'github_open_repo': {
-      const owner = action.owner?.trim();
-      const repo  = action.repo?.trim();
-      if (!owner || !repo) throw new Error('github_open_repo: owner and repo are required');
-      return openSite(`https://github.com/${owner}/${repo}`);
-    }
-
-    case 'github_check_prs': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      const state  = action.state || 'open';
-      const prs    = await GithubAPI.getPullRequests(creds, action.owner, action.repo, state);
-      const titles = prs.slice(0, 3).map(p => `• ${p.title}`).join('\n');
-      sendNotification(
-        `🔀 ${action.owner}/${action.repo} — ${prs.length} ${state} PR${prs.length !== 1 ? 's' : ''}`,
-        titles || 'No pull requests.',
-      );
-      return;
-    }
-
-    case 'github_check_issues': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      const state  = action.state || 'open';
-      const issues = await GithubAPI.getIssues(creds, action.owner, action.repo, state);
-      const titles = issues.slice(0, 3).map(i => `• ${i.title}`).join('\n');
-      sendNotification(
-        `🐛 ${action.owner}/${action.repo} — ${issues.length} ${state} issue${issues.length !== 1 ? 's' : ''}`,
-        titles || 'No issues.',
-      );
-      return;
-    }
-
-    case 'github_check_commits': {
-      const creds   = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      const commits = await GithubAPI.getCommits(creds, action.owner, action.repo, action.maxResults ?? 5);
-      const msgs    = commits.slice(0, 3).map(c => `• ${c.commit.message.split('\n')[0]}`).join('\n');
-      sendNotification(
-        `📝 ${action.owner}/${action.repo} — ${commits.length} recent commit${commits.length !== 1 ? 's' : ''}`,
-        msgs || 'No commits found.',
-      );
-      return;
-    }
-
-    case 'github_check_releases': {
-      const creds   = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      const release = await GithubAPI.getLatestRelease(creds, action.owner, action.repo);
-      const publishedAt = release.published_at
-        ? new Date(release.published_at).toLocaleDateString()
-        : '';
-      sendNotification(
-        `🚀 ${action.owner}/${action.repo} — ${release.tag_name}`,
-        (release.name || release.tag_name) + (publishedAt ? ` · ${publishedAt}` : ''),
-      );
-      return;
-    }
-
-    case 'github_check_notifs': {
-      const creds  = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      const notifs = await GithubAPI.getNotifications(creds);
-      const count  = notifs?.length ?? 0;
-      sendNotification(
-        `🔔 GitHub Notifications`,
-        count === 0
-          ? 'No unread notifications.'
-          : `${count} unread notification${count !== 1 ? 's' : ''}`,
-      );
-      return;
-    }
-
-    case 'github_create_issue': {
-      const creds  = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.issueTitle) throw new Error('github_create_issue: issue title required');
-      const labels = action.labels
-        ? String(action.labels).split(',').map(l => l.trim()).filter(Boolean)
-        : [];
-      const issue = await GithubAPI.createIssue(
-        creds,
-        action.owner,
-        action.repo,
-        action.issueTitle,
-        action.issueBody ?? '',
-        labels,
-      );
-      sendNotification(
-        `✅ Issue created: #${issue.number}`,
-        `${issue.title} — ${action.owner}/${action.repo}`,
-      );
-      return;
-    }
-
-    case 'github_repo_stats': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_repo_stats: owner and repo required');
-      const stats = await GithubAPI.getRepoStats(creds, action.owner, action.repo);
-      sendNotification(
-        `📊 ${stats.fullName}`,
-        `⭐ ${stats.stars} · 🍴 ${stats.forks} · 🐛 ${stats.openIssues} open issues · ${stats.language}`,
-      );
-      return;
-    }
-
-    case 'github_star_repo': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_star_repo: owner and repo required');
-      await GithubAPI.starRepo(creds, action.owner, action.repo);
-      sendNotification(`⭐ Starred ${action.owner}/${action.repo}`, '');
-      return;
-    }
-
-    case 'github_create_pr': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_create_pr: owner and repo required');
-      if (!action.title || !action.head || !action.base)
-        throw new Error('github_create_pr: title, head, and base are required');
-      const pr = await GithubAPI.createPR(creds, action.owner, action.repo, {
-        title: action.title,
-        body:  action.body  ?? '',
-        head:  action.head,
-        base:  action.base,
-        draft: action.draft ?? false,
-      });
-      sendNotification(
-        `🔀 PR created: #${pr.number}`,
-        `${pr.title} · ${action.owner}/${action.repo}`,
-      );
-      return;
-    }
-
-    case 'github_merge_pr': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_merge_pr: owner and repo required');
-      if (!action.prNumber) throw new Error('github_merge_pr: prNumber required');
-      await GithubAPI.mergePR(
-        creds,
-        action.owner,
-        action.repo,
-        action.prNumber,
-        action.mergeMethod  ?? 'merge',
-        action.commitTitle  ?? '',
-      );
-      sendNotification(
-        `✅ PR #${action.prNumber} merged`,
-        `${action.owner}/${action.repo} · ${action.mergeMethod ?? 'merge'}`,
-      );
-      return;
-    }
-
-    case 'github_close_issue': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_close_issue: owner and repo required');
-      if (!action.issueNumber) throw new Error('github_close_issue: issueNumber required');
-      await GithubAPI.closeIssue(creds, action.owner, action.repo, action.issueNumber, action.reason ?? 'completed');
-      sendNotification(
-        `🔒 Issue #${action.issueNumber} closed`,
-        `${action.owner}/${action.repo} · ${action.reason ?? 'completed'}`,
-      );
-      return;
-    }
-
-    case 'github_comment_issue': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_comment_issue: owner and repo required');
-      if (!action.issueNumber) throw new Error('github_comment_issue: issueNumber required');
-      if (!action.body)        throw new Error('github_comment_issue: body required');
-      await GithubAPI.addIssueComment(creds, action.owner, action.repo, action.issueNumber, action.body);
-      sendNotification(
-        `💬 Comment added to #${action.issueNumber}`,
-        `${action.owner}/${action.repo}`,
-      );
-      return;
-    }
-
-    case 'github_add_labels': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_add_labels: owner and repo required');
-      if (!action.issueNumber) throw new Error('github_add_labels: issueNumber required');
-      if (!action.labels)      throw new Error('github_add_labels: labels required');
-      const labels = String(action.labels).split(',').map(l => l.trim()).filter(Boolean);
-      await GithubAPI.addLabels(creds, action.owner, action.repo, action.issueNumber, labels);
-      sendNotification(
-        `🏷️ Labels added to #${action.issueNumber}`,
-        labels.join(', '),
-      );
-      return;
-    }
-
-    case 'github_assign': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_assign: owner and repo required');
-      if (!action.issueNumber) throw new Error('github_assign: issueNumber required');
-      if (!action.assignees)   throw new Error('github_assign: assignees required');
-      const assignees = String(action.assignees).split(',').map(a => a.trim()).filter(Boolean);
-      await GithubAPI.addAssignees(creds, action.owner, action.repo, action.issueNumber, assignees);
-      sendNotification(
-        `👤 Assigned #${action.issueNumber}`,
-        `${assignees.join(', ')} · ${action.owner}/${action.repo}`,
-      );
-      return;
-    }
-
-    case 'github_mark_notifs_read': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      await GithubAPI.markAllNotificationsRead(creds);
-      sendNotification('✅ GitHub notifications cleared', 'All notifications marked as read.');
-      return;
-    }
-
-    case 'github_trigger_workflow': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_trigger_workflow: owner and repo required');
-      if (!action.workflowId) throw new Error('github_trigger_workflow: workflowId required');
-      await GithubAPI.triggerWorkflow(
-        creds,
-        action.owner,
-        action.repo,
-        action.workflowId,
-        action.ref    ?? 'main',
-        action.inputs ?? {},
-      );
-      sendNotification(
-        `⚡ Workflow triggered`,
-        `${action.workflowId} on ${action.ref ?? 'main'} · ${action.owner}/${action.repo}`,
-      );
-      return;
-    }
-
-    case 'github_workflow_status': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.owner || !action.repo) throw new Error('github_workflow_status: owner and repo required');
-      if (!action.workflowId) throw new Error('github_workflow_status: workflowId required');
-      const run = await GithubAPI.getLatestWorkflowRun(creds, action.owner, action.repo, action.workflowId, action.branch ?? '');
-      if (!run) {
-        sendNotification(`⚙️ ${action.workflowId}`, 'No runs found.');
-        return;
-      }
-      const statusEmoji = { completed: '✅', in_progress: '🔄', queued: '⏳', failure: '❌' }[run.status] ?? '⚙️';
-      const conclusion  = run.conclusion ? ` · ${run.conclusion}` : '';
-      sendNotification(
-        `${statusEmoji} ${action.workflowId} — ${run.status}${conclusion}`,
-        `Branch: ${run.head_branch} · ${action.owner}/${action.repo}`,
-      );
-      return;
-    }
-
-    case 'github_create_gist': {
-      const creds = connectorEngine?.getCredentials('github');
-      if (!creds?.token) throw new Error('GitHub not connected');
-      if (!action.filename) throw new Error('github_create_gist: filename required');
-      if (!action.content)  throw new Error('github_create_gist: content required');
-      const files = { [action.filename]: { content: action.content } };
-      const gist  = await GithubAPI.createGist(creds, action.description ?? '', files, action.isPublic ?? false);
-      sendNotification(
-        `📋 Gist created`,
-        gist.html_url ?? `${action.filename} · ${action.isPublic ? 'public' : 'secret'}`,
-      );
-      if (action.openInBrowser && gist.html_url) await openSite(gist.html_url);
-      return;
-    }
 
     default:
       console.warn(`[AutomationEngine] Unknown action type: "${action.type}"`);
@@ -623,14 +189,15 @@ export async function runAction(action, connectorEngine = null) {
 }
 
 
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  AUTOMATION ENGINE CLASS
-// ─────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export class AutomationEngine {
-  constructor(automationsFilePath, connectorEngine = null) {
+  constructor(automationsFilePath, connectorEngine = null, featureRegistry = null) {
     this.filePath        = automationsFilePath;
     this.connectorEngine = connectorEngine;
+    this.featureRegistry = featureRegistry;
     this.automations     = [];
     this._ticker         = null;
     this._running        = new Set();
@@ -742,7 +309,14 @@ export class AutomationEngine {
     try {
       const actionTypes = [];
       for (const action of (automation.actions ?? [])) {
-        await runAction(action, this.connectorEngine);
+        const featureResult = await this.featureRegistry?.runAutomationAction?.(action, {
+          connectorEngine: this.connectorEngine,
+        });
+        if (featureResult?.handled) {
+          await featureResult.result;
+        } else {
+          await runAction(action, this.connectorEngine);
+        }
         if (action.type) actionTypes.push(action.type);
       }
       entry.summary = actionTypes.length
@@ -765,7 +339,9 @@ export class AutomationEngine {
       live.lastRun = entry.timestamp;
       this._persist();
     } else {
-      console.warn(`[AutomationEngine] Automation ${automationId} not found after run — was it deleted?`);
+      console.warn(`[AutomationEngine] Automation ${automationId} not found after run â€” was it deleted?`);
     }
   }
 }
+
+

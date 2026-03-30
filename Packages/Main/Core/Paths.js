@@ -4,19 +4,11 @@ import { app } from 'electron';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Two levels up from Packages/Main/ → project root (inside ASAR when packaged)
 const ROOT = path.resolve(__dirname, '..', '..', '..');
-
-// ── External root (outside ASAR) ────────────────────────────────────
-// In production: resources/ folder beside app.asar (writable, not encrypted)
-// In development: project root itself (same as ROOT)
 const EXTERNAL = app.isPackaged ? process.resourcesPath : ROOT;
 
 export const Paths = {
   ROOT,
-
-  // Data (mutable — outside ASAR in production)
   DATA_DIR: path.join(EXTERNAL, 'Data'),
   USER_FILE: path.join(EXTERNAL, 'Data', 'User.json'),
   MODELS_FILE: path.join(EXTERNAL, 'Data', 'Models.json'),
@@ -33,12 +25,10 @@ export const Paths = {
   CHANNELS_FILE: path.join(EXTERNAL, 'Data', 'Channels.json'),
   MCP_FILE: path.join(EXTERNAL, 'Data', 'MCPServers.json'),
   WINDOW_STATE_FILE: path.join(EXTERNAL, 'Data', 'WindowState.json'),
-
-  // Skills & Personas (outside ASAR — downloadable/editable)
+  FEATURES_DATA_DIR: path.join(EXTERNAL, 'Data', 'Features'),
   SKILLS_DIR: path.join(EXTERNAL, 'Skills'),
   PERSONAS_DIR: path.join(EXTERNAL, 'Personas'),
-
-  // Electron (code/pages — stays inside ASAR, read-only is fine)
+  FEATURES_DIR: path.join(ROOT, 'Packages', 'Features'),
   PRELOAD: path.join(ROOT, 'Packages', 'Electron', 'Bridge', 'Preload.js'),
   SETUP_PAGE: path.join(ROOT, 'Public', 'Setup.html'),
   INDEX_PAGE: path.join(ROOT, 'Public', 'index.html'),
