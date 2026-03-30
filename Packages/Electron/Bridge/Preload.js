@@ -84,8 +84,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleFreeConnector: (name, enabled) => ipcRenderer.invoke('toggle-free-connector', name, enabled),
   saveFreeConnectorKey: (name, apiKey) => ipcRenderer.invoke('save-free-connector-key', name, apiKey),
 
+  // ── Google Workspace auth ─────────────────────────────────────────────────────
+  googleOAuthStart: (clientId, clientSecret) => ipcRenderer.invoke('google-oauth-start', clientId, clientSecret),
+  googleDetectServices: () => ipcRenderer.invoke('google-detect-services'),
+  getConnectorSafeCreds: (name) => ipcRenderer.invoke('get-connector-safe-creds', name),
+
+  // ── Google Drive ──────────────────────────────────────────────────────────────
+  driveListFiles: (opts) => ipcRenderer.invoke('drive-list-files', opts),
+  driveSearchFiles: (query, maxResults) => ipcRenderer.invoke('drive-search-files', query, maxResults),
+  driveGetFileInfo: (fileId) => ipcRenderer.invoke('drive-get-file-info', fileId),
+  driveReadFile: (fileId) => ipcRenderer.invoke('drive-read-file', fileId),
+  driveCreateFile: (name, content, mimeType, folderId) => ipcRenderer.invoke('drive-create-file', name, content, mimeType, folderId),
+  driveUpdateFile: (fileId, content, mimeType) => ipcRenderer.invoke('drive-update-file', fileId, content, mimeType),
+  driveListFolders: (maxResults) => ipcRenderer.invoke('drive-list-folders', maxResults),
+  driveGetQuota: () => ipcRenderer.invoke('drive-get-quota'),
+
+  // ── Google Calendar ───────────────────────────────────────────────────────────
+  calendarListCalendars: () => ipcRenderer.invoke('calendar-list-calendars'),
+  calendarListEvents: (calendarId, opts) => ipcRenderer.invoke('calendar-list-events', calendarId, opts),
+  calendarGetToday: () => ipcRenderer.invoke('calendar-get-today'),
+  calendarGetUpcoming: (days, maxResults) => ipcRenderer.invoke('calendar-get-upcoming', days, maxResults),
+  calendarSearchEvents: (query, maxResults) => ipcRenderer.invoke('calendar-search-events', query, maxResults),
+  calendarGetEvent: (calendarId, eventId) => ipcRenderer.invoke('calendar-get-event', calendarId, eventId),
+  calendarCreateEvent: (calendarId, eventData) => ipcRenderer.invoke('calendar-create-event', calendarId, eventData),
+  calendarUpdateEvent: (calendarId, eventId, updates) => ipcRenderer.invoke('calendar-update-event', calendarId, eventId, updates),
+  calendarDeleteEvent: (calendarId, eventId) => ipcRenderer.invoke('calendar-delete-event', calendarId, eventId),
+
   // ── Gmail ─────────────────────────────────────────────────────────────────
-  gmailOAuthStart: (clientId, clientSecret) => ipcRenderer.invoke('gmail-oauth-start', clientId, clientSecret),
   gmailGetBrief: (maxResults) => ipcRenderer.invoke('gmail-get-brief', maxResults),
   gmailGetUnread: (maxResults) => ipcRenderer.invoke('gmail-get-unread', maxResults),
   gmailSend: (to, subject, body, cc, bcc) => ipcRenderer.invoke('gmail-send', to, subject, body, cc, bcc),

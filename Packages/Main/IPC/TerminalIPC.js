@@ -7,7 +7,6 @@ import {
   extractDocumentTextFromBuffer,
   extractDocumentTextFromPath,
 } from '../Services/DocumentExtractionService.js';
-// FIX: imported so open-terminal-os handler can open a native terminal at a directory
 import { openTerminalAtPath } from '../../Automation/Actions/Terminal.js';
 
 const activePtys = new Map();
