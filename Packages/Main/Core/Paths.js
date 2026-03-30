@@ -9,11 +9,11 @@ const EXTERNAL = app.isPackaged ? process.resourcesPath : ROOT;
 
 export const Paths = {
   ROOT,
+
+  // Data
   DATA_DIR: path.join(EXTERNAL, 'Data'),
   USER_FILE: path.join(EXTERNAL, 'Data', 'User.json'),
   MODELS_FILE: path.join(EXTERNAL, 'Data', 'Models.json'),
-  CUSTOM_INSTRUCTIONS_FILE: path.join(EXTERNAL, 'Data', 'CustomInstructions.md'),
-  MEMORY_FILE: path.join(EXTERNAL, 'Data', 'Memory.md'),
   CHATS_DIR: path.join(EXTERNAL, 'Data', 'Chats'),
   PROJECTS_DIR: path.join(EXTERNAL, 'Data', 'Projects'),
   AUTOMATIONS_FILE: path.join(EXTERNAL, 'Data', 'Automations.json'),
@@ -26,10 +26,24 @@ export const Paths = {
   MCP_FILE: path.join(EXTERNAL, 'Data', 'MCPServers.json'),
   WINDOW_STATE_FILE: path.join(EXTERNAL, 'Data', 'WindowState.json'),
   FEATURES_DATA_DIR: path.join(EXTERNAL, 'Data', 'Features'),
+
+  // Instructions
+  CUSTOM_INSTRUCTIONS_FILE: path.join(EXTERNAL, 'Instructions', 'CustomInstructions.md'),
+  MEMORY_FILE: path.join(EXTERNAL, 'Instructions', 'Memory.md'),
+
+  // Skills
   SKILLS_DIR: path.join(EXTERNAL, 'Skills'),
+
+  // Personas
   PERSONAS_DIR: path.join(EXTERNAL, 'Personas'),
+
+  // Features
   FEATURES_DIR: path.join(ROOT, 'Packages', 'Features'),
+
+  // Preload
   PRELOAD: path.join(ROOT, 'Packages', 'Electron', 'Bridge', 'Preload.js'),
+
+  // Pages
   SETUP_PAGE: path.join(ROOT, 'Public', 'Setup.html'),
   INDEX_PAGE: path.join(ROOT, 'Public', 'index.html'),
   AUTOMATIONS_PAGE: path.join(ROOT, 'Public', 'Automations.html'),
