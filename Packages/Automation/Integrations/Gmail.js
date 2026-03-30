@@ -20,7 +20,7 @@ const SCOPES = [
 ].join(' ');
 
 /* ══════════════════════════════════════════
-   OAUTH FLOW
+   OAUTH FLOW  (kept for standalone Gmail-only setups)
 ══════════════════════════════════════════ */
 export function startGmailOAuthFlow(clientId, clientSecret) {
   return new Promise((resolve, reject) => {
@@ -103,6 +103,7 @@ async function exchangeCode(code, clientId, clientSecret) {
 
 /* ══════════════════════════════════════════
    TOKEN REFRESH
+   Persists refreshed tokens back to the unified 'google' connector.
 ══════════════════════════════════════════ */
 
 let _connectorEngine = null;
@@ -115,7 +116,7 @@ async function getFreshCreds(creds) {
   if (!isExpired) return creds;
 
   if (!creds.refreshToken) {
-    throw new Error('Gmail token expired and no refresh token available. Please reconnect Gmail in Settings → Connectors.');
+    throw new Error('Gmail token expired and no refresh token available. Please reconnect Google Workspace in Settings → Connectors.');
   }
 
   console.warn('[Gmail] Access token expired - refreshing...');
@@ -133,7 +134,7 @@ async function getFreshCreds(creds) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(`Token refresh failed: ${err.error_description ?? err.error ?? res.status}. Please reconnect Gmail.`);
+    throw new Error(`Token refresh failed: ${err.error_description ?? err.error ?? res.status}. Please reconnect Google Workspace.`);
   }
 
   const data = await res.json();
@@ -145,7 +146,8 @@ async function getFreshCreds(creds) {
     ...(data.refresh_token ? { refreshToken: data.refresh_token } : {}),
   };
 
-  _connectorEngine?.updateCredentials('gmail', {
+  // Persist back to the unified 'google' connector (not the old 'gmail' key)
+  _connectorEngine?.updateCredentials('google', {
     accessToken:  updated.accessToken,
     tokenExpiry:  updated.tokenExpiry,
     ...(data.refresh_token ? { refreshToken: updated.refreshToken } : {}),
@@ -174,7 +176,6 @@ async function gmailFetch(creds, url, options = {}) {
     throw new Error(`Gmail API error (${res.status}): ${body.error?.message ?? JSON.stringify(body)}`);
   }
 
-  // 204 No Content
   if (res.status === 204) return null;
   return res.json();
 }
@@ -499,8 +500,8 @@ export async function createLabel(creds, name, { textColor = '#ffffff', backgrou
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({
       name,
-      labelListVisibility:    'labelShow',
-      messageListVisibility:  'show',
+      labelListVisibility:   'labelShow',
+      messageListVisibility: 'show',
       color: { textColor, backgroundColor },
     }),
   });
@@ -555,9 +556,9 @@ export async function getInboxStats(creds) {
   ]);
 
   return {
-    email:         profile.emailAddress,
-    totalMessages: profile.messagesTotal,
-    totalThreads:  profile.threadsTotal,
+    email:          profile.emailAddress,
+    totalMessages:  profile.messagesTotal,
+    totalThreads:   profile.threadsTotal,
     unreadEstimate: unreadList.resultSizeEstimate ?? 0,
     inboxEstimate:  inboxList.resultSizeEstimate ?? 0,
   };

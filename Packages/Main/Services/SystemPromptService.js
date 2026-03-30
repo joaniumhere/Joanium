@@ -29,7 +29,8 @@ export async function get({ user, customInstructions, memory, connectorEngine })
   if (_cache && now - _cacheTime < TTL_MS) return _cache;
 
   const githubCreds = connectorEngine.getCredentials('github');
-  const gmailCreds = connectorEngine.getCredentials('gmail');
+  // Gmail lives inside the unified 'google' connector now
+  const googleCreds = connectorEngine.getCredentials('google');
 
   let githubUsername = null;
   let githubRepos = [];
@@ -60,7 +61,8 @@ export async function get({ user, customInstructions, memory, connectorEngine })
     memory,
     githubUsername,
     githubRepos,
-    gmailEmail: gmailCreds?.email ?? null,
+    // Pass the gmail email from the google connector if available
+    gmailEmail: googleCreds?.email ?? null,
     activePersona,
   });
   _cacheTime = now;

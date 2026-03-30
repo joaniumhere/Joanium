@@ -67,37 +67,16 @@ export class ConnectorEngine {
       }
     }
 
-    // Migrate legacy separate gmail/gdrive/gcal → google (one-time, non-destructive)
-    this._migrateGoogleConnectors();
 
     return this._data;
   }
 
-  _migrateGoogleConnectors() {
-    const legacy = ['gmail', 'gdrive', 'gcal'];
-    const googleSlot = this._data.connectors.google;
-
-    for (const key of legacy) {
-      const old = this._data.connectors[key];
-      if (!old) continue;
-
-      // If the legacy slot had valid credentials and google is still empty, migrate them
-      if (old.enabled && old.credentials?.accessToken && !googleSlot.enabled) {
-        googleSlot.enabled      = true;
-        googleSlot.credentials  = { ...old.credentials };
-        googleSlot.connectedAt  = old.connectedAt ?? new Date().toISOString();
-        console.info(`[ConnectorEngine] Migrated legacy '${key}' credentials → 'google'`);
-      }
-
-      // Remove the legacy slot so it doesn't confuse anything
-      delete this._data.connectors[key];
-    }
-  }
-
   _persist() {
-    const dir = path.dirname(this.filePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(this.filePath, JSON.stringify(this._data, null, 2), 'utf-8');
+    try {
+      const dir = path.dirname(this.filePath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(this.filePath, JSON.stringify(this._data, null, 2), 'utf-8');
+    } catch (err) { console.error('[ConnectorEngine] _persist error:', err); }
   }
 
   /* ── Public status API (no secrets) ── */

@@ -163,14 +163,16 @@ const DS_LABELS = {
 
 /* ══════════════════════════════════════════
    SOURCE COLLECTOR
+   NOTE: All Gmail sources read from the unified 'google' connector.
 ══════════════════════════════════════════ */
 async function collectOneSource(ds, connectorEngine) {
   const type = ds?.type;
   switch (type) {
 
     case 'gmail_inbox': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) return '⚠️ Gmail not connected.';
+      // Gmail is now part of the unified Google Workspace connector
+      const creds = connectorEngine?.getCredentials('google');
+      if (!creds?.accessToken) return '⚠️ Google Workspace not connected.';
       const { getEmailBrief } = await import('../../Automation/Integrations/Gmail.js');
       const brief = await getEmailBrief(creds, ds.maxResults ?? 20);
       if (!brief.count) return 'EMPTY: Gmail Inbox has no unread emails.';
@@ -178,8 +180,8 @@ async function collectOneSource(ds, connectorEngine) {
     }
 
     case 'gmail_search': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) return '⚠️ Gmail not connected.';
+      const creds = connectorEngine?.getCredentials('google');
+      if (!creds?.accessToken) return '⚠️ Google Workspace not connected.';
       if (!ds.query) return '⚠️ No search query specified.';
       const { searchEmails } = await import('../../Automation/Integrations/Gmail.js');
       const emails = await searchEmails(creds, ds.query, ds.maxResults ?? 10);
@@ -400,8 +402,9 @@ async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
   switch (output?.type) {
 
     case 'send_email': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected.');
+      // Email sending uses the unified 'google' connector
+      const creds = connectorEngine?.getCredentials('google');
+      if (!creds?.accessToken) throw new Error('Google Workspace not connected.');
       const { sendEmail } = await import('../../Automation/Integrations/Gmail.js');
       const subject = output.subject?.trim()
         ? output.subject.replace('{{date}}', dateStr).replace('{{agent}}', agent.name).replace('{{job}}', job.name ?? '')
@@ -465,10 +468,9 @@ async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
         throw new Error('github_pr_review: owner, repo, and prNumber are required.');
       }
       const { createPRReview } = await import('../../Automation/Integrations/Github.js');
-      const event = output.event ?? 'COMMENT';
       await createPRReview(creds, output.owner, output.repo, output.prNumber, {
         body: aiResponse,
-        event,
+        event: output.event ?? 'COMMENT',
       });
       break;
     }
@@ -501,12 +503,8 @@ export class AgentsEngine {
   getAll() { return this.agents; }
   getRunning() { return Array.from(this._running.values()); }
 
-  /**
-   * Clear all job history AND lastRun from every agent on disk.
-   * This is the persistent wipe the Events "Clear" button needs.
-   */
   clearAllHistory() {
-    this._load(); // get latest from disk first
+    this._load();
     for (const agent of this.agents) {
       for (const job of (agent.jobs ?? [])) {
         job.history = [];
@@ -681,7 +679,6 @@ export class AgentsEngine {
       this._running.delete(runKey);
     }
 
-    // Re-find by ID — guards against concurrent _load() replacing this.agents
     const liveAgent = this.agents.find(a => a.id === agentId);
     const liveJob = liveAgent?.jobs?.find(j => j.id === jobId);
 

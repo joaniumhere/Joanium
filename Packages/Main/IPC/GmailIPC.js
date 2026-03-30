@@ -1,27 +1,15 @@
 import { ipcMain } from 'electron';
 import * as GmailAPI from '../../Automation/Integrations/Gmail.js';
-import { startGmailOAuthFlow, setConnectorEngine } from '../../Automation/Integrations/Gmail.js';
+import { setConnectorEngine } from '../../Automation/Integrations/Gmail.js';
 import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
 
 export function register(connectorEngine) {
   // Give Gmail.js a reference so it can persist refreshed tokens automatically
   setConnectorEngine(connectorEngine);
 
-  function creds() { return connectorEngine.getCredentials('gmail'); }
-  function notConnected() { return { ok: false, error: 'Gmail not connected' }; }
-
-  // ── OAuth ─────────────────────────────────────────────────────────────────
-
-  ipcMain.handle('gmail-oauth-start', async (_e, clientId, clientSecret) => {
-    try {
-      if (!clientId?.trim() || !clientSecret?.trim())
-        return { ok: false, error: 'Client ID and Client Secret are required' };
-      const tokens = await startGmailOAuthFlow(clientId.trim(), clientSecret.trim());
-      connectorEngine.saveConnector('gmail', tokens);
-      invalidateSysPrompt();
-      return { ok: true, email: tokens.email };
-    } catch (err) { return { ok: false, error: err.message }; }
-  });
+  // All Gmail calls read from the unified 'google' connector
+  function creds() { return connectorEngine.getCredentials('google'); }
+  function notConnected() { return { ok: false, error: 'Google Workspace not connected — connect it in Settings → Connectors' }; }
 
   // ── Read ──────────────────────────────────────────────────────────────────
 

@@ -13,7 +13,6 @@ import { sendNotification }                   from '../Actions/Notification.js';
 import { copyToClipboard }                    from '../Actions/Clipboard.js';
 import { writeFile }                          from '../Actions/File.js';
 
-// Helpers
 import { shouldRunNow } from '../Scheduling/Scheduling.js';
 
 
@@ -23,6 +22,10 @@ import { shouldRunNow } from '../Scheduling/Scheduling.js';
 
 export async function runAction(action, connectorEngine = null) {
   if (!action?.type) return;
+
+  // Gmail credentials now live in the unified 'google' connector
+  const gmailCreds = () => connectorEngine?.getCredentials('google');
+  const gmailNotConnected = () => { throw new Error('Google Workspace not connected — connect it in Settings → Connectors'); };
 
   switch (action.type) {
     // System / OS
@@ -183,10 +186,11 @@ export async function runAction(action, connectorEngine = null) {
       }
       return;
     }
-    // Gmail
+
+    // ── Gmail (all via unified 'google' connector) ────────────────────────
     case 'gmail_send_email': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected — connect in Settings → Connectors');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       await GmailAPI.sendEmail(
         creds,
         action.to,
@@ -199,8 +203,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_get_brief': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       const brief = await GmailAPI.getEmailBrief(creds, action.maxResults ?? 10);
       const preview = brief.emails
         ? brief.emails.slice(0, 3).map(e => e.subject).filter(Boolean).join(' · ')
@@ -213,8 +217,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_get_unread_count': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       const brief = await GmailAPI.getEmailBrief(creds, 100);
       sendNotification(
         `📬 Gmail: ${brief.count} unread email${brief.count !== 1 ? 's' : ''}`,
@@ -224,8 +228,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_search_notify': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       if (!action.query) throw new Error('gmail_search_notify: no query provided');
       const emails = await GmailAPI.searchEmails(creds, action.query, action.maxResults ?? 5);
       const count = emails.length;
@@ -238,8 +242,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_reply': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       if (!action.messageId) throw new Error('gmail_reply: messageId required');
       if (!action.body)      throw new Error('gmail_reply: body required');
       await GmailAPI.replyToEmail(creds, action.messageId, action.body);
@@ -248,8 +252,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_forward': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       if (!action.messageId) throw new Error('gmail_forward: messageId required');
       if (!action.forwardTo) throw new Error('gmail_forward: forwardTo required');
       await GmailAPI.forwardEmail(creds, action.messageId, action.forwardTo, action.note ?? '');
@@ -258,8 +262,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_mark_all_read': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       const count = await GmailAPI.markAllRead(creds);
       sendNotification(
         count === 0 ? '📭 Already all read!' : `✅ Marked ${count} emails as read`,
@@ -269,8 +273,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_archive_read': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       const count = await GmailAPI.archiveReadEmails(creds, action.maxResults ?? 100);
       sendNotification(
         count === 0 ? '📭 Inbox already clean' : `🗃️ Archived ${count} emails`,
@@ -280,8 +284,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_trash_by_query': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       if (!action.query) throw new Error('gmail_trash_by_query: query required');
       const count = await GmailAPI.trashEmailsByQuery(creds, action.query, action.maxResults ?? 50);
       sendNotification(
@@ -292,8 +296,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_create_draft': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       if (!action.to || !action.subject) throw new Error('gmail_create_draft: to and subject required');
       await GmailAPI.createDraft(creds, action.to, action.subject, action.body ?? '', action.cc ?? '');
       sendNotification('📝 Draft saved', `To: ${action.to} · Subject: ${action.subject}`);
@@ -301,8 +305,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_inbox_stats': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       const stats = await GmailAPI.getInboxStats(creds);
       sendNotification(
         `📊 Inbox: ${stats.unreadEstimate} unread`,
@@ -312,8 +316,8 @@ export async function runAction(action, connectorEngine = null) {
     }
 
     case 'gmail_label_emails': {
-      const creds = connectorEngine?.getCredentials('gmail');
-      if (!creds?.accessToken) throw new Error('Gmail not connected');
+      const creds = gmailCreds();
+      if (!creds?.accessToken) gmailNotConnected();
       if (!action.query)     throw new Error('gmail_label_emails: query required');
       if (!action.labelName) throw new Error('gmail_label_emails: labelName required');
 
@@ -337,7 +341,7 @@ export async function runAction(action, connectorEngine = null) {
       return;
     }
 
-    // Github
+    // ── GitHub ────────────────────────────────────────────────────────────
     case 'github_open_repo': {
       const owner = action.owner?.trim();
       const repo  = action.repo?.trim();
