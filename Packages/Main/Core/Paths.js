@@ -43,7 +43,7 @@ export const Paths = {
   FEATURES_DIR: path.join(ROOT, 'Packages', 'Features'),
 
   // Preload
-  PRELOAD: path.join(ROOT, 'Packages', 'Electron', 'Bridge', 'Preload.js'),
+  PRELOAD: path.join(ROOT, 'Core', 'Electron', 'Bridge', 'Preload.js'),
 
   // Pages
   SETUP_PAGE: path.join(ROOT, 'Public', 'Setup.html'),
