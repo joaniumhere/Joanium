@@ -1,4 +1,4 @@
-import { escapeHtml, formatTrigger, fullDateTime, getJobLabel, getSourceCount, timeAgo } from '../Utils/Utils.js';
+import { escapeHtml, formatTrigger, fullDateTime, getJobLabel, getSourceCount, timeAgo } from '../Pages/Agents/UI/Render/Utils/Utils.js';
 
 export function createHistoryModal({ dataSourceTypes, onOpenResponse }) {
   const wrapper = document.createElement('div');

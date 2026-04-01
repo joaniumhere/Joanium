@@ -1,7 +1,7 @@
 import { state } from '../../../Shared/Core/State.js';
 import { render as renderMarkdown } from '../../../Shared/Content/Markdown.js';
 import { chatMessages } from '../../../Shared/Core/DOM.js';
-import { openHtmlPreviewModal } from '../../../Shared/Modals/HtmlPreviewModal.js';
+import { openHtmlPreviewModal } from '../../../../Modals/HtmlPreviewModal.js';
 import { copyIcon, checkIcon, editIcon, retryIcon, assistantIcon } from './ChatIcons.js';
 import { buildTokenFooter, updateTimeline } from './ChatTimeline.js';
 

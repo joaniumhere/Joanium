@@ -1,8 +1,8 @@
-import { state } from '../Core/State.js';
-import { loadConnectorsPanel } from '../../Features/Connectors/index.js';
-import { loadMCPPanel } from '../../Features/MCP/index.js';
-import { loadChannelsPanel } from '../../Features/Channels/index.js';
-import { PROVIDERS, PROVIDERS_BY_ID } from '../../../Pages/Setup/UI/Render/Providers/SetupProviders.js';
+import { state } from '../Renderer/Shared/Core/State.js';
+import { loadConnectorsPanel } from '../Renderer/Features/Connectors/index.js';
+import { loadMCPPanel } from '../Renderer/Features/MCP/index.js';
+import { loadChannelsPanel } from '../Renderer/Features/Channels/index.js';
+import { PROVIDERS, PROVIDERS_BY_ID } from '../Pages/Setup/UI/Render/Providers/SetupProviders.js';
 
 const PROVIDER_ORDER = new Map(
   PROVIDERS.map((provider, index) => [provider.id, index]),

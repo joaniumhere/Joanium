@@ -1,5 +1,5 @@
-import { state } from '../Core/State.js';
-import { escapeHtml, timeAgo } from '../Core/Utils.js';
+import { state } from '../Renderer/Shared/Core/State.js';
+import { escapeHtml, timeAgo } from '../Renderer/Shared/Core/Utils.js';
 
 // HTML TEMPLATE
 function buildHTML() {

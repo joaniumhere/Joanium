@@ -1,9 +1,9 @@
 import { state }              from '../Shared/Core/State.js';
 import { initSidebar }        from '../Shared/Navigation/Sidebar.js';
-import { initAboutModal }     from '../Shared/Modals/AboutModal.js';
-import { initLibraryModal }   from '../Shared/Modals/LibraryModal.js';
-import { initProjectsModal }  from '../Shared/Modals/ProjectsModal.js';
-import { initSettingsModal }  from '../Shared/Modals/SettingsModal.js';
+import { initAboutModal }     from '../../Modals/AboutModal.js';
+import { initLibraryModal }   from '../../Modals/LibraryModal.js';
+import { initProjectsModal }  from '../../Modals/ProjectsModal.js';
+import { initSettingsModal }  from '../../Modals/SettingsModal.js';
 import { injectCSS }          from '../Shared/Utils/InjectCSS.js';
 import { initChannelGateway } from '../Features/Channels/Gateway.js';
 

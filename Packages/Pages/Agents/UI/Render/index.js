@@ -1,7 +1,7 @@
 import { DATA_SOURCE_TYPES, loadAgentsFeatureRegistry } from './Config/Constants.js';
 import { createConfirmDialog } from './Components/ConfirmDialog.js';
 import { renderAgentsGrid } from './Components/Grid.js';
-import { createHistoryModal } from './Components/HistoryModal.js';
+import { createHistoryModal } from '../../../../Modals/HistoryModal.js';
 import { createJobsController } from './Builders/JobBuilder.js';
 import { createModelPicker } from './Components/ModelPicker.js';
 import { createResponseViewer } from './Components/ResponseViewer.js';
