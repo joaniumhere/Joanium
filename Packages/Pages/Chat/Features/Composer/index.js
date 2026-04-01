@@ -1,10 +1,10 @@
-import { state } from '../../Shared/Core/State.js';
-import { generateId } from '../../Shared/Core/Utils.js';
+import { state } from '../../../../Renderer/Shared/Core/State.js';
+import { generateId } from '../../../../Renderer/Shared/Core/Utils.js';
 import {
   textarea, sendBtn, attachmentBtn, folderBtn,
   composerAttachments as composerAttachmentsEl,
   composerHint,
-} from '../../Shared/Core/DOM.js';
+} from '../../../../Renderer/Shared/Core/DOM.js';
 import { modelSupportsInput } from '../ModelSelector/index.js';
 import {
   FILE_TYPES,
@@ -15,8 +15,8 @@ import {
   getFileTypeMeta,
   isTextLikeMime,
   isExtractableBinary,
-} from './Core/ComposerFileTypes.js';
-import { enrichFileContent } from './Core/ComposerParsers.js';
+} from './ComposerFileTypes.js';
+import { enrichFileContent } from './ComposerParsers.js';
 
 /* ══════════════════════════════════════════
    INTERNAL

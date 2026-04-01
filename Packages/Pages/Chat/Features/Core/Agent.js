@@ -1,5 +1,5 @@
-import { state } from '../../../Shared/Core/State.js';
-import { fetchWithTools, fetchStreamingWithTools } from '../../AI/index.js';
+import { state } from '../../../../Renderer/Shared/Core/State.js';
+import { fetchWithTools, fetchStreamingWithTools } from '../../../../Renderer/Features/AI/index.js';
 import { buildToolsPrompt, getAvailableTools } from '../Capabilities/Registry/Tools.js';
 import { executeTool } from '../Capabilities/Registry/Executors.js';
 

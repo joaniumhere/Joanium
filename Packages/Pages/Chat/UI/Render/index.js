@@ -14,19 +14,19 @@ import {
   updateModelLabel,
   buildModelDropdown,
   notifyModelSelectionChanged,
-} from '../../../../Renderer/Features/ModelSelector/index.js';
+} from '../../Features/ModelSelector/index.js';
 import {
   init as initComposer,
   syncCapabilities,
   addAttachments,
   syncWorkspacePickerVisibility,
-} from '../../../../Renderer/Features/Composer/index.js';
+} from '../../Features/Composer/index.js';
 import {
   sendMessage, startNewChat, loadChat,
   appendMessage, showChatView,
   setSendBtnUpdater, stopGeneration, initChatUI,
-} from '../../../../Renderer/Features/Chat/index.js';
-import { initTerminalObserver } from '../../../../Renderer/Features/Chat/UI/TerminalComponent.js';
+} from '../../Features/index.js';
+import { initTerminalObserver } from '../../Features/UI/TerminalComponent.js';
 
 import { getChatHTML, ensureDropOverlay, getDropOverlay } from './Templates/ChatTemplate.js';
 import { createEnhanceFeature } from './Features/ChatEnhance.js';

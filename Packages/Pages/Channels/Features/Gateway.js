@@ -10,9 +10,9 @@
  * Initialised once in Main.js right after the app boots.
  */
 
-import { agentLoop } from '../Chat/Core/Agent.js';
-import { trackUsage } from '../Chat/Data/ChatPersistence.js';
-import { state } from '../../Shared/Core/State.js';
+import { agentLoop } from '../../Chat/Features/Core/Agent.js';
+import { trackUsage } from '../../Chat/Features/Data/ChatPersistence.js';
+import { state } from '../../../Renderer/Shared/Core/State.js';
 
 const api = window.electronAPI;
 

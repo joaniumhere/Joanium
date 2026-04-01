@@ -1,6 +1,6 @@
-import { state } from '../../Shared/Core/State.js';
-import { welcome, chatView, chatMessages } from '../../Shared/Core/DOM.js';
-import { reset as resetComposer } from '../Composer/index.js';
+import { state } from '../../../Renderer/Shared/Core/State.js';
+import { welcome, chatView, chatMessages } from '../../../Renderer/Shared/Core/DOM.js';
+import { reset as resetComposer } from './Composer/index.js';
 import { planRequest, agentLoop } from './Core/Agent.js';
 
 // Sub-modules
