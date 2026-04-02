@@ -298,9 +298,19 @@
   border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
+.auto-trigger-icon {
+  width: 13px;
+  height: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .auto-card-tag.trigger-tag svg {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
+  display: block;
 }
 
 .auto-card-actions-summary {

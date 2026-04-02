@@ -653,3 +653,7 @@ export class ChannelEngine {
     return false;
   }
 }
+
+export const engineMeta = {
+  create: ({ paths }) => new ChannelEngine(paths.CHANNELS_FILE),
+};

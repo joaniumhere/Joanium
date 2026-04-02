@@ -3,53 +3,19 @@ import fs from 'fs';
 import path from 'path';
 import Paths from '../../../Main/Core/Paths.js';
 import { invalidate as invalidateSysPrompt } from '../../../Main/Services/SystemPromptService.js';
-
-/* ── Frontmatter parser ── */
-function parseFrontmatter(content) {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return { meta: {}, body: content };
-  const meta = {};
-  for (const line of match[1].split('\n')) {
-    const idx = line.indexOf(':');
-    if (idx < 1) continue;
-    const key = line.slice(0, idx).trim();
-    const val = line.slice(idx + 1).trim();
-    if (key && val) meta[key] = val;
-  }
-  return { meta, body: content.slice(match[0].length).trim() };
-}
+import { parseFrontmatter, loadJson, persistJson } from '../../../Main/Services/FileService.js';
 
 /* ── Files to skip — internal/empty stubs ── */
 const SKIP_FILES = new Set(['Debug.md']);
 
 /* ── Skills.json helpers ── */
 
-/**
- * Load the enabled map from Data/Skills.json.
- * Returns a plain object: { "FileName.md": true | false }
- * Missing entries default to false (disabled).
- */
 function loadEnabledMap() {
-  try {
-    if (fs.existsSync(Paths.SKILLS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(Paths.SKILLS_FILE, 'utf-8'));
-      return data.skills ?? {};
-    }
-  } catch { /* fall through */ }
-  return {};
+  return loadJson(Paths.SKILLS_FILE, { skills: {} }).skills ?? {};
 }
 
-/**
- * Persist the enabled map back to Data/Skills.json.
- */
 function saveEnabledMap(map) {
-  const dir = path.dirname(Paths.SKILLS_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(
-    Paths.SKILLS_FILE,
-    JSON.stringify({ skills: map }, null, 2),
-    'utf-8',
-  );
+  persistJson(Paths.SKILLS_FILE, { skills: map });
 }
 
 /* ── IPC registration ── */

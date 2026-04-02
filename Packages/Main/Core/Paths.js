@@ -26,6 +26,7 @@ export const Paths = {
   USAGE_FILE: path.join(EXTERNAL, 'Data', 'Usage.json'),
   AGENTS_FILE: path.join(EXTERNAL, 'Data', 'Agents.json'),
   CHANNELS_FILE: path.join(EXTERNAL, 'Data', 'Channels.json'),
+  CHANNEL_MESSAGES_FILE: path.join(EXTERNAL, 'Data', 'ChannelMessages.json'),
   MCP_FILE: path.join(EXTERNAL, 'Data', 'MCPServers.json'),
   FEATURES_DATA_DIR: path.join(EXTERNAL, 'Data', 'Features'),
 
@@ -41,6 +42,9 @@ export const Paths = {
 
   // Features
   FEATURES_DIR: path.join(ROOT, 'Packages', 'Capabilities'),
+
+  // Pages (renderer)
+  PAGES_DIR: path.join(ROOT, 'Packages', 'Pages'),
 
   // Preload
   PRELOAD: path.join(ROOT, 'Core', 'Electron', 'Bridge', 'Preload.js'),

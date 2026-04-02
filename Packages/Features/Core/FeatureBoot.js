@@ -3,6 +3,7 @@ let bootPromise = null;
 function emptyBoot() {
   return {
     features: [],
+    pages: [],
     connectors: { services: [], free: [] },
     chat: { tools: [] },
     automations: { actions: [], fieldMeta: {}, fieldLabels: {} },

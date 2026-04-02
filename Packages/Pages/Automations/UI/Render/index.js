@@ -1,5 +1,16 @@
+export const pageMeta = {
+  id: 'automations',
+  label: 'Automations',
+  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+           <path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z" stroke-linejoin="round"/>
+         </svg>`,
+  css: '../Automations/UI/Styles/AutomationsPage.css',
+  order: 20,
+  section: 'top',
+};
+
 import { loadAutomationFeatureRegistry } from './Config/Constants.js';
-import { escapeHtml, formatActionsSummary, formatLastRun, formatTrigger, generateId } from './Utils/Utils.js';
+import { escapeHtml, formatActionsSummary, formatLastRun, getTriggerPresentation, generateId } from './Utils/Utils.js';
 import { createActionRow, collectActionFromRow } from './Components/ActionRenderer.js';
 import { getAutomationsHTML } from './Templates/Template.js';
 import { createCardPool } from '../../../../System/CardPool.js';
@@ -34,8 +45,8 @@ export function mount(outlet) {
         </label>
       </div>
       <div class="auto-card-meta">
-        <span class="auto-card-tag trigger_tag">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
+        <span class="auto-card-tag trigger-tag">
+          <span class="auto-trigger-icon" aria-hidden="true"></span>
           <span class="auto-trigger-text"></span>
         </span>
         <div class="auto-card-actions-summary">
@@ -76,7 +87,9 @@ export function mount(outlet) {
     card.querySelector('.auto-card-name').textContent = auto.name;
     card.querySelector('.auto-toggle').title = auto.enabled ? 'Enabled' : 'Disabled';
     card.querySelector('.toggle-input').checked = auto.enabled;
-    card.querySelector('.auto-trigger-text').textContent = formatTrigger(auto.trigger);
+    const trigger = getTriggerPresentation(auto.trigger);
+    card.querySelector('.auto-trigger-icon').innerHTML = trigger.icon;
+    card.querySelector('.auto-trigger-text').textContent = trigger.label;
     card.querySelector('.auto-actions-text').textContent = formatActionsSummary(auto.actions);
 
     const descEl = card.querySelector('.auto-card-desc');

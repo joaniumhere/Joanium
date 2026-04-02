@@ -247,6 +247,46 @@ export function initSettingsModal() {
     window.dispatchEvent(new CustomEvent('ow:user-profile-updated', { detail: { name: displayName, initials: state.userInitials } }));
   }
 
+  function captureProviderFocus() {
+    const list = $('settings-providers-list');
+    const active = document.activeElement;
+    if (!(active instanceof HTMLInputElement) || !list?.contains(active)) return null;
+
+    return {
+      providerId: active.dataset.providerId ?? '',
+      fieldKey: active.dataset.fieldKey ?? '',
+      selectionStart: active.selectionStart,
+      selectionEnd: active.selectionEnd,
+      selectionDirection: active.selectionDirection,
+    };
+  }
+
+  function restoreProviderFocus(focusState) {
+    if (!focusState?.providerId || !focusState?.fieldKey) return;
+
+    requestAnimationFrame(() => {
+      const list = $('settings-providers-list');
+      if (!list) return;
+
+      const nextInput = Array.from(list.querySelectorAll('input[data-provider-id][data-field-key]'))
+        .find((input) => input.dataset.providerId === focusState.providerId && input.dataset.fieldKey === focusState.fieldKey);
+
+      if (!nextInput || nextInput.disabled) return;
+      nextInput.focus();
+
+      if (typeof focusState.selectionStart !== 'number' || typeof focusState.selectionEnd !== 'number') return;
+      if (typeof nextInput.setSelectionRange !== 'function') return;
+
+      try {
+        nextInput.setSelectionRange(
+          focusState.selectionStart,
+          focusState.selectionEnd,
+          focusState.selectionDirection ?? 'none',
+        );
+      } catch {}
+    });
+  }
+
   function renderProviderField(r, field, savedConfig, effectiveConfig, disabled) {
     const wrapper = document.createElement('label');
     wrapper.className = 'spr-field';
@@ -260,8 +300,11 @@ export function initSettingsModal() {
     input.type = field.type === 'password' ? 'password' : 'text';
     input.placeholder = field.type === 'password' && savedConfig.apiKey ? '••••••••  (saved)' : field.placeholder;
     input.autocomplete = 'off'; input.spellcheck = false; input.disabled = disabled;
+    input.dataset.providerId = r.provider;
+    input.dataset.fieldKey = field.key;
     input.value = field.type === 'password' ? String(ss.pendingProviderConfigs[r.provider]?.[field.key] ?? '') : String(effectiveConfig[field.key] ?? '');
     input.addEventListener('input', () => {
+      const focusState = captureProviderFocus();
       const pending = { ...(ss.pendingProviderConfigs[r.provider] ?? {}) };
       const trimmed = input.value.trim();
       if (field.type === 'password' && !trimmed && savedConfig.apiKey) delete pending[field.key];
@@ -269,7 +312,7 @@ export function initSettingsModal() {
       if (Object.keys(pending).length > 0) ss.pendingProviderConfigs[r.provider] = pending;
       else delete ss.pendingProviderConfigs[r.provider];
       if (trimmed) ss.pendingDeletes.delete(r.provider);
-      renderProviders();
+      renderProviders(focusState);
     });
     inputWrap.appendChild(input);
     if (field.type === 'password') {
@@ -284,7 +327,7 @@ export function initSettingsModal() {
     return wrapper;
   }
 
-  function renderProviders() {
+  function renderProviders(focusState = null) {
     const list = $('settings-providers-list');
     if (!list) return;
     const catalog = sortProviderCatalog(ss.providerCatalog, ss);
@@ -346,6 +389,7 @@ export function initSettingsModal() {
       list.appendChild(row);
     });
     updateSaveButton();
+    restoreProviderFocus(focusState);
   }
 
   async function hydrateModal() {

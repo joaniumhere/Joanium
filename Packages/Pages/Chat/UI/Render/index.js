@@ -1,3 +1,14 @@
+export const pageMeta = {
+  id: 'chat',
+  label: 'New chat',
+  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+           <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+         </svg>`,
+  css: null,
+  order: 1,
+  section: 'top',
+};
+
 import { state } from '../../../../System/State.js';
 import { initDOM } from '../../../Shared/Core/DOM.js';
 import {

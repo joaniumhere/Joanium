@@ -31,6 +31,7 @@ export function defineFeature(feature = {}) {
     name: String(feature.name ?? feature.id).trim(),
     dependsOn,
     connectors: feature.connectors ?? {},
+    pages: Array.isArray(feature.pages) ? feature.pages : [],
     main: feature.main ?? {},
     renderer: feature.renderer ?? {},
     automation: feature.automation ?? {},

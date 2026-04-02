@@ -1,3 +1,14 @@
+export const pageMeta = {
+  id: 'events',
+  label: 'Events',
+  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+           <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke-linecap="round" stroke-linejoin="round"/>
+         </svg>`,
+  css: '../Events/UI/Styles/EventsPage.css',
+  order: 60,
+  section: 'bottom',
+};
+
 import { getEventsHTML } from './Templates/EventsTemplate.js';
 import { esc, timeAgo, runningDuration, fullDateTime, triggerLabel } from './Utils/EventsUtils.js';
 import { fetchHistory, fetchRunning } from './Data/EventsFetcher.js';

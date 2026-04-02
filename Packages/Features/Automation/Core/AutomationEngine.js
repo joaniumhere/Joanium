@@ -183,3 +183,9 @@ export class AutomationEngine {
     }
   }
 }
+
+export const engineMeta = {
+  needs: ['connectorEngine', 'featureRegistry'],
+  create: ({ paths, connectorEngine, featureRegistry }) =>
+    new AutomationEngine(paths.AUTOMATIONS_FILE, connectorEngine, featureRegistry),
+};

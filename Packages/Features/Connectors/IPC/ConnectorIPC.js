@@ -1,6 +1,4 @@
 import { ipcMain } from 'electron';
-import * as GithubAPI from '../../../Capabilities/Github/Core/api/GithubAPI.js';
-import { getFreshCreds } from '../../../Capabilities/Google/GoogleWorkspace.js';
 import { invalidate as invalidateSysPrompt } from '../../../Main/Services/SystemPromptService.js';
 
 export const ipcMeta = { needs: ['connectorEngine', 'featureRegistry'] };
@@ -38,24 +36,7 @@ export function register(connectorEngine, featureRegistry = null) {
       const creds = connectorEngine.getCredentials(name);
       if (!creds) return { ok: false, error: 'No credentials stored' };
 
-      if (name === 'google') {
-        const fresh = await getFreshCreds(creds);
-        const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-          headers: { Authorization: `Bearer ${fresh.accessToken}` },
-        });
-        if (!response.ok) throw new Error(`Token validation failed (${response.status})`);
-        const profile = await response.json();
-        connectorEngine.updateCredentials('google', { email: profile.email });
-        return { ok: true, email: profile.email };
-      }
-
-      if (name === 'github') {
-        const user = await GithubAPI.getUser(creds);
-        connectorEngine.updateCredentials('github', { username: user.login });
-        return { ok: true, username: user.login, avatar: user.avatar_url };
-      }
-
-      return { ok: false, error: 'Unknown connector' };
+      return { ok: false, error: 'No validation handler registered for this connector' };
     } catch (err) {
       return { ok: false, error: err.message };
     }

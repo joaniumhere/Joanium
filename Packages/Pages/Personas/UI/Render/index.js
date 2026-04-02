@@ -1,3 +1,15 @@
+export const pageMeta = {
+  id: 'personas',
+  label: 'Personas',
+  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+           <circle cx="12" cy="8" r="4"/>
+           <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+         </svg>`,
+  css: '../Personas/UI/Styles/PersonasPage.css',
+  order: 50,
+  section: 'top',
+};
+
 import { getPersonasHTML } from './Templates/PersonasTemplate.js';
 import { createPersonaCardPool } from './Components/PersonasCards.js';
 

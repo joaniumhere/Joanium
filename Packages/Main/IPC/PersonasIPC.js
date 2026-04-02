@@ -3,20 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import Paths from '../Core/Paths.js';
 import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
-
-function parseFrontmatter(content) {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return { meta: {}, body: content };
-  const meta = {};
-  for (const line of match[1].split('\n')) {
-    const idx = line.indexOf(':');
-    if (idx < 1) continue;
-    const key = line.slice(0, idx).trim();
-    const val = line.slice(idx + 1).trim();
-    if (key && val) meta[key] = val;
-  }
-  return { meta, body: content.slice(match[0].length).trim() };
-}
+import { parseFrontmatter } from '../Services/FileService.js';
 
 export const ipcMeta = { needs: [] };
 export function register() {

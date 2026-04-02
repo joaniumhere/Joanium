@@ -1,4 +1,16 @@
 import { ipcMain } from 'electron';
+import Paths from '../../../Main/Core/Paths.js';
+import { loadJson, persistJson } from '../../../Main/Services/FileService.js';
+
+const MAX_MESSAGES = 500;
+
+function loadMessages() {
+  return loadJson(Paths.CHANNEL_MESSAGES_FILE, { messages: [] });
+}
+
+function persistMessages(data) {
+  persistJson(Paths.CHANNEL_MESSAGES_FILE, data);
+}
 
 export const ipcMeta = { needs: ['channelEngine'] };
 export function register(channelEngine) {
@@ -81,5 +93,54 @@ export function register(channelEngine) {
   ipcMain.handle('channel-reply', (_e, id, text) => {
     try { channelEngine.resolveReply(id, text); return { ok: true }; }
     catch (err) { return { ok: false, error: err.message }; }
+  });
+
+  /* ══════════════════════════════════════════
+     CHANNEL MESSAGE LOG — persisted to JSON
+     ══════════════════════════════════════════ */
+
+  /* ── Save a message log entry ── */
+  ipcMain.handle('save-channel-message', (_e, msg) => {
+    try {
+      const data = loadMessages();
+      data.messages.unshift({
+        id: `chmsg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        channel: msg.channel,
+        incoming: msg.incoming,
+        reply: msg.reply,
+        timestamp: new Date().toISOString(),
+      });
+      if (data.messages.length > MAX_MESSAGES) {
+        data.messages.length = MAX_MESSAGES;
+      }
+      persistMessages(data);
+      return { ok: true };
+    } catch (err) { return { ok: false, error: err.message }; }
+  });
+
+  /* ── Get all saved messages ── */
+  ipcMain.handle('get-channel-messages', () => {
+    try {
+      const data = loadMessages();
+      return { ok: true, messages: data.messages };
+    } catch (err) { return { ok: false, error: err.message, messages: [] }; }
+  });
+
+  /* ── Delete a single message by id ── */
+  ipcMain.handle('delete-channel-message', (_e, msgId) => {
+    try {
+      const data = loadMessages();
+      data.messages = data.messages.filter(m => m.id !== msgId);
+      persistMessages(data);
+      return { ok: true };
+    } catch (err) { return { ok: false, error: err.message }; }
+  });
+
+  /* ── Clear all messages ── */
+  ipcMain.handle('clear-channel-messages', () => {
+    try {
+      persistMessages({ messages: [] });
+      return { ok: true };
+    } catch (err) { return { ok: false, error: err.message }; }
   });
 }

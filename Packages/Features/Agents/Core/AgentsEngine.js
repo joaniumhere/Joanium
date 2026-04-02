@@ -499,10 +499,16 @@ export class AgentsEngine {
       liveJob.lastRun = entry.timestamp;
       this._persist();
     } else {
-      console.warn(`[AgentsEngine] Agent/job ${agentId}/${jobId} not found after run â€” was it deleted?`);
+      console.warn(`[AgentsEngine] Agent/job ${agentId}/${jobId} not found after run — was it deleted?`);
     }
   }
 }
+
+export const engineMeta = {
+  needs: ['connectorEngine', 'featureRegistry'],
+  create: ({ paths, connectorEngine, featureRegistry }) =>
+    new AgentsEngine(paths.AGENTS_FILE, connectorEngine, featureRegistry),
+};
 
 
 

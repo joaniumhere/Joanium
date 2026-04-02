@@ -1,49 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 
-const STATIC_DEFAULT_CONNECTORS = {
-  google: {
-    enabled: false,
-    isFree: false,
-    credentials: {},
-    connectedAt: null,
-  },
-  github: {
-    enabled: false,
-    isFree: false,
-    credentials: {},
-    connectedAt: null,
-  },
-  open_meteo: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  coingecko: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  exchange_rate: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  treasury: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  wikipedia: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  ipgeo: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  funfacts: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  jokeapi: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  quotes: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  restcountries: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  hackernews: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  cleanuri: { enabled: true, isFree: true, noKey: true, credentials: {}, connectedAt: null },
-  nasa: { enabled: true, isFree: true, noKey: false, credentials: { apiKey: '' }, connectedAt: null },
-  fred: { enabled: true, isFree: true, noKey: false, credentials: { apiKey: '' }, connectedAt: null },
-  openweathermap: { enabled: false, isFree: true, noKey: false, credentials: { apiKey: '' }, connectedAt: null },
-  unsplash: { enabled: false, isFree: true, noKey: false, credentials: { apiKey: '' }, connectedAt: null },
-};
-
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function buildDefaultState(featureRegistry = null) {
-  const connectors = deepClone(STATIC_DEFAULT_CONNECTORS);
+  const connectors = {};
   for (const connector of featureRegistry?.getConnectorDefaults?.() ?? []) {
     if (!connector?.id) continue;
-    connectors[connector.id] = {
-      ...(connectors[connector.id] ?? {}),
-      ...deepClone(connector.defaultState ?? {}),
-    };
+    connectors[connector.id] = deepClone(connector.defaultState);
   }
   return { connectors };
 }
@@ -202,3 +168,9 @@ export class ConnectorEngine {
     return Boolean(credentials?.services?.[service]);
   }
 }
+
+export const engineMeta = {
+  needs: ['featureRegistry'],
+  create: ({ paths, featureRegistry }) =>
+    new ConnectorEngine(paths.CONNECTORS_FILE, featureRegistry),
+};

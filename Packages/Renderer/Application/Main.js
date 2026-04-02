@@ -7,10 +7,11 @@ import { initSettingsModal }  from '../../Modals/SettingsModal.js';
 import { injectCSS }          from '../../System/Utils/InjectCSS.js';
 import { initChannelGateway } from '../../Pages/Channels/Features/Gateway.js';
 
-import { buildPagesMap } from './PagesManifest.js';
+import { discoverPages, buildPagesMap, registerFeaturePages } from './PagesManifest.js';
+import { getFeatureBoot } from '../../Features/Core/FeatureBoot.js';
 
-// Build the PAGES map from the manifest — single source of truth
-const PAGES = buildPagesMap();
+// Build the PAGES map from the manifest — populated after async discovery
+let PAGES = {};
 
 /* ══════════════════════════════════════════
    ROUTER STATE
@@ -138,6 +139,14 @@ async function leaveProject() {
    Called once when index.html loads.
 ══════════════════════════════════════════ */
 async function init() {
+
+  // ── Register feature-declared pages, then discover all pages ─────────
+  try {
+    const boot = await getFeatureBoot();
+    if (boot.pages?.length) registerFeaturePages(boot.pages);
+  } catch { /* non-fatal */ }
+  await discoverPages();
+  Object.assign(PAGES, buildPagesMap());
 
   // ── Window controls ─────────────────────────────────────────────────
   document.getElementById('btn-minimize')?.addEventListener('click', () => window.electronAPI?.send('window-minimize'));

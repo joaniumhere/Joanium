@@ -308,8 +308,14 @@ export class FeatureRegistry {
     const agentDataSources = [];
     const agentOutputTypes = [];
     const instructionTemplates = {};
+    const featurePages = [];
 
     for (const feature of this.features) {
+      for (const page of feature.pages ?? []) {
+        if (!page?.id) continue;
+        featurePages.push({ featureId: feature.id, ...deepClone(page) });
+      }
+
       for (const tool of feature.renderer?.chatTools ?? []) {
         chatTools.push({ featureId: feature.id, ...deepClone(tool) });
       }
@@ -338,6 +344,7 @@ export class FeatureRegistry {
         name: feature.name,
         dependsOn: [...(feature.dependsOn ?? [])],
       })),
+      pages: featurePages,
       connectors: {
         services: this._buildServiceConnectors(),
         free: this._buildFreeConnectors(),

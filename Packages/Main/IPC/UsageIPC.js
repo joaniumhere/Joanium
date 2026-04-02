@@ -1,22 +1,15 @@
 import { ipcMain } from 'electron';
-import fs from 'fs';
-import path from 'path';
 import { loadPage } from '../Core/Window.js';
 import Paths from '../Core/Paths.js';
 import { wrapHandler } from './IPCWrapper.js';
+import { loadJson, persistJson } from '../Services/FileService.js';
 
 function load() {
-  try {
-    if (fs.existsSync(Paths.USAGE_FILE))
-      return JSON.parse(fs.readFileSync(Paths.USAGE_FILE, 'utf-8'));
-  } catch { /* fall through */ }
-  return { records: [] };
+  return loadJson(Paths.USAGE_FILE, { records: [] });
 }
 
 function persist(data) {
-  const dir = path.dirname(Paths.USAGE_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(Paths.USAGE_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  persistJson(Paths.USAGE_FILE, data);
 }
 
 export const ipcMeta = { needs: [] };
