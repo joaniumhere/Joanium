@@ -102,7 +102,7 @@ export async function mountTerminal(containerId, pid) {
 
     // Write input to PTY
     term.onData(data => {
-        window.electronAPI?.writePty?.(pid, data);
+        window.electronAPI?.invoke?.('pty-write', pid, data);
     });
 
     // Cleanup on exit

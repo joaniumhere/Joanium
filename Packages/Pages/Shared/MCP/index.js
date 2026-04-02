@@ -348,8 +348,8 @@ function readEditorValues() {
 
 async function refreshData() {
   const [servers, toolsResult] = await Promise.all([
-    window.electronAPI?.mcpListServers?.() ?? [],
-    window.electronAPI?.mcpGetTools?.() ?? { ok: false, tools: [] },
+    window.electronAPI?.invoke?.('mcp-list-servers') ?? [],
+    window.electronAPI?.invoke?.('mcp-get-tools') ?? { ok: false, tools: [] },
   ]);
 
   STATE.servers = Array.isArray(servers) ? servers : [];
@@ -366,16 +366,16 @@ async function saveEditor(connectAfterSave = false) {
     const shouldReconnect = Boolean(existing.connected);
 
     if (shouldReconnect) {
-      await window.electronAPI?.mcpDisconnectServer?.(payload.id).catch(() => { });
+      await window.electronAPI?.invoke?.('mcp-disconnect-server', payload.id).catch(() => { });
     }
 
-    const saveResult = await window.electronAPI?.mcpSaveServer?.(payload);
+    const saveResult = await window.electronAPI?.invoke?.('mcp-save-server', payload);
     if (saveResult?.ok === false) {
       throw new Error(saveResult.error ?? 'Could not save the MCP server.');
     }
 
     if (connectAfterSave || shouldReconnect) {
-      const connectResult = await window.electronAPI?.mcpConnectServer?.(payload.id);
+      const connectResult = await window.electronAPI?.invoke?.('mcp-connect-server', payload.id);
       if (!connectResult?.ok) {
         throw new Error(connectResult?.error ?? 'Could not connect the MCP server.');
       }
@@ -398,7 +398,7 @@ async function connectServer(serverId) {
   if (!server) return;
 
   try {
-    const result = await window.electronAPI?.mcpConnectServer?.(serverId);
+    const result = await window.electronAPI?.invoke?.('mcp-connect-server', serverId);
     if (!result?.ok) throw new Error(result?.error ?? 'Could not connect the MCP server.');
 
     await refreshData();
@@ -415,7 +415,7 @@ async function disconnectServer(serverId) {
   if (!server) return;
 
   try {
-    const result = await window.electronAPI?.mcpDisconnectServer?.(serverId);
+    const result = await window.electronAPI?.invoke?.('mcp-disconnect-server', serverId);
     if (!result?.ok) throw new Error(result?.error ?? 'Could not disconnect the MCP server.');
 
     await refreshData();
@@ -435,7 +435,7 @@ async function removeServer(serverId) {
   if (!confirmed) return;
 
   try {
-    const result = await window.electronAPI?.mcpRemoveServer?.(serverId);
+    const result = await window.electronAPI?.invoke?.('mcp-remove-server', serverId);
     if (!result?.ok) throw new Error(result?.error ?? 'Could not delete the MCP server.');
 
     if (STATE.editor?.server?.id === serverId) STATE.editor = null;

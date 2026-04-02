@@ -113,7 +113,7 @@ export const { handles, execute } = createExecutor({
 
             let apiKey = 'abcdefghijklmnopqrstuvwxyz012345';
             try {
-                const config = await window.electronAPI?.getFreeConnectorConfig?.('fred');
+                const config = await window.electronAPI?.invoke?.('get-free-connector-config', 'fred');
                 if (config?.credentials?.apiKey?.trim()) {
                     apiKey = config.credentials.apiKey.trim();
                 } else {

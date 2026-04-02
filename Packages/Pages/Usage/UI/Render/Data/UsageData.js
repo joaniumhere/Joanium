@@ -8,7 +8,7 @@ export function setRange(r) { _range = r; }
 
 export async function loadPricing() {
   try {
-    const providers = await window.electronAPI?.getModels?.() ?? [];
+    const providers = await window.electronAPI?.invoke?.('get-models') ?? [];
     for (const provider of providers) {
       for (const [modelId, info] of Object.entries(provider.models ?? {})) {
         if (info.pricing) {
@@ -112,7 +112,7 @@ export function computeStats(records) {
 
 export async function loadRecords() {
   try {
-    const result = await window.electronAPI?.getUsage?.();
+    const result = await window.electronAPI?.invoke?.('get-usage');
     if (result?.ok) _records = result.records ?? [];
   } catch (error) {
     console.error('[Usage] load error:', error);

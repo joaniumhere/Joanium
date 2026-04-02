@@ -215,7 +215,7 @@ export function mount(outlet, { settings, navigate }) {
   // ── Project folder / exit ────────────────────────────────────────────────
   projectOpenFolderBtn?.addEventListener('click', async () => {
     if (!state.activeProject?.rootPath) return;
-    await window.electronAPI?.openFolderOS?.({ dirPath: state.activeProject.rootPath });
+    await window.electronAPI?.invoke?.('open-folder-os', { dirPath: state.activeProject.rootPath });
   });
   projectExitBtn?.addEventListener('click', () => {
     state.activeProject = null;
@@ -235,7 +235,7 @@ export function mount(outlet, { settings, navigate }) {
 
   // ── System prompt / profile refresh ──────────────────────────────────────
   async function refreshSystemPrompt() {
-    try { state.systemPrompt = await window.electronAPI?.getSystemPrompt?.() ?? ''; }
+    try { state.systemPrompt = await window.electronAPI?.invoke?.('get-system-prompt') ?? ''; }
     catch { state.systemPrompt = ''; }
   }
   const onSettingsSaved = () => refreshSystemPrompt();

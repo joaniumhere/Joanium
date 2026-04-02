@@ -57,7 +57,7 @@ export function initStepController({ state, STEP_ELS, setupLogo, progressTrack, 
     if (n === 3) {
       const first = state.name.split(' ')[0];
       doneTitle.textContent = `You're all set, ${first} 🎉`;
-      setTimeout(() => window.electronAPI?.launchMain?.(), 2200);
+      setTimeout(() => window.electronAPI?.invoke?.('launch-main'), 2200);
     }
   }
 

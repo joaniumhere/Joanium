@@ -216,7 +216,7 @@ export function mount(outlet) {
     clearing = true;
 
     try {
-      await window.electronAPI?.clearEventsHistory?.();
+      await window.electronAPI?.invoke?.('clear-events-history');
     } catch (error) {
       console.error('[Events] clearEventsHistory IPC failed:', error);
     }

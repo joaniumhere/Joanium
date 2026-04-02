@@ -139,7 +139,7 @@ export function buildModelDropdown() {
 ══════════════════════════════════════════ */
 export async function loadProviders() {
   try {
-    const all = await window.electronAPI?.getModels() ?? [];
+    const all = await window.electronAPI?.invoke?.('get-models') ?? [];
 
     const prevProviderId = state.selectedProvider?.provider ?? null;
     const prevModelId = state.selectedModel ?? null;

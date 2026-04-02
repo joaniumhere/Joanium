@@ -259,7 +259,7 @@ export function initSidebar({
   // Populate user name / initials from Electron if available
   (async () => {
     try {
-      const user = await window.electronAPI?.getUser?.();
+      const user = await window.electronAPI?.invoke?.('get-user');
       const name = String(user?.name ?? '').trim() || 'User';
       setUser(name);
     } catch {

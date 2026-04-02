@@ -8,7 +8,7 @@ async function refreshMCPTools() {
   if (_refreshPromise) return _refreshPromise;
   _refreshPromise = (async () => {
     try {
-      const res = await window.electronAPI?.mcpGetTools?.();
+      const res = await window.electronAPI?.invoke?.('mcp-get-tools');
       if (res?.ok) {
         _mcpToolNames = new Set((res.tools ?? []).map(t => t.name));
         _lastFetch = Date.now();
@@ -31,7 +31,7 @@ export function handlesSync(toolName) {
 export async function execute(toolName, params, onStage = () => { }) {
   onStage(`🔌 Calling MCP tool: ${toolName}`);
 
-  const result = await window.electronAPI?.mcpCallTool?.({ toolName, args: params });
+  const result = await window.electronAPI?.invoke?.('mcp-call-tool', { toolName, args: params });
   if (!result) return '⚠️ MCP is not available in this environment.';
   if (!result.ok) throw new Error(result.error ?? 'MCP tool call failed');
 

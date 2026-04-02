@@ -147,7 +147,7 @@ export function buildFailoverCandidates(selectedProvider, selectedModel) {
 
 async function loadEnabledSkills() {
   try {
-    const res = await window.electronAPI?.getSkills?.();
+    const res = await window.electronAPI?.invoke?.('get-skills');
     return (res?.skills ?? []).filter(skill => skill.enabled === true);
   } catch {
     return [];
@@ -157,7 +157,7 @@ async function loadEnabledSkills() {
 async function loadWorkspaceSummary() {
   if (!state.workspacePath) return null;
   try {
-    const res = await window.electronAPI?.inspectWorkspace?.({ rootPath: state.workspacePath });
+    const res = await window.electronAPI?.invoke?.('inspect-workspace', { rootPath: state.workspacePath });
     return res?.ok ? res.summary : null;
   } catch {
     return null;

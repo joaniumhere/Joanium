@@ -74,7 +74,7 @@ async function handleToggle(filename, newEnabled) {
   const skill = _allSkills.find(s => s.filename === filename);
   if (skill) skill.enabled = newEnabled;
   updateCounts();
-  const result = await window.electronAPI?.toggleSkill?.(filename, newEnabled);
+  const result = await window.electronAPI?.invoke?.('toggle-skill', filename, newEnabled);
   if (!result?.ok) {
     if (skill) skill.enabled = !newEnabled;
     render(searchInput?.value?.trim() ?? '');
@@ -219,7 +219,7 @@ function render(query = '') {
 
 async function load() {
   try {
-    const result = await window.electronAPI?.getSkills?.();
+    const result = await window.electronAPI?.invoke?.('get-skills');
     _allSkills = result?.skills ?? [];
   } catch (err) {
     console.error('[Skills] Load error:', err);
@@ -281,7 +281,7 @@ export function mount(outlet) {
     });
     if (!confirmed || !enableAllBtn) return;
     enableAllBtn.disabled = true;
-    const result = await window.electronAPI?.enableAllSkills?.();
+    const result = await window.electronAPI?.invoke?.('enable-all-skills');
     if (result?.ok !== false) {
       _allSkills.forEach(s => { s.enabled = true; });
       render(searchInput?.value?.trim() ?? '');
@@ -295,7 +295,7 @@ export function mount(outlet) {
     });
     if (!confirmed || !disableAllBtn) return;
     disableAllBtn.disabled = true;
-    const result = await window.electronAPI?.disableAllSkills?.();
+    const result = await window.electronAPI?.invoke?.('disable-all-skills');
     if (result?.ok !== false) {
       _allSkills.forEach(s => { s.enabled = false; });
       render(searchInput?.value?.trim() ?? '');

@@ -59,7 +59,7 @@ export async function attemptMemoryUpdate() {
   const hideIndicator = showMemoryIndicator();
 
   try {
-    const existingMemory = (await window.electronAPI?.getMemory?.()) ?? '';
+    const existingMemory = (await window.electronAPI?.invoke?.('get-memory')) ?? '';
 
     const recentMessages = state.messages.slice(-20);
     const conversationText = recentMessages
@@ -102,7 +102,7 @@ export async function attemptMemoryUpdate() {
     const updated = (existingMemory.trim() ? existingMemory.trim() + '\n\n' : '') +
       `--- Auto-learned ${timestamp} ---\n${bullets}`;
 
-    await window.electronAPI?.saveMemory?.(updated);
+    await window.electronAPI?.invoke?.('save-memory', updated);
 
   } catch (err) {
     console.warn('[Chat] Memory update failed (non-fatal):', err.message);

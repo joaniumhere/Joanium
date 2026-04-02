@@ -91,20 +91,20 @@ export function createBrowserPreviewFeature() {
   }
 
   async function syncBounds() {
-    if (disposed || !window.electronAPI?.browserPreviewSetBounds) return;
+    if (disposed || !window.electronAPI?.invoke) return;
 
     if (document.body.classList.contains('modal-open') || browserPreviewPanel.hidden || !currentState.visible) {
-      await window.electronAPI.browserPreviewSetBounds(null);
+      await window.electronAPI.invoke('browser-preview-set-bounds', null);
       return;
     }
 
     const rect = (browserPreviewViewport || browserPreviewMount).getBoundingClientRect();
     if (!rect.width || !rect.height) {
-      await window.electronAPI.browserPreviewSetBounds(null);
+      await window.electronAPI.invoke('browser-preview-set-bounds', null);
       return;
     }
 
-    await window.electronAPI.browserPreviewSetBounds({
+    await window.electronAPI.invoke('browser-preview-set-bounds', {
       x: rect.x,
       y: rect.y,
       width: rect.width,
@@ -127,7 +127,7 @@ export function createBrowserPreviewFeature() {
 
   async function refreshInitialState() {
     try {
-      const result = await window.electronAPI?.browserPreviewGetState?.();
+      const result = await window.electronAPI?.invoke?.('browser-preview-get-state');
       if (result?.ok) {
         applyState(result.state);
         return;
@@ -176,8 +176,8 @@ export function createBrowserPreviewFeature() {
       browserPreviewPanel.classList.remove('is-active');
       browserPreviewPanel.classList.remove('is-reading');
       chatWorkspace?.classList.remove('has-browser-preview');
-      void window.electronAPI?.browserPreviewSetBounds?.(null);
-      void window.electronAPI?.browserPreviewSetVisible?.(false);
+      void window.electronAPI?.invoke?.('browser-preview-set-bounds', null);
+      void window.electronAPI?.invoke?.('browser-preview-set-visible', false);
     },
   };
 }

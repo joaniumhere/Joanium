@@ -298,7 +298,7 @@ function wireEvents() {
   // Toggles
   document.getElementById('ch-toggle-telegram')?.addEventListener('change', async (e) => {
     try {
-      await api?.toggleChannel?.('telegram', e.target.checked);
+      await api?.invoke?.('toggle-channel', 'telegram', e.target.checked);
       setStatus('telegram', e.target.checked);
       setFb('telegram', e.target.checked ? 'Telegram enabled.' : 'Telegram paused.', 'success');
     } catch (err) {
@@ -308,7 +308,7 @@ function wireEvents() {
   });
   document.getElementById('ch-toggle-whatsapp')?.addEventListener('change', async (e) => {
     try {
-      await api?.toggleChannel?.('whatsapp', e.target.checked);
+      await api?.invoke?.('toggle-channel', 'whatsapp', e.target.checked);
       setStatus('whatsapp', e.target.checked);
       setFb('whatsapp', e.target.checked ? 'WhatsApp enabled.' : 'WhatsApp paused.', 'success');
     } catch (err) {
@@ -318,7 +318,7 @@ function wireEvents() {
   });
   document.getElementById('ch-toggle-discord')?.addEventListener('change', async (e) => {
     try {
-      await api?.toggleChannel?.('discord', e.target.checked);
+      await api?.invoke?.('toggle-channel', 'discord', e.target.checked);
       setStatus('discord', e.target.checked);
       setFb('discord', e.target.checked ? 'Discord enabled.' : 'Discord paused.', 'success');
     } catch (err) {
@@ -328,7 +328,7 @@ function wireEvents() {
   });
   document.getElementById('ch-toggle-slack')?.addEventListener('change', async (e) => {
     try {
-      await api?.toggleChannel?.('slack', e.target.checked);
+      await api?.invoke?.('toggle-channel', 'slack', e.target.checked);
       setStatus('slack', e.target.checked);
       setFb('slack', e.target.checked ? 'Slack enabled.' : 'Slack paused.', 'success');
     } catch (err) {
@@ -348,13 +348,13 @@ function wireEvents() {
     setFb('telegram', 'Validating…', '');
     try {
       if (token) {
-        const v = await api?.validateChannel?.('telegram', { botToken: token });
+        const v = await api?.invoke?.('validate-channel', 'telegram', { botToken: token });
         if (!v?.ok) throw new Error(v?.error ?? 'Invalid token');
         setFb('telegram', `✓ @${v.username} verified`, 'success');
       }
       const payload = {};
       if (token) payload.botToken = token;
-      const r = await api?.saveChannel?.('telegram', payload);
+      const r = await api?.invoke?.('save-channel', 'telegram', payload);
       if (!r?.ok) throw new Error(r?.error ?? 'Save failed');
       setStatus('telegram', true);
       setToggle('telegram', true, true);
@@ -385,14 +385,14 @@ function wireEvents() {
     setFb('whatsapp', 'Validating credentials…', '');
     try {
       if (sid && token) {
-        const v = await api?.validateChannel?.('whatsapp', { accountSid: sid, authToken: token });
+        const v = await api?.invoke?.('validate-channel', 'whatsapp', { accountSid: sid, authToken: token });
         if (!v?.ok) throw new Error(v?.error ?? 'Invalid credentials');
         setFb('whatsapp', `✓ ${v.friendlyName} verified`, 'success');
       }
       const payload = { fromNumber: number };
       if (sid)   payload.accountSid = sid;
       if (token) payload.authToken  = token;
-      const r = await api?.saveChannel?.('whatsapp', payload);
+      const r = await api?.invoke?.('save-channel', 'whatsapp', payload);
       if (!r?.ok) throw new Error(r?.error ?? 'Save failed');
       setStatus('whatsapp', true);
       setToggle('whatsapp', true, true);
@@ -422,7 +422,7 @@ function wireEvents() {
     try {
       // 1. Validate the token itself
       if (token) {
-        const v = await api?.validateChannel?.('discord', { botToken: token });
+        const v = await api?.invoke?.('validate-channel', 'discord', { botToken: token });
         if (!v?.ok) throw new Error(v?.error ?? 'Invalid bot token');
         setFb('discord', `✓ Bot @${v.username} verified`, 'success');
       }
@@ -468,7 +468,7 @@ function wireEvents() {
     try {
       // 1. Validate the token
       if (token) {
-        const v = await api?.validateChannel?.('slack', { botToken: token });
+        const v = await api?.invoke?.('validate-channel', 'slack', { botToken: token });
         if (!v?.ok) throw new Error(v?.error ?? 'Invalid bot token');
         setFb('slack', `✓ Connected to ${v.team} as ${v.name}`, 'success');
       }
@@ -476,7 +476,7 @@ function wireEvents() {
       // 2. Save
       const payload = { channelId: channel };
       if (token) payload.botToken = token;
-      const r = await api?.saveChannel?.('slack', payload);
+      const r = await api?.invoke?.('save-channel', 'slack', payload);
       if (!r?.ok) throw new Error(r?.error ?? 'Save failed');
 
       setStatus('slack', true);
@@ -508,7 +508,7 @@ async function disconnectChannel(name) {
   const titles = { telegram: 'Telegram', whatsapp: 'WhatsApp', discord: 'Discord', slack: 'Slack' };
   if (!window.confirm(`Disconnect ${titles[name] || name}? The bot will stop replying.`)) return;
   try {
-    const r = await api?.removeChannel?.(name);
+    const r = await api?.invoke?.('remove-channel', name);
     if (!r?.ok) throw new Error(r?.error ?? 'Failed');
     setStatus(name, false);
     setToggle(name, false, false);
@@ -540,7 +540,7 @@ async function disconnectChannel(name) {
 async function prefill() {
   for (const name of ['telegram', 'whatsapp', 'discord', 'slack']) {
     try {
-      const r = await api?.getChannelConfig?.(name);
+      const r = await api?.invoke?.('get-channel-config', name);
       if (!r?.ok) continue;
       const c = r.config;
       if (name === 'telegram' && c.botTokenSet) {
@@ -581,7 +581,7 @@ export async function loadChannelsPanel() {
 
   // Refresh state every time the tab is opened
   try {
-    const res = await api?.getChannels?.();
+    const res = await api?.invoke?.('get-channels');
     if (!res?.ok) return;
     for (const [name, c] of Object.entries(res.channels ?? {})) {
       setStatus(name, c.configured && c.enabled);

@@ -27,7 +27,7 @@ export async function saveCurrentChat() {
   const title = first?.content?.trim().slice(0, 70) ||
     (hasFileAttachment ? 'File attachment' : hasImageAttachment ? 'Image attachment' : 'Untitled');
   try {
-    await window.electronAPI?.saveChat({
+    await window.electronAPI?.invoke?.('save-chat', {
       id: state.currentChatId,
       title,
       updatedAt: new Date().toISOString(),
@@ -49,7 +49,7 @@ export async function trackUsage(usage, chatId, provider = null, modelId = null)
   if (!p || !m) return;
   try {
     const modelInfo = p.models?.[m];
-    await window.electronAPI?.trackUsage?.({
+    await window.electronAPI?.invoke?.('track-usage', {
       provider: p.provider,
       model: m,
       modelName: modelInfo?.name ?? m,

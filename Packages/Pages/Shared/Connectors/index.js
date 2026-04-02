@@ -367,8 +367,8 @@ async function handleTokenConnect(id, def) {
   setStatus(id, '');
 
   try {
-    await window.electronAPI?.saveConnector?.(id, credentials);
-    const validation = await window.electronAPI?.validateConnector?.(id);
+    await window.electronAPI?.invoke?.('save-connector', id, credentials);
+    const validation = await window.electronAPI?.invoke?.('validate-connector', id);
     if (!validation?.ok) throw new Error(validation?.error ?? 'Connection failed');
 
     cxState.statuses[id] = {
@@ -381,7 +381,7 @@ async function handleTokenConnect(id, def) {
     setStatus(id, 'Connected successfully!', 'success');
     setTimeout(renderPanel, 800);
   } catch (err) {
-    await window.electronAPI?.removeConnector?.(id).catch(() => {});
+    await window.electronAPI?.invoke?.('remove-connector', id).catch(() => {});
     cxState.statuses[id] = { enabled: false };
     setStatus(id, `Failed: ${err.message}`, 'error');
     setConnectBtnState(id, false, `Connect ${def.name}`);
@@ -390,7 +390,7 @@ async function handleTokenConnect(id, def) {
 
 async function handleDisconnect(id) {
   try {
-    await window.electronAPI?.removeConnector?.(id);
+    await window.electronAPI?.invoke?.('remove-connector', id);
     cxState.statuses[id] = { enabled: false, accountInfo: null, services: {} };
     cxState.pending[id] = {};
     renderPanel();
@@ -409,7 +409,7 @@ export async function loadConnectorsPanel() {
 
   try {
     await loadFeatureConnectorDefs();
-    const statuses = await window.electronAPI?.getConnectors?.() ?? {};
+    const statuses = await window.electronAPI?.invoke?.('get-connectors') ?? {};
     cxState.statuses = {};
 
     for (const [name, s] of Object.entries(statuses)) {
@@ -423,20 +423,20 @@ export async function loadConnectorsPanel() {
       Object.entries(cxState.statuses)
         .filter(([, s]) => s.enabled)
         .map(async ([name]) => {
-          const v = await window.electronAPI?.validateConnector?.(name).catch(() => null);
+          const v = await window.electronAPI?.invoke?.('validate-connector', name).catch(() => null);
           if (v?.ok) {
             cxState.statuses[name].accountInfo = { email: v.email ?? null, username: v.username ?? null };
           }
           // For google, also load stored service detection state
           if (name === 'google') {
-            const creds = await window.electronAPI?.getConnectorSafeCreds?.('google').catch(() => null);
+            const creds = await window.electronAPI?.invoke?.('get-connector-safe-creds', 'google').catch(() => null);
             if (creds?.ok && creds.services) cxState.statuses[name].services = creds.services;
           }
         }),
     );
 
     for (const def of FREE_CONNECTORS) {
-      const config = await window.electronAPI?.getFreeConnectorConfig?.(def.id).catch(() => null);
+      const config = await window.electronAPI?.invoke?.('get-free-connector-config', def.id).catch(() => null);
       if (config) {
         cxState.freeStatuses[def.id] = config.enabled ?? true;
         if (!def.noKey && config.credentials?.apiKey) {

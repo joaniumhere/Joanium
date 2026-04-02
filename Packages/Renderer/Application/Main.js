@@ -101,7 +101,7 @@ async function openFreshChat() {
    Shared across Chat and Sidebar project flows.
 ══════════════════════════════════════════ */
 async function openProject(project) {
-  const validation = await window.electronAPI?.validateProject?.(project.id);
+  const validation = await window.electronAPI?.invoke?.('validate-project', project.id);
   if (!validation?.ok || !validation.project) return false;
 
   let nextProject = validation.project;
@@ -110,7 +110,7 @@ async function openProject(project) {
     // showMissingProjectDialog is handled inside ProjectsModal
     return false;
   } else {
-    const touched = await window.electronAPI?.updateProject?.(nextProject.id, {
+    const touched = await window.electronAPI?.invoke?.('update-project', nextProject.id, {
       lastOpenedAt: new Date().toISOString(),
     });
     if (touched?.ok && touched.project) nextProject = touched.project;
@@ -140,9 +140,9 @@ async function leaveProject() {
 async function init() {
 
   // ── Window controls ─────────────────────────────────────────────────
-  document.getElementById('btn-minimize')?.addEventListener('click', () => window.electronAPI?.minimize());
-  document.getElementById('btn-maximize')?.addEventListener('click', () => window.electronAPI?.maximize());
-  document.getElementById('btn-close')?.addEventListener('click',    () => window.electronAPI?.close());
+  document.getElementById('btn-minimize')?.addEventListener('click', () => window.electronAPI?.send('window-minimize'));
+  document.getElementById('btn-maximize')?.addEventListener('click', () => window.electronAPI?.send('window-maximize'));
+  document.getElementById('btn-close')?.addEventListener('click',    () => window.electronAPI?.send('window-close'));
 
   // ── CRITICAL modals (needed immediately for sidebar avatar) ─────────────
   _settings = initSettingsModal();
@@ -174,7 +174,7 @@ async function init() {
   });
 
   // ── Main-process navigate events ─────────────────────────────────────
-  window.electronAPI?.onNavigate?.((page) => navigate(page));
+  window.electronAPI?.on?.('navigate', (page) => navigate(page));
 
   // ── Global navigate for page modules ────────────────────────────────
   window.appNavigate = navigate;

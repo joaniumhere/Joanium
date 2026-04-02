@@ -60,7 +60,7 @@ export function mount(outlet) {
       if (!auto) return;
       auto.enabled = e.target.checked;
       card.classList.toggle('is-disabled', !auto.enabled);
-      await window.electronAPI?.toggleAutomation?.(auto.id, auto.enabled);
+      await window.electronAPI?.invoke?.('toggle-automation', auto.id, auto.enabled);
     });
     card.querySelector('.edit-btn').addEventListener('click', () => { if (card._currentAuto) openModal(card._currentAuto); });
     card.querySelector('.delete-btn').addEventListener('click', () => { const a = card._currentAuto; if (a) openConfirm(a.id, a.name); });
@@ -107,7 +107,7 @@ export function mount(outlet) {
 
   async function loadAutomations() {
     try {
-      const res = await window.electronAPI?.getAutomations?.();
+      const res = await window.electronAPI?.invoke?.('get-automations');
       pageState.automations = Array.isArray(res?.automations) ? res.automations : [];
     } catch { pageState.automations = []; }
     renderAutomations();
@@ -191,7 +191,7 @@ export function mount(outlet) {
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
 
     try {
-      const res = await window.electronAPI?.saveAutomation?.(data);
+      const res = await window.electronAPI?.invoke?.('save-automation', data);
       if (res?.ok) {
         const idx = pageState.automations.findIndex(a => a.id === data.id);
         if (idx >= 0) pageState.automations[idx] = res.automation ?? data;
@@ -227,7 +227,7 @@ export function mount(outlet) {
   $('confirm-overlay')?.addEventListener('click', e => { if (e.target.id === 'confirm-overlay') closeConfirm(); });
   $('confirm-delete')?.addEventListener('click', async () => {
     if (!_deletingId) return;
-    await window.electronAPI?.deleteAutomation?.(_deletingId);
+    await window.electronAPI?.invoke?.('delete-automation', _deletingId);
     pageState.automations = pageState.automations.filter(a => a.id !== _deletingId);
     closeConfirm();
     renderAutomations();

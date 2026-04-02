@@ -165,12 +165,12 @@ export function filterToolsByConnectors(connectorStatuses = {}) {
 export async function getAvailableTools() {
   let connectorStatuses = {};
   try {
-    connectorStatuses = await window.electronAPI?.getConnectors?.() ?? {};
+    connectorStatuses = await window.electronAPI?.invoke?.('get-connectors') ?? {};
   } catch {}
 
   let mcpTools = [];
   try {
-    const res = await window.electronAPI?.mcpGetTools?.();
+    const res = await window.electronAPI?.invoke?.('mcp-get-tools');
     if (res?.ok) mcpTools = (res.tools ?? []).map(normalizeMCPTool).filter(Boolean);
   } catch {}
 

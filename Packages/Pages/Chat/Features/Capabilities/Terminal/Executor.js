@@ -165,7 +165,7 @@ export const { handles, execute } = createExecutor({
       if (!rootPath) throw new Error('No workspace is open. Set a workspace or provide a path.');
 
       onStage(`📂 Inspecting workspace ${rootPath}`);
-      const result = await window.electronAPI?.inspectWorkspace?.({ rootPath });
+      const result = await window.electronAPI?.invoke?.('inspect-workspace', { rootPath });
       if (!result?.ok) throw new Error(result?.error ?? 'Workspace inspection failed');
       return formatWorkspaceSummary(result.summary);
     },
@@ -176,7 +176,7 @@ export const { handles, execute } = createExecutor({
       if (!params.query?.trim()) throw new Error('Missing required param: query');
 
       onStage(`🔎 Searching workspace for "${params.query}"`);
-      const result = await window.electronAPI?.searchWorkspace?.({
+      const result = await window.electronAPI?.invoke?.('search-workspace', {
         rootPath,
         query: params.query,
         maxResults: params.max_results,
@@ -197,7 +197,7 @@ export const { handles, execute } = createExecutor({
       if (!params.name?.trim()) throw new Error('Missing required param: name');
 
       onStage(`🔎 Finding file "${params.name}"`);
-      const result = await window.electronAPI?.findFileByName?.({
+      const result = await window.electronAPI?.invoke?.('find-file-by-name', {
         rootPath,
         name: params.name,
         maxResults: params.max_results,
@@ -215,7 +215,7 @@ export const { handles, execute } = createExecutor({
     assess_shell_command: async (params, onStage) => {
       if (!params.command?.trim()) throw new Error('Missing required param: command');
       onStage('🛡️ Assessing shell command risk');
-      const result = await window.electronAPI?.assessCommandRisk?.({ command: params.command });
+      const result = await window.electronAPI?.invoke?.('assess-command-risk', { command: params.command });
       if (!result?.ok) throw new Error(result?.error ?? 'Risk assessment failed');
       return formatRisk(result.risk) || 'Risk: **low**';
     },
@@ -227,7 +227,7 @@ export const { handles, execute } = createExecutor({
       const workingDirectory = resolveWorkingDirectory(params.working_directory);
       onStage(`💻 Running: \`${command.slice(0, 80)}${command.length > 80 ? '…' : ''}\``);
 
-      const result = await window.electronAPI?.runShellCommand?.({
+      const result = await window.electronAPI?.invoke?.('run-shell-command', {
         command,
         cwd: workingDirectory,
         timeout: timeout_seconds * 1000,
@@ -258,7 +258,7 @@ export const { handles, execute } = createExecutor({
       if (!filePath?.trim()) throw new Error('Missing required param: path');
 
       onStage(`📄 Reading ${filePath}`);
-      const result = await window.electronAPI?.readLocalFile?.({
+      const result = await window.electronAPI?.invoke?.('read-local-file', {
         filePath,
         maxLines: max_lines,
       });
@@ -278,7 +278,7 @@ export const { handles, execute } = createExecutor({
       if (!filePath?.trim()) throw new Error('Missing required param: path');
 
       onStage(`Extracting text from ${filePath}`);
-      const result = await window.electronAPI?.extractDocumentText?.({ filePath });
+      const result = await window.electronAPI?.invoke?.('extract-document-text', { filePath });
       if (!result?.ok) throw new Error(result?.error ?? 'Document extraction failed');
       return formatDocumentExtraction(result, filePath);
     },
@@ -289,7 +289,7 @@ export const { handles, execute } = createExecutor({
       if (!start_line) throw new Error('Missing required param: start_line');
 
       onStage(`📄 Reading lines around ${filePath}:${start_line}`);
-      const result = await window.electronAPI?.readFileChunk?.({
+      const result = await window.electronAPI?.invoke?.('read-file-chunk', {
         filePath,
         startLine: start_line,
         lineCount: line_count,
@@ -309,7 +309,7 @@ export const { handles, execute } = createExecutor({
       if (!params.paths?.trim()) throw new Error('Missing required param: paths');
 
       onStage(`Reading multiple files`);
-      const result = await window.electronAPI?.readMultipleLocalFiles?.({
+      const result = await window.electronAPI?.invoke?.('read-multiple-local-files', {
         paths: params.paths,
         maxLinesPerFile: params.max_lines_per_file,
       });
@@ -323,7 +323,7 @@ export const { handles, execute } = createExecutor({
       if (!dirPath?.trim()) throw new Error('Missing required param: path');
 
       onStage(`📁 Listing ${dirPath}`);
-      const result = await window.electronAPI?.listDirectory?.({ dirPath });
+      const result = await window.electronAPI?.invoke?.('list-directory', { dirPath });
       if (!result?.ok) throw new Error(result?.error ?? 'Directory listing failed');
 
       const lines = result.entries.map(entry => {
@@ -347,7 +347,7 @@ export const { handles, execute } = createExecutor({
       if (!dirPath?.trim()) throw new Error('Missing required param: path');
 
       onStage(`Listing tree for ${dirPath}`);
-      const result = await window.electronAPI?.listDirectoryTree?.({
+      const result = await window.electronAPI?.invoke?.('list-directory-tree', {
         dirPath,
         maxDepth: params.max_depth,
         maxEntries: params.max_entries,
@@ -363,7 +363,7 @@ export const { handles, execute } = createExecutor({
 
       const append = params.append === true || params.append === 'true';
       onStage(`✍️ ${append ? 'Appending to' : 'Writing'} ${filePath}`);
-      const result = await window.electronAPI?.writeAIFile?.({ filePath, content, append });
+      const result = await window.electronAPI?.invoke?.('write-ai-file', { filePath, content, append });
       if (!result?.ok) throw new Error(result?.error ?? 'File write failed');
       return `✅ File ${append ? 'appended' : 'written'}: ${result.path} (${result.bytes} bytes)`;
     },
@@ -375,7 +375,7 @@ export const { handles, execute } = createExecutor({
       if (typeof replace !== 'string') throw new Error('Missing required param: replace');
 
       onStage(`🩹 Patching ${filePath}`);
-      const result = await window.electronAPI?.applyFilePatch?.({
+      const result = await window.electronAPI?.invoke?.('apply-file-patch', {
         filePath,
         search,
         replace,
@@ -393,7 +393,7 @@ export const { handles, execute } = createExecutor({
       if (typeof replacement !== 'string') throw new Error('Missing required param: replacement');
 
       onStage(`Replacing lines ${start_line}-${end_line} in ${filePath}`);
-      const result = await window.electronAPI?.replaceLinesInFile?.({
+      const result = await window.electronAPI?.invoke?.('replace-lines-in-file', {
         filePath,
         startLine: start_line,
         endLine: end_line,
@@ -409,7 +409,7 @@ export const { handles, execute } = createExecutor({
       if (typeof content !== 'string') throw new Error('Missing required param: content');
 
       onStage(`Inserting text into ${filePath}`);
-      const result = await window.electronAPI?.insertIntoFile?.({
+      const result = await window.electronAPI?.invoke?.('insert-into-file', {
         filePath,
         content,
         position: params.position,
@@ -425,7 +425,7 @@ export const { handles, execute } = createExecutor({
       if (!dirPath?.trim()) throw new Error('Missing required param: path');
 
       onStage(`📁 Creating folder ${dirPath}`);
-      const result = await window.electronAPI?.createDirectory?.({ dirPath });
+      const result = await window.electronAPI?.invoke?.('create-directory', { dirPath });
       if (!result?.ok) throw new Error(result?.error ?? 'Folder creation failed');
       return `✅ Folder created: ${result.path}`;
     },
@@ -436,7 +436,7 @@ export const { handles, execute } = createExecutor({
       if (!destination_path?.trim()) throw new Error('Missing required param: destination_path');
 
       onStage(`Copying ${source_path}`);
-      const result = await window.electronAPI?.copyItem?.({
+      const result = await window.electronAPI?.invoke?.('copy-item', {
         sourcePath: source_path,
         destinationPath: destination_path,
         overwrite: params.overwrite,
@@ -451,7 +451,7 @@ export const { handles, execute } = createExecutor({
       if (!destination_path?.trim()) throw new Error('Missing required param: destination_path');
 
       onStage(`Moving ${source_path}`);
-      const result = await window.electronAPI?.moveItem?.({
+      const result = await window.electronAPI?.invoke?.('move-item', {
         sourcePath: source_path,
         destinationPath: destination_path,
         overwrite: params.overwrite,
@@ -465,7 +465,7 @@ export const { handles, execute } = createExecutor({
       if (!workingDirectory) throw new Error('No workspace is open. Set a workspace or provide working_directory.');
 
       onStage(`🌿 Reading git status in ${workingDirectory}`);
-      const result = await window.electronAPI?.gitStatus?.({ workingDir: workingDirectory });
+      const result = await window.electronAPI?.invoke?.('git-status', { workingDir: workingDirectory });
       if (!result?.ok) throw new Error(result?.error ?? 'git status failed');
       return [
         `Git status for ${workingDirectory}:`,
@@ -480,7 +480,7 @@ export const { handles, execute } = createExecutor({
       if (!workingDirectory) throw new Error('No workspace is open. Set a workspace or provide working_directory.');
 
       onStage(`🌿 Reading git diff in ${workingDirectory}`);
-      const result = await window.electronAPI?.gitDiff?.({
+      const result = await window.electronAPI?.invoke?.('git-diff', {
         workingDir: workingDirectory,
         staged: params.staged,
       });
@@ -499,7 +499,7 @@ export const { handles, execute } = createExecutor({
       if (!params.branch_name?.trim()) throw new Error('Missing required param: branch_name');
 
       onStage(`🌿 Creating branch ${params.branch_name}`);
-      const result = await window.electronAPI?.gitCreateBranch?.({
+      const result = await window.electronAPI?.invoke?.('git-create-branch', {
         workingDir: workingDirectory,
         branchName: params.branch_name,
         checkout: params.checkout ?? true,
@@ -518,7 +518,7 @@ export const { handles, execute } = createExecutor({
       if (!workingDirectory) throw new Error('No workspace is open. Set a workspace or provide working_directory.');
 
       onStage(`🧪 Running project checks in ${workingDirectory}`);
-      const result = await window.electronAPI?.runProjectChecks?.({
+      const result = await window.electronAPI?.invoke?.('run-project-checks', {
         working_directory: workingDirectory,
         include_lint: params.include_lint,
         include_test: params.include_test,
@@ -534,7 +534,7 @@ export const { handles, execute } = createExecutor({
       if (!dirPath?.trim()) throw new Error('Missing required param: path');
 
       onStage(`📂 Opening folder in OS ${dirPath}`);
-      const result = await window.electronAPI?.openFolderOS?.({ dirPath });
+      const result = await window.electronAPI?.invoke?.('open-folder-os', { dirPath });
       if (!result?.ok) throw new Error(result?.error ?? 'Opening folder failed');
       return `✅ Opened folder in system file explorer: ${dirPath}`;
     },
@@ -544,7 +544,7 @@ export const { handles, execute } = createExecutor({
       if (!itemPath?.trim()) throw new Error('Missing required param: path');
 
       onStage(`🗑️ Deleting ${itemPath}`);
-      const result = await window.electronAPI?.deleteItem?.({ itemPath });
+      const result = await window.electronAPI?.invoke?.('delete-item', { itemPath });
       if (!result?.ok) throw new Error(result?.error ?? 'Delete failed');
       return `✅ Successfully deleted: ${itemPath}`;
     },
@@ -555,7 +555,7 @@ export const { handles, execute } = createExecutor({
 
       const workingDirectory = resolveWorkingDirectory(params.working_directory);
       onStage(`🚀 Starting server: ${command}`);
-      const result = await window.electronAPI?.spawnPty?.({
+      const result = await window.electronAPI?.invoke?.('spawn-pty', {
         command,
         cwd: workingDirectory,
       });

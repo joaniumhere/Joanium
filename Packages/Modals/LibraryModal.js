@@ -104,7 +104,7 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
 
       deleteBtn.addEventListener('click', async e => {
         e.stopPropagation();
-        await window.electronAPI?.deleteChat(chat.id, currentChatScope());
+        await window.electronAPI?.invoke('delete-chat', chat.id, currentChatScope());
         await refreshChatList();
       });
 
@@ -117,7 +117,7 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
     const list = chatListEl();
     try {
       syncHeader();
-      const chats = (await window.electronAPI?.getChats(currentChatScope())) ?? [];
+      const chats = (await window.electronAPI?.invoke('get-chats', currentChatScope())) ?? [];
       renderChatList(chats, searchInput()?.value ?? '');
       return chats;
     } catch {
@@ -132,7 +132,7 @@ export function initLibraryModal({ onChatSelect = () => {} } = {}) {
     closeBtnSelector: '#library-close',
     onInit(backdrop) {
       searchInput()?.addEventListener('input', async () => {
-        const chats = (await window.electronAPI?.getChats(currentChatScope())) ?? [];
+        const chats = (await window.electronAPI?.invoke('get-chats', currentChatScope())) ?? [];
         renderChatList(chats, searchInput()?.value ?? '');
       });
 

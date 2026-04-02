@@ -72,7 +72,7 @@ export function initAboutModal() {
 
       (async () => {
         try {
-          const v = await window.electronAPI?.getAppVersion?.();
+          const v = await window.electronAPI?.invoke('get-app-version');
           if (v && versionEl) versionEl.textContent = `v${v}`;
         } catch { /* keep default */ }
       })();

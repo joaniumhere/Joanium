@@ -70,7 +70,7 @@ export function mount(outlet) {
     deleteBtn: elements.confirmDeleteBtn,
     nameEl: elements.confirmNameEl,
     onDelete: async agentId => {
-      await window.electronAPI?.deleteAgent?.(agentId);
+      await window.electronAPI?.invoke?.('delete-agent', agentId);
       state.agents = state.agents.filter(agent => agent.id !== agentId);
       renderGrid();
     },
@@ -84,7 +84,7 @@ export function mount(outlet) {
     onToggleAgent: async ({ agent, enabled, card }) => {
       agent.enabled = enabled;
       card.classList.toggle('is-disabled', !enabled);
-      await window.electronAPI?.toggleAgent?.(agent.id, enabled);
+      await window.electronAPI?.invoke?.('toggle-agent', agent.id, enabled);
     },
     onRunAgent: async ({ agent, button }) => {
       button.classList.add('is-running');
@@ -92,7 +92,7 @@ export function mount(outlet) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite">
           <path d="M21 12a9 9 0 11-6.219-8.56" stroke-linecap="round"/>
         </svg>`;
-      await window.electronAPI?.runAgentNow?.(agent.id);
+      await window.electronAPI?.invoke?.('run-agent-now', agent.id);
       state.agents = await fetchAgents();
       renderGrid();
     },
@@ -105,13 +105,13 @@ export function mount(outlet) {
   });
 
   async function fetchAgents() {
-    const response = await window.electronAPI?.getAgents?.().catch(() => null);
+    const response = await window.electronAPI?.invoke?.('get-agents').catch(() => null);
     return Array.isArray(response?.agents) ? response.agents : [];
   }
 
   async function loadModels() {
     try {
-      const providers = await window.electronAPI?.getModels?.() ?? [];
+      const providers = await window.electronAPI?.invoke?.('get-models') ?? [];
       state.allModels = [];
 
       providers.forEach(provider => {
@@ -192,7 +192,7 @@ export function mount(outlet) {
     elements.saveBtn.textContent = 'Saving...';
 
     try {
-      const response = await window.electronAPI?.saveAgent?.(payload);
+      const response = await window.electronAPI?.invoke?.('save-agent', payload);
       if (response?.ok) {
         const nextAgent = response.agent ?? payload;
         const existingIndex = state.agents.findIndex(agent => agent.id === payload.id);

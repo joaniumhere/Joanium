@@ -189,7 +189,7 @@ export function mount(outlet) {
   /* ── Hydrate ───────────────────────────────────────────────── */
   async function hydrate() {
     try {
-      const res = await api?.getChannels?.();
+      const res = await api?.invoke?.('get-channels');
       if (!res?.ok) return;
       for (const name of ['telegram', 'whatsapp']) {
         const c = res.channels[name] ?? {};
@@ -209,7 +209,7 @@ export function mount(outlet) {
 
   async function prefillTelegram() {
     try {
-      const res = await api?.getChannelConfig?.('telegram');
+      const res = await api?.invoke?.('get-channel-config', 'telegram');
       if (!res?.ok) return;
       if (res.config.botTokenSet) $('tg-token').placeholder = '••••••••  (saved)';
       if (res.config.systemPrompt) $('tg-prompt').value = res.config.systemPrompt;
@@ -218,7 +218,7 @@ export function mount(outlet) {
 
   async function prefillWhatsApp() {
     try {
-      const res = await api?.getChannelConfig?.('whatsapp');
+      const res = await api?.invoke?.('get-channel-config', 'whatsapp');
       if (!res?.ok) return;
       if (res.config.accountSidSet) $('wa-sid').placeholder = 'AC……  (saved)';
       if (res.config.authTokenSet)  $('wa-token').placeholder = '••••••••  (saved)';
@@ -242,7 +242,7 @@ export function mount(outlet) {
   /* ── Toggle on/off ────────────────────────────────────────── */
   async function onToggleTelegram(e) {
     try {
-      await api?.toggleChannel?.('telegram', e.target.checked);
+      await api?.invoke?.('toggle-channel', 'telegram', e.target.checked);
       setStatus('telegram', e.target.checked);
       setFeedback('telegram', e.target.checked ? 'Telegram channel enabled.' : 'Telegram channel paused.', 'success');
     } catch (err) {
@@ -252,7 +252,7 @@ export function mount(outlet) {
   }
   async function onToggleWhatsApp(e) {
     try {
-      await api?.toggleChannel?.('whatsapp', e.target.checked);
+      await api?.invoke?.('toggle-channel', 'whatsapp', e.target.checked);
       setStatus('whatsapp', e.target.checked);
       setFeedback('whatsapp', e.target.checked ? 'WhatsApp channel enabled.' : 'WhatsApp channel paused.', 'success');
     } catch (err) {
@@ -281,7 +281,7 @@ export function mount(outlet) {
 
     try {
       if (token) {
-        const val = await api?.validateChannel?.('telegram', { botToken: token });
+        const val = await api?.invoke?.('validate-channel', 'telegram', { botToken: token });
         if (!val?.ok) throw new Error(val?.error ?? 'Invalid token');
         setFeedback('telegram', `✓ Bot verified: @${val.username}`, 'success');
       }
@@ -289,7 +289,7 @@ export function mount(outlet) {
       const payload = { systemPrompt: prompt || undefined };
       if (token) payload.botToken = token;
 
-      const saved = await api?.saveChannel?.('telegram', payload);
+      const saved = await api?.invoke?.('save-channel', 'telegram', payload);
       if (!saved?.ok) throw new Error(saved?.error ?? 'Could not save');
 
       setStatus('telegram', true);
@@ -324,7 +324,7 @@ export function mount(outlet) {
 
     try {
       if (sid && token) {
-        const val = await api?.validateChannel?.('whatsapp', { accountSid: sid, authToken: token });
+        const val = await api?.invoke?.('validate-channel', 'whatsapp', { accountSid: sid, authToken: token });
         if (!val?.ok) throw new Error(val?.error ?? 'Invalid Twilio credentials');
         setFeedback('whatsapp', `✓ Account verified: ${val.friendlyName}`, 'success');
       }
@@ -333,7 +333,7 @@ export function mount(outlet) {
       if (sid)   payload.accountSid = sid;
       if (token) payload.authToken  = token;
 
-      const saved = await api?.saveChannel?.('whatsapp', payload);
+      const saved = await api?.invoke?.('save-channel', 'whatsapp', payload);
       if (!saved?.ok) throw new Error(saved?.error ?? 'Could not save');
 
       setStatus('whatsapp', true);
@@ -357,7 +357,7 @@ export function mount(outlet) {
     if (!window.confirm(msg)) return;
 
     try {
-      const res = await api?.removeChannel?.(name);
+      const res = await api?.invoke?.('remove-channel', name);
       if (!res?.ok) throw new Error(res?.error ?? 'Could not disconnect');
 
       setStatus(name, false);

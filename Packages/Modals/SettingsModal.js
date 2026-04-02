@@ -351,8 +351,8 @@ export function initSettingsModal() {
   async function hydrateModal() {
     setFeedback(); ss.pendingDeletes.clear(); ss.pendingProviderConfigs = {};
     const [user, customInstructions, memory, providers] = await Promise.all([
-      window.electronAPI?.getUser?.(), window.electronAPI?.getCustomInstructions?.(),
-      window.electronAPI?.getMemory?.(), window.electronAPI?.getModels?.(),
+      window.electronAPI?.invoke('get-user'), window.electronAPI?.invoke('get-custom-instructions'),
+      window.electronAPI?.invoke('get-memory'), window.electronAPI?.invoke('get-models'),
     ]);
     applyUserProfile(user ?? {});
     ss.providerCatalog = buildProviderCatalog(providers);
@@ -370,9 +370,9 @@ export function initSettingsModal() {
     $('settings-save').disabled = true; setFeedback('Saving...', 'info');
     try {
       const [profileResult, instructionsResult, memoryResult] = await Promise.all([
-        window.electronAPI?.saveUserProfile?.({ name: nextName }),
-        window.electronAPI?.saveCustomInstructions?.(nextInstructions),
-        window.electronAPI?.saveMemory?.(nextMemory),
+        window.electronAPI?.invoke('save-user-profile', { name: nextName }),
+        window.electronAPI?.invoke('save-custom-instructions', nextInstructions),
+        window.electronAPI?.invoke('save-memory', nextMemory),
       ]);
       if (!profileResult?.ok) throw new Error(profileResult?.error ?? 'Could not save profile.');
       if (!instructionsResult?.ok) throw new Error(instructionsResult?.error ?? 'Could not save custom instructions.');
@@ -406,9 +406,9 @@ export function initSettingsModal() {
     if (!Object.keys(changes).length) { setFeedback('No provider changes to save.', 'error'); return; }
     $('settings-save').disabled = true; setFeedback('Saving provider settings...', 'info');
     try {
-      const result = await window.electronAPI?.saveProviderConfigs?.(changes);
+      const result = await window.electronAPI?.invoke('save-provider-configs', changes);
       if (!result?.ok) throw new Error(result?.error ?? 'Could not save provider settings.');
-      const allProviders = await window.electronAPI?.getModels?.() ?? [];
+      const allProviders = await window.electronAPI?.invoke('get-models') ?? [];
       state.allProviders = allProviders; state.providers = allProviders.filter((p) => p.configured);
       ss.providerCatalog = buildProviderCatalog(allProviders); ss.pendingProviderConfigs = {}; ss.pendingDeletes.clear();
       renderProviders();
@@ -432,7 +432,7 @@ export function initSettingsModal() {
 
   async function loadUser() {
     try {
-      const user = await window.electronAPI?.getUser?.();
+      const user = await window.electronAPI?.invoke('get-user');
       applyUserProfile(user ?? {}); return user;
     } catch { applyUserProfile({}); return null; }
   }

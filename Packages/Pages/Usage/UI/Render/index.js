@@ -66,7 +66,7 @@ export function mount(outlet) {
   const onOverlayClick = event => { if (event.target === overlay) overlay.classList.remove('open'); };
   const onConfirmDelete = async () => {
     overlay?.classList.remove('open');
-    await window.electronAPI?.clearUsage?.();
+    await window.electronAPI?.invoke?.('clear-usage');
     const { setRecords } = await import('./Data/UsageData.js');
     setRecords([]);
     render(currentRange);

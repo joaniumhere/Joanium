@@ -11,7 +11,7 @@ export const { handles, execute } = createExecutor({
 
             let apiKey = '';
             try {
-                const config = await window.electronAPI?.getFreeConnectorConfig?.('unsplash');
+                const config = await window.electronAPI?.invoke?.('get-free-connector-config', 'unsplash');
                 apiKey = config?.credentials?.apiKey?.trim() ?? '';
             } catch { /* optional */ }
 

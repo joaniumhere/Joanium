@@ -184,7 +184,7 @@ function readClipboardImage(item, index) {
 
 async function extractBinaryAttachment(file, ext, mime) {
   const arrayBuffer = await file.arrayBuffer();
-  const result = await window.electronAPI?.extractDocumentText?.({
+  const result = await window.electronAPI?.invoke?.('extract-document-text', {
     fileName: file.name,
     mimeType: mime,
     buffer: arrayBuffer,
@@ -427,7 +427,7 @@ export function init(onSend) {
   if (folderBtn) {
     folderBtn.addEventListener('click', async () => {
       if (state.activeProject) return;
-      const result = await window.electronAPI?.selectDirectory?.();
+      const result = await window.electronAPI?.invoke?.('select-directory');
       if (result && result.ok && result.path) {
         state.workspacePath = result.path;
         window.dispatchEvent(new CustomEvent('ow:workspace-changed', {

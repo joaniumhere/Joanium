@@ -230,7 +230,7 @@ export function initProjectsModal({
 
   async function chooseFolder() {
     const defaultPath = pathInput?.value?.trim() || state.activeProject?.rootPath || undefined;
-    const result = await window.electronAPI?.selectDirectory?.({ defaultPath });
+    const result = await window.electronAPI?.invoke('select-directory', { defaultPath });
     if (result?.ok && result.path && pathInput) {
       pathInput.value = result.path;
     }
@@ -306,7 +306,7 @@ export function initProjectsModal({
         );
         if (!confirmed) return;
 
-        const result = await window.electronAPI?.deleteProject?.(project.id);
+        const result = await window.electronAPI?.invoke('delete-project', project.id);
         if (!result?.ok) {
           setStatus(result?.error || 'Could not remove the project.', 'error');
           return;
@@ -326,7 +326,7 @@ export function initProjectsModal({
 
   async function refreshProjects() {
     try {
-      projects = (await window.electronAPI?.getProjects?.()) ?? [];
+      projects = (await window.electronAPI?.invoke('get-projects')) ?? [];
     } catch {
       projects = [];
     }
@@ -352,7 +352,7 @@ export function initProjectsModal({
     }
 
     setStatus('Creating project...');
-    const result = await window.electronAPI?.createProject?.({ name, rootPath, context });
+    const result = await window.electronAPI?.invoke('create-project', { name, rootPath, context });
     if (!result?.ok || !result.project) {
       setStatus(result?.error || 'Could not create the project.', 'error');
       return;
@@ -390,7 +390,7 @@ export function initProjectsModal({
       editStatusEl.className = 'project-status';
     }
 
-    const result = await window.electronAPI?.updateProject?.(editingProject.id, { name, rootPath, context });
+    const result = await window.electronAPI?.invoke('update-project', editingProject.id, { name, rootPath, context });
     if (!result?.ok) {
       if (editStatusEl) {
         editStatusEl.textContent = result?.error || 'Could not update the project.';
@@ -440,7 +440,7 @@ export function initProjectsModal({
   editSaveBtn?.addEventListener('click', handleEditSave);
   editPathBtn?.addEventListener('click', async () => {
     const defaultPath = editPathInput?.value?.trim() || undefined;
-    const result = await window.electronAPI?.selectDirectory?.({ defaultPath });
+    const result = await window.electronAPI?.invoke('select-directory', { defaultPath });
     if (result?.ok && result.path && editPathInput) {
       editPathInput.value = result.path;
     }

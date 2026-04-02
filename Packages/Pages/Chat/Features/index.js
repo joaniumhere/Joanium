@@ -270,7 +270,7 @@ export function startNewChat(extraCleanup = () => { }) {
 
 export async function loadChat(chatId, { updateModelLabel, buildModelDropdown, notifyModelSelectionChanged }) {
   try {
-    const chat = await window.electronAPI?.loadChat(chatId, currentChatScope());
+    const chat = await window.electronAPI?.invoke?.('load-chat', chatId, currentChatScope());
     if (!chat) return;
     state.messages = [];
     state.currentChatId = chat.id;

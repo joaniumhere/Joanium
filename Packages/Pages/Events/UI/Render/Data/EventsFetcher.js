@@ -8,7 +8,7 @@ export async function fetchHistory() {
   const events = [];
 
   try {
-    const res = await window.electronAPI?.getAgents?.();
+    const res = await window.electronAPI?.invoke?.('get-agents');
     const agents = Array.isArray(res?.agents) ? res.agents : [];
     for (const agent of agents) {
       for (const job of agent.jobs ?? []) {
@@ -38,7 +38,7 @@ export async function fetchHistory() {
   } catch { /* non-fatal */ }
 
   try {
-    const res = await window.electronAPI?.getAutomations?.();
+    const res = await window.electronAPI?.invoke?.('get-automations');
     const automations = Array.isArray(res?.automations) ? res.automations : [];
     for (const automation of automations) {
       for (const entry of automation.history ?? []) {
@@ -84,7 +84,7 @@ export async function fetchHistory() {
 /** Fetch jobs that are currently running. Returns an array (empty on error). */
 export async function fetchRunning() {
   try {
-    const res = await window.electronAPI?.getRunningJobs?.();
+    const res = await window.electronAPI?.invoke?.('get-running-jobs');
     return Array.isArray(res?.running) ? res.running : [];
   } catch {
     return [];

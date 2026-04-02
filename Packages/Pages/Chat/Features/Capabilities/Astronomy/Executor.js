@@ -12,7 +12,7 @@ export const { handles, execute } = createExecutor({
             // NASA APOD — DEMO_KEY allows 30 req/hr (plenty for personal use)
             let apiKey = 'DEMO_KEY';
             try {
-                const config = await window.electronAPI?.getFreeConnectorConfig?.('nasa');
+                const config = await window.electronAPI?.invoke?.('get-free-connector-config', 'nasa');
                 if (config?.credentials?.apiKey?.trim()) {
                     apiKey = config.credentials.apiKey.trim();
                 }

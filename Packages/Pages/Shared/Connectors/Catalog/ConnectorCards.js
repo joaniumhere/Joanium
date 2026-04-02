@@ -186,7 +186,7 @@ export function buildFreeCard(def, cxState) {
     card.classList.toggle('cx-free-enabled', enabled);
     card.classList.toggle('cx-free-disabled', !enabled);
     toggleWrap.title = enabled ? 'Click to disable' : 'Click to enable';
-    await window.electronAPI?.toggleFreeConnector?.(def.id, enabled);
+    await window.electronAPI?.invoke?.('toggle-free-connector', def.id, enabled);
   });
 
   header.appendChild(toggleWrap);
@@ -241,7 +241,7 @@ export function buildFreeCard(def, cxState) {
       const val = keyInput.value.trim();
       saveKeyBtn.disabled = true;
       saveKeyBtn.textContent = 'Saving…';
-      const res = await window.electronAPI?.saveFreeConnectorKey?.(def.id, val);
+      const res = await window.electronAPI?.invoke?.('save-free-connector-key', def.id, val);
       if (res?.ok !== false) {
         cxState.freeKeys[def.id] = { saved: true, value: val };
         saveKeyBtn.textContent = '✓ Saved';

@@ -74,8 +74,8 @@ function render(query = '') {
 async function load() {
   try {
     const [personasResult, activeResult] = await Promise.all([
-      window.electronAPI?.getPersonas?.(),
-      window.electronAPI?.getActivePersona?.(),
+      window.electronAPI?.invoke?.('get-personas'),
+      window.electronAPI?.invoke?.('get-active-persona'),
     ]);
     _allPersonas   = personasResult?.personas ?? [];
     _activePersona = activeResult?.persona ?? null;
@@ -106,29 +106,29 @@ export function mount(outlet, { navigate }) {
   _personaPool = createPersonaCardPool({
     container: personasGrid,
     onActivateDefault: async () => {
-      await window.electronAPI?.resetActivePersona?.();
+      await window.electronAPI?.invoke?.('reset-active-persona');
       _activePersona = null;
       render(searchInput?.value?.trim() ?? '');
     },
     onChatDefault: async () => {
-      await window.electronAPI?.resetActivePersona?.();
+      await window.electronAPI?.invoke?.('reset-active-persona');
       _activePersona = null;
       await navigateToChat();
     },
     onActivatePersona: async (persona) => {
-      const result = await window.electronAPI?.setActivePersona?.(persona);
+      const result = await window.electronAPI?.invoke?.('set-active-persona', persona);
       if (result?.ok !== false) {
         _activePersona = persona;
         render(searchInput?.value?.trim() ?? '');
       }
     },
     onDeactivatePersona: async () => {
-      await window.electronAPI?.resetActivePersona?.();
+      await window.electronAPI?.invoke?.('reset-active-persona');
       _activePersona = null;
       render(searchInput?.value?.trim() ?? '');
     },
     onChatPersona: async (persona) => {
-      const result = await window.electronAPI?.setActivePersona?.(persona);
+      const result = await window.electronAPI?.invoke?.('set-active-persona', persona);
       if (result?.ok !== false) {
         _activePersona = persona;
         await navigateToChat();

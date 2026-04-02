@@ -363,7 +363,7 @@ keysContinue.addEventListener('click', async () => {
 
 async function saveSetup() {
   try {
-    await window.electronAPI.saveUser({
+    await window.electronAPI.invoke('save-user', {
       name: state.name,
       setup_complete: true,
       created_at: new Date().toISOString(),
@@ -374,7 +374,7 @@ async function saveSetup() {
       },
     });
 
-    await window.electronAPI.saveProviderConfigs(
+    await window.electronAPI.invoke('save-provider-configs',
       Object.fromEntries(
         [...state.selectedProviders].map((id) => [id, serializeProviderConfig(id)]),
       ),

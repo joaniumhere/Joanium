@@ -39,11 +39,11 @@ export function initChannelGateway() {
   if (_initialised) return;
   _initialised = true;
 
-  api?.onChannelIncoming?.(async ({ id, channelName, text }) => {
+  api?.on?.('channel-incoming', async ({ id, channelName, text }) => {
 
     try {
       if (!state.selectedProvider || !state.selectedModel) {
-        await api.channelReply(id, 'No AI provider is configured yet. Open Settings → AI Providers to add one.');
+        await api.invoke('channel-reply', id, 'No AI provider is configured yet. Open Settings → AI Providers to add one.');
         return;
       }
 
@@ -63,10 +63,10 @@ export function initChannelGateway() {
       // Track usage exactly like a normal chat call
       await trackUsage(usage, `channel:${channelName}`, usedProvider, usedModel);
 
-      await api.channelReply(id, reply ?? '(no response)');
+      await api.invoke('channel-reply', id, reply ?? '(no response)');
     } catch (err) {
       console.error('[ChannelGateway] processing error:', err);
-      try { await api.channelReply(id, `Sorry, something went wrong: ${err.message}`); } catch { /* ignore */ }
+      try { await api.invoke('channel-reply', id, `Sorry, something went wrong: ${err.message}`); } catch { /* ignore */ }
     }
   });
 }
