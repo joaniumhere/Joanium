@@ -167,8 +167,6 @@ async function pollDiscord(cfg) {
     .filter(m => {
       // Skip all bot messages (including ourselves)
       if (m.author?.bot) return false;
-      // Skip our own user ID if we resolved it
-      if (cfg._botUserId && m.author?.id === cfg._botUserId) return false;
       // Skip messages with no readable text
       if (!m.content?.trim()) return false;
       return true;

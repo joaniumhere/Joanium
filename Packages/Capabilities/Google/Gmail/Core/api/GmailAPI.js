@@ -556,7 +556,7 @@ export async function createFilter(creds, { from, to, subject, hasWords, doesNot
   };
 
   const action = {
-    addLabelIds: [...addLabelIds, ...(markAsRead ? [] : [])],
+    addLabelIds,
     removeLabelIds: [...removeLabelIds, ...(markAsRead ? ['UNREAD'] : []), ...(archive ? ['INBOX'] : [])],
   };
 

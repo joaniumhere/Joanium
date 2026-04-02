@@ -4,6 +4,9 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 import { shouldRunNow } from '../../Automation/Scheduling/Scheduling.js';
 import { loadDataSources } from './loadDataSources.js';
+import Paths from '../../../Main/Core/Paths.js';
+import { readText, writeText } from '../../../Main/Services/UserService.js';
+import { invalidate } from '../../../Main/Services/SystemPromptService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +17,6 @@ const DATA_SOURCES_DIR = path.resolve(__dirname, '..', 'DataSources');
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 async function trackUsage({ provider, model, modelName, inputTokens, outputTokens }) {
   try {
-    const Paths = (await import('../../../Main/Core/Paths.js')).default;
     const usageFile = Paths.USAGE_FILE;
     const dir = path.dirname(usageFile);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -250,9 +252,6 @@ export async function executeOutput(output, aiResponse, agent, job, connectorEng
 
     case 'append_to_memory': {
       try {
-    const Paths = (await import('../../../Main/Core/Paths.js')).default;
-        const { readText, writeText } = await import('../../../Main/Services/UserService.js');
-        const { invalidate } = await import('../../../Main/Services/SystemPromptService.js');
         const ts = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         writeText(
           Paths.MEMORY_FILE,
@@ -346,8 +345,8 @@ export class AgentsEngine {
 
   toggleAgent(id, enabled) {
     this._load();
-    const a = this.agents.find(a => a.id === id);
-    if (a) { a.enabled = Boolean(enabled); this._persist(); }
+    const agent = this.agents.find(a => a.id === id);
+    if (agent) { agent.enabled = Boolean(enabled); this._persist(); }
   }
 
   async runNow(agentId) {

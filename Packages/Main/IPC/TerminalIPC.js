@@ -370,7 +370,7 @@ function runCommandDetailed(command, { cwd, timeout = DEFAULT_TIMEOUT } = {}) {
       },
       (err, stdout, stderr) => {
         resolve({
-          ok: !err || err.killed === false,
+          ok: !err,
           stdout: truncate(stdout || ''),
           stderr: truncate(stderr || ''),
           exitCode: typeof err?.code === 'number' ? err.code : 0,
