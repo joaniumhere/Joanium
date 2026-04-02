@@ -16,6 +16,6 @@ export function retryIcon() {
 
 export function assistantIcon() {
   return `<div class="assistant-icon">
-    <img src="../Icons/Logo.png" alt="Joanium" width="45" height="45">
+    <img src="../../../Assets/Logo/Logo.png" alt="Joanium" width="45" height="45">
   </div>`;
 }

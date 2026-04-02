@@ -251,15 +251,15 @@ export function buildLogItem(rawLine) {
 
   if (rawLine.startsWith('[GMAIL]')) {
     displayText = rawLine.slice(7).trim();
-    iconHtml = `<img src="Assets/Icons/Gmail.png" alt="Gmail"
+    iconHtml = `<img src="../../../Assets/Icons/Gmail.png" alt="Gmail"
       style="width:14px;height:14px;object-fit:contain;vertical-align:middle;border-radius:2px;flex-shrink:0;"/>`;
   } else if (rawLine.startsWith('[GITHUB]')) {
     displayText = rawLine.slice(8).trim();
-    iconHtml = `<img src="Assets/Icons/Github.png" alt="GitHub"
+    iconHtml = `<img src="../../../Assets/Icons/Github.png" alt="GitHub"
       style="width:14px;height:14px;object-fit:contain;vertical-align:middle;border-radius:2px;flex-shrink:0;"/>`;
   } else if (rawLine.startsWith('[SKILL]')) {
     displayText = rawLine.slice(7).trim();
-    iconHtml = `<img src="../Icons/Logo.png" alt="Joanium" width="14" height="14">`;
+    iconHtml = `<img src="../../../Assets/Logo/Logo.png" alt="Joanium" width="14" height="14">`;
   } else if (rawLine.startsWith('[TOOL]')) {
     displayText = humanizeBrowserToolLog(rawLine.slice(6).trim());
     iconHtml = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"

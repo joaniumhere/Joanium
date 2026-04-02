@@ -33,7 +33,7 @@ export function getChatHTML() {
 
     <section id="welcome">
       <div class="welcome-greeting">
-        <img src="../Icons/Logo.png" alt="Joanium" class="welcome-logo" width="64" height="64">
+        <img src="../../../Assets/Logo/Logo.png" alt="Joanium" class="welcome-logo" width="64" height="64">
         <h1 class="welcome-title">Welcome</h1>
       </div>
       <p class="welcome-subtitle" id="welcome-subtitle">Ask me anything.</p>
