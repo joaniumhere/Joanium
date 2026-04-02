@@ -440,3 +440,160 @@ export async function requestReviewers(credentials, owner, repo, prNumber, revie
 export async function getUserInfo(credentials, username) {
   return githubFetch(`/users/${username}`, credentials.token);
 }
+
+export async function searchRepos(credentials, query, perPage = 20) {
+  return githubFetch(
+    `/search/repositories?q=${encodeURIComponent(query)}&per_page=${perPage}&sort=stars&order=desc`,
+    credentials.token,
+  );
+}
+
+export async function searchIssues(credentials, query, perPage = 20) {
+  return githubFetch(
+    `/search/issues?q=${encodeURIComponent(query)}&per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function getIssueComments(credentials, owner, repo, issueNumber, perPage = 30) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function getCommitDetails(credentials, owner, repo, sha) {
+  return githubFetch(`/repos/${owner}/${repo}/commits/${sha}`, credentials.token);
+}
+
+export async function getTags(credentials, owner, repo, perPage = 20) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/tags?per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function createRelease(credentials, owner, repo, {
+  tagName, name = '', body = '', draft = false, prerelease = false, targetCommitish = '',
+}) {
+  const payload = { tag_name: tagName, name: name || tagName, body, draft, prerelease };
+  if (targetCommitish) payload.target_commitish = targetCommitish;
+  return githubFetch(`/repos/${owner}/${repo}/releases`, credentials.token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function forkRepo(credentials, owner, repo, organization = '') {
+  const payload = organization ? { organization } : {};
+  return githubFetch(`/repos/${owner}/${repo}/forks`, credentials.token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updatePullRequest(credentials, owner, repo, prNumber, {
+  title, body, state, base,
+} = {}) {
+  const payload = {};
+  if (title !== undefined) payload.title = title;
+  if (body  !== undefined) payload.body  = body;
+  if (state !== undefined) payload.state = state;
+  if (base  !== undefined) payload.base  = base;
+  return githubFetch(`/repos/${owner}/${repo}/pulls/${prNumber}`, credentials.token, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getLabels(credentials, owner, repo, perPage = 50) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/labels?per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function createLabel(credentials, owner, repo, name, color, description = '') {
+  return githubFetch(`/repos/${owner}/${repo}/labels`, credentials.token, {
+    method: 'POST',
+    body: JSON.stringify({ name, color: color.replace('#', ''), description }),
+  });
+}
+
+export async function deleteLabel(credentials, owner, repo, name) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/labels/${encodeURIComponent(name)}`,
+    credentials.token,
+    { method: 'DELETE' },
+  );
+}
+
+export async function searchUsers(credentials, query, perPage = 20) {
+  return githubFetch(
+    `/search/users?q=${encodeURIComponent(query)}&per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function getUserStarred(credentials, username, perPage = 30) {
+  return githubFetch(
+    `/users/${username}/starred?per_page=${perPage}&sort=updated`,
+    credentials.token,
+  );
+}
+
+export async function getFileCommits(credentials, owner, repo, filePath, perPage = 15) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/commits?path=${encodeURIComponent(filePath)}&per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function lockIssue(credentials, owner, repo, issueNumber, lockReason = '') {
+  const payload = lockReason ? { lock_reason: lockReason } : {};
+  return githubFetch(`/repos/${owner}/${repo}/issues/${issueNumber}/lock`, credentials.token, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function unlockIssue(credentials, owner, repo, issueNumber) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/issues/${issueNumber}/lock`,
+    credentials.token,
+    { method: 'DELETE' },
+  );
+}
+
+export async function getDeployments(credentials, owner, repo, perPage = 20) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/deployments?per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function getRepoPermissions(credentials, owner, repo, username) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/collaborators/${username}/permission`,
+    credentials.token,
+  );
+}
+
+export async function removeLabels(credentials, owner, repo, issueNumber, labels = []) {
+  // GitHub removes labels one at a time; delete via the bulk endpoint
+  return githubFetch(
+    `/repos/${owner}/${repo}/issues/${issueNumber}/labels`,
+    credentials.token,
+    {
+      method: 'PUT',          // PUT replaces the full label set; we pass remaining labels
+      body: JSON.stringify({ labels }),
+    },
+  );
+}
+
+export async function getPRRequestedReviewers(credentials, owner, repo, prNumber) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/pulls/${prNumber}/requested_reviewers`,
+    credentials.token,
+  );
+}
