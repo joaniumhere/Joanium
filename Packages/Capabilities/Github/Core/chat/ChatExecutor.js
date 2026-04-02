@@ -1150,6 +1150,159 @@ export async function executeGithubChatTool(ctx, toolName, params = {}) {
       ].join('\n');
     }
 
+    case 'github_get_repo_info': {
+      const { owner, repo } = params;
+      requireRepo(owner, repo);
+      const r = await GithubAPI.getRepoInfo(credentials, owner, repo);
+      return [
+        `Repository: ${r.full_name}`,
+        r.description ? `Description: ${r.description}` : '',
+        `Stars: ${r.stargazers_count} | Forks: ${r.forks_count} | Watchers: ${r.watchers_count}`,
+        `Open issues: ${r.open_issues_count} | Default branch: ${r.default_branch}`,
+        `Language: ${r.language ?? 'unknown'}`,
+        `Visibility: ${r.visibility} | Fork: ${r.fork}`,
+        `Created: ${formatDate(r.created_at)} | Updated: ${formatDate(r.updated_at)}`,
+        `License: ${r.license?.name ?? 'none'}`,
+        `URL: ${r.html_url}`,
+      ].filter(Boolean).join('\n');
+    }
+
+    case 'github_get_org_repos': {
+      const { org, count = 30 } = params;
+      if (!org) throw new Error('Missing required param: org');
+      const repos = await GithubAPI.getOrgRepos(credentials, org, Math.min(Number(count) || 30, 100));
+      if (!repos.length) return `No repositories found for org "${org}".`;
+      return [
+        `Repositories for ${org} (${repos.length} shown):`,
+        '',
+        ...repos.map((r, i) =>
+          `${i + 1}. ${r.name} [${r.language ?? 'unknown'}] ★${r.stargazers_count}${r.description ? ` — ${r.description}` : ''}`,
+        ),
+      ].join('\n');
+    }
+
+    case 'github_watch_repo': {
+      const { owner, repo, action = 'watch' } = params;
+      requireRepo(owner, repo);
+      const unwatch = String(action).toLowerCase() === 'unwatch';
+      await GithubAPI.watchRepo(credentials, owner, repo, !unwatch);
+      return `${unwatch ? 'Unwatched' : 'Now watching'} ${owner}/${repo}.`;
+    }
+
+    case 'github_get_user_events': {
+      const { username, count = 20 } = params;
+      if (!username) throw new Error('Missing required param: username');
+      const events = await GithubAPI.getUserEvents(credentials, username, Math.min(Number(count) || 20, 100));
+      if (!events.length) return `No public events found for @${username}.`;
+      return [
+        `Recent public events for @${username} (${events.length} shown):`,
+        '',
+        ...events.slice(0, 20).map((e, i) => {
+          const repo = e.repo?.name ?? 'unknown';
+          const date = formatDate(e.created_at);
+          return `${i + 1}. [${e.type}] ${repo} — ${date}`;
+        }),
+      ].join('\n');
+    }
+
+    case 'github_get_repo_environments': {
+      const { owner, repo } = params;
+      requireRepo(owner, repo);
+      const data = await GithubAPI.getRepoEnvironments(credentials, owner, repo);
+      const envs = data.environments ?? [];
+      if (!envs.length) return `No deployment environments found for ${owner}/${repo}.`;
+      return [
+        `Environments for ${owner}/${repo} (${envs.length}):`,
+        '',
+        ...envs.map((e, i) => {
+          const updated = formatDate(e.updated_at);
+          const protections = e.protection_rules?.map(r => r.type).join(', ') || 'none';
+          return `${i + 1}. ${e.name} — updated ${updated} | protection: ${protections}`;
+        }),
+      ].join('\n');
+    }
+
+    case 'github_list_actions_secrets': {
+      const { owner, repo } = params;
+      requireRepo(owner, repo);
+      const data = await GithubAPI.listActionsSecrets(credentials, owner, repo);
+      const secrets = data.secrets ?? [];
+      if (!secrets.length) return `No Actions secrets found in ${owner}/${repo}.`;
+      return [
+        `Actions secrets in ${owner}/${repo} (${secrets.length}) — names only, values are never exposed:`,
+        '',
+        ...secrets.map((s, i) => `${i + 1}. ${s.name} — updated ${formatDate(s.updated_at)}`),
+      ].join('\n');
+    }
+
+    case 'github_get_dependabot_alerts': {
+      const { owner, repo, state = 'open' } = params;
+      requireRepo(owner, repo);
+      const alerts = await GithubAPI.getDependabotAlerts(credentials, owner, repo, state);
+      if (!alerts.length) return `No ${state} Dependabot alerts in ${owner}/${repo}.`;
+      return [
+        `Dependabot alerts for ${owner}/${repo} (${alerts.length} ${state}):`,
+        '',
+        ...alerts.slice(0, 20).map((a, i) => {
+          const pkg = a.dependency?.package?.name ?? 'unknown';
+          const severity = a.security_advisory?.severity ?? 'unknown';
+          const summary = a.security_advisory?.summary ?? '';
+          return `${i + 1}. [${severity.toUpperCase()}] ${pkg} — ${summary}`;
+        }),
+      ].join('\n');
+    }
+
+    case 'github_get_commits_since': {
+      const { owner, repo, since, until = '', count = 20 } = params;
+      requireRepo(owner, repo);
+      if (!since) throw new Error('Missing required param: since (ISO 8601 date, e.g. 2024-01-01T00:00:00Z)');
+      const commits = await GithubAPI.getCommitsSince(credentials, owner, repo, since, until, Math.min(Number(count) || 20, 100));
+      if (!commits.length) return `No commits found in ${owner}/${repo} since ${since}.`;
+      return [
+        `Commits in ${owner}/${repo} since ${since}${until ? ` until ${until}` : ''} (${commits.length} shown):`,
+        '',
+        ...commits.map((c, i) => {
+          const sha = c.sha?.slice(0, 7) ?? '?';
+          const msg = String(c.commit?.message ?? '').split('\n')[0].slice(0, 80);
+          const author = c.commit?.author?.name ?? c.author?.login ?? 'unknown';
+          const date = formatDate(c.commit?.author?.date);
+          return `${i + 1}. \`${sha}\` ${msg}\n   by ${author} on ${date}`;
+        }),
+      ].join('\n');
+    }
+
+    case 'github_get_branch_protection': {
+      const { owner, repo, branch } = params;
+      if (!owner || !repo || !branch) throw new Error('Missing required params: owner, repo, branch');
+      const p = await GithubAPI.getBranchProtection(credentials, owner, repo, branch);
+      const lines = [`Branch protection for ${owner}/${repo}:${branch}`, ''];
+      if (p.required_status_checks) {
+        lines.push(`Required status checks: ${p.required_status_checks.contexts?.join(', ') || 'none (strict)'}`);
+      }
+      if (p.required_pull_request_reviews) {
+        const r = p.required_pull_request_reviews;
+        lines.push(`PR reviews required: ${r.required_approving_review_count ?? 1} approver(s)`);
+        if (r.dismiss_stale_reviews) lines.push('Stale reviews dismissed on push');
+        if (r.require_code_owner_reviews) lines.push('Code owner review required');
+      }
+      lines.push(`Force push allowed: ${!p.allow_force_pushes?.enabled}`);
+      lines.push(`Deletions allowed: ${!p.allow_deletions?.enabled}`);
+      if (p.enforce_admins?.enabled) lines.push('Rules enforced on admins');
+      return lines.join('\n');
+    }
+
+    case 'github_get_user_orgs': {
+      const { username } = params;
+      if (!username) throw new Error('Missing required param: username');
+      const orgs = await GithubAPI.getUserOrgs(credentials, username);
+      if (!orgs.length) return `@${username} is not a member of any public organizations.`;
+      return [
+        `Organizations for @${username} (${orgs.length}):`,
+        '',
+        ...orgs.map((o, i) => `${i + 1}. ${o.login}${o.description ? ` — ${o.description}` : ''}`),
+      ].join('\n');
+    }
+    
     default:
       throw new Error(`Unknown GitHub tool: ${toolName}`);
   }

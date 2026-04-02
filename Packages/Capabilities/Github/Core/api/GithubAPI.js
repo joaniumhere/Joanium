@@ -597,3 +597,61 @@ export async function getPRRequestedReviewers(credentials, owner, repo, prNumber
     credentials.token,
   );
 }
+
+export async function getRepoInfo(credentials, owner, repo) {
+  return githubFetch(`/repos/${owner}/${repo}`, credentials.token);
+}
+
+export async function getOrgRepos(credentials, org, perPage = 30) {
+  return githubFetch(
+    `/orgs/${org}/repos?sort=updated&per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function watchRepo(credentials, owner, repo, subscribed = true) {
+  if (!subscribed) {
+    return githubFetch(`/repos/${owner}/${repo}/subscription`, credentials.token, { method: 'DELETE' });
+  }
+  return githubFetch(`/repos/${owner}/${repo}/subscription`, credentials.token, {
+    method: 'PUT',
+    body: JSON.stringify({ subscribed: true, ignored: false }),
+  });
+}
+
+export async function getUserEvents(credentials, username, perPage = 20) {
+  return githubFetch(`/users/${username}/events/public?per_page=${perPage}`, credentials.token);
+}
+
+export async function getRepoEnvironments(credentials, owner, repo) {
+  return githubFetch(`/repos/${owner}/${repo}/environments`, credentials.token);
+}
+
+export async function listActionsSecrets(credentials, owner, repo) {
+  return githubFetch(`/repos/${owner}/${repo}/actions/secrets`, credentials.token);
+}
+
+export async function getDependabotAlerts(credentials, owner, repo, state = 'open', perPage = 20) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/dependabot/alerts?state=${state}&per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function getCommitsSince(credentials, owner, repo, since, until = '', perPage = 20) {
+  const qs = new URLSearchParams({ per_page: String(perPage) });
+  if (since) qs.set('since', since);
+  if (until) qs.set('until', until);
+  return githubFetch(`/repos/${owner}/${repo}/commits?${qs.toString()}`, credentials.token);
+}
+
+export async function getBranchProtection(credentials, owner, repo, branch) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}/protection`,
+    credentials.token,
+  );
+}
+
+export async function getUserOrgs(credentials, username) {
+  return githubFetch(`/users/${username}/orgs`, credentials.token);
+}
