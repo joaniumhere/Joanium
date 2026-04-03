@@ -1,6 +1,3 @@
-import { getBuiltinPage } from '../../../PageRegistry.js';
-export const pageMeta = getBuiltinPage('skills');
-
 import { getHTML } from './Templates/SkillsTemplate.js';
 import { openConfirm, closeConfirm } from './Components/SkillsConfirm.js';
 import { createCardPool } from '../../../../System/CardPool.js';

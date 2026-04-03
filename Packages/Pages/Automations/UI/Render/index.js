@@ -1,6 +1,3 @@
-import { getBuiltinPage } from '../../../PageRegistry.js';
-export const pageMeta = getBuiltinPage('automations');
-
 import { loadAutomationFeatureRegistry } from './Config/Constants.js';
 import { escapeHtml, formatActionsSummary, formatLastRun, getTriggerPresentation, generateId } from './Utils/Utils.js';
 import { createActionRow, collectActionFromRow } from './Components/ActionRenderer.js';

@@ -1,6 +1,3 @@
-import { getBuiltinPage } from '../../../PageRegistry.js';
-export const pageMeta = getBuiltinPage('chat');
-
 import { state } from '../../../../System/State.js';
 import { initDOM } from '../../../Shared/Core/DOM.js';
 import {

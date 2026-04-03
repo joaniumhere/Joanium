@@ -21,6 +21,20 @@ function scanRecursive(dir, predicate, results = []) {
   return results;
 }
 
+function normalizeEngineMeta(name, rawMeta) {
+  if (!rawMeta || typeof rawMeta !== 'object' || Array.isArray(rawMeta)) {
+    throw new Error(`[EngineDiscovery] "${name}" must export engineMeta.`);
+  }
+
+  if (!rawMeta.id || !rawMeta.provides || typeof rawMeta.create !== 'function') {
+    throw new Error(
+      `[EngineDiscovery] "${name}" must export engineMeta with id, provides, and create(context).`,
+    );
+  }
+
+  return rawMeta;
+}
+
 /**
  * Discover engine modules under one or more roots.
  * Each engine should export:
@@ -38,11 +52,14 @@ export async function discoverEngines(scanRoots = []) {
     try {
       const mod = await import(pathToFileURL(fullPath).href);
       const name = path.basename(fullPath, '.js');
+      const meta = normalizeEngineMeta(name, mod.engineMeta);
 
       engines.push({
+        id: meta.id,
         name,
         module: mod,
-        meta: mod.engineMeta ?? {},
+        meta,
+        provides: meta.provides,
         filePath: fullPath,
       });
     } catch (err) {
@@ -51,34 +68,4 @@ export async function discoverEngines(scanRoots = []) {
   }
 
   return engines.sort((a, b) => a.name.localeCompare(b.name));
-}
-
-export function instantiateEngines(discovered, context) {
-  const engines = {};
-
-  for (const { name, meta } of discovered) {
-    if (typeof meta.create === 'function') {
-      engines[name] = meta.create(context);
-    } else {
-      console.warn(`[EngineDiscovery] "${name}" has no engineMeta.create — skipping`);
-    }
-  }
-
-  return engines;
-}
-
-export function startEngines(engines) {
-  for (const engine of Object.values(engines)) {
-    if (typeof engine?.start === 'function') {
-      engine.start();
-    }
-  }
-}
-
-export function stopEngines(engines) {
-  for (const engine of Object.values(engines)) {
-    if (typeof engine?.stop === 'function') {
-      engine.stop();
-    }
-  }
 }

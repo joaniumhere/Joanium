@@ -2,7 +2,7 @@ import { ipcMain } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import Paths from '../Core/Paths.js';
-import { invalidate as invalidateSysPrompt } from '../Services/SystemPromptService.js';
+import { invalidate as invalidateSysPrompt, getDefaultPersona } from '../Services/SystemPromptService.js';
 import { parseFrontmatter } from '../Services/FileService.js';
 
 export const ipcMeta = { needs: [] };
@@ -36,7 +36,7 @@ export function register() {
   /* ── Get active persona ── */
   ipcMain.handle('get-active-persona', () => {
     try {
-      if (!fs.existsSync(Paths.ACTIVE_PERSONA_FILE)) return { ok: true, persona: null };
+      if (!fs.existsSync(Paths.ACTIVE_PERSONA_FILE)) return { ok: true, persona: getDefaultPersona() };
 
       const data = JSON.parse(fs.readFileSync(Paths.ACTIVE_PERSONA_FILE, 'utf-8'));
 
@@ -46,13 +46,13 @@ export function register() {
         if (!fs.existsSync(personaPath)) {
           fs.unlinkSync(Paths.ACTIVE_PERSONA_FILE);
           invalidateSysPrompt();
-          return { ok: true, persona: null };
+          return { ok: true, persona: getDefaultPersona() };
         }
       }
 
       return { ok: true, persona: data };
     } catch {
-      return { ok: true, persona: null };
+      return { ok: true, persona: getDefaultPersona() };
     }
   });
 

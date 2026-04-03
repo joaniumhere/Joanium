@@ -1,0 +1,10 @@
+{
+  "name": "@Joanium/capabilities",
+  "private": true,
+  "type": "module",
+  "description": "Capability and connector features for Joanium.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

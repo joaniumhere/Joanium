@@ -1,6 +1,3 @@
-import { getBuiltinPage } from '../../../PageRegistry.js';
-export const pageMeta = getBuiltinPage('events');
-
 import { getEventsHTML } from './Templates/EventsTemplate.js';
 import { esc, timeAgo, runningDuration, fullDateTime, triggerLabel } from './Utils/EventsUtils.js';
 import { fetchHistory, fetchRunning } from './Data/EventsFetcher.js';

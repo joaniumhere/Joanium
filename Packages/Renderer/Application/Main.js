@@ -7,7 +7,7 @@ import { initSettingsModal }  from '../../Modals/SettingsModal.js';
 import { injectCSS }          from '../../System/Utils/InjectCSS.js';
 import { initChannelGateway } from '../../Pages/Channels/Features/Gateway.js';
 
-import { discoverPages, buildPagesMap, registerFeaturePages } from './PagesManifest.js';
+import { buildSidebarNav, discoverPages, buildPagesMap, registerFeaturePages } from './PagesManifest.js';
 import { getFeatureBoot } from '../../Features/Core/FeatureBoot.js';
 
 // Build the PAGES map from the manifest — populated after async discovery
@@ -166,6 +166,7 @@ async function init() {
   // pages manifest.
   _sidebar = initSidebar({
     activePage: 'chat',
+    navigation: buildSidebarNav(),
     onNewChat:   () => openFreshChat(),
     onLibrary:   () => _library?.isOpen() ? _library.close() : _library?.open(),
     onProjects:  () => _projects?.isOpen() ? _projects.close() : _projects?.open(),

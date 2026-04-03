@@ -1,9 +1,13 @@
-﻿import { getFreshCreds } from '../../../GoogleWorkspace.js';
+async function getFreshGoogleCreds(creds) {
+  const { getFreshCreds } = await import('../../../GoogleWorkspace.js');
+  return getFreshCreds(creds);
+}
+
 
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
 
 async function gmailFetch(creds, url, options = {}) {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -70,7 +74,7 @@ export async function searchEmails(creds, query, maxResults = 10) {
 }
 
 export async function sendEmail(creds, to, subject, body, cc = '', bcc = '') {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const message = [
     `To: ${to}`,
     ...(cc ? [`Cc: ${cc}`] : []),
@@ -106,7 +110,7 @@ export async function sendEmail(creds, to, subject, body, cc = '', bcc = '') {
 }
 
 export async function replyToEmail(creds, messageId, replyBody) {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const detail = await gmailFetch(creds, `${GMAIL_BASE}/messages/${messageId}?format=full`);
   const headers = parseHeaders(detail.payload.headers);
 
@@ -148,7 +152,7 @@ export async function replyToEmail(creds, messageId, replyBody) {
 }
 
 export async function forwardEmail(creds, messageId, forwardTo, extraNote = '') {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const detail = await gmailFetch(creds, `${GMAIL_BASE}/messages/${messageId}?format=full`);
   const headers = parseHeaders(detail.payload.headers);
 
@@ -313,7 +317,7 @@ export async function getLabelId(creds, labelName) {
 }
 
 export async function createDraft(creds, to, subject, body, cc = '') {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const message = [
     `To: ${to}`,
     ...(cc ? [`Cc: ${cc}`] : []),
@@ -494,7 +498,7 @@ export async function deleteDraft(creds, draftId) {
 }
 
 export async function sendDraft(creds, draftId) {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const res = await fetch(`${GMAIL_BASE}/drafts/send`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${fresh.accessToken}`, 'Content-Type': 'application/json' },

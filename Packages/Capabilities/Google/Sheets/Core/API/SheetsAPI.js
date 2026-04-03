@@ -1,9 +1,13 @@
-import { getFreshCreds } from '../../../GoogleWorkspace.js';
+async function getFreshGoogleCreds(creds) {
+  const { getFreshCreds } = await import('../../../GoogleWorkspace.js');
+  return getFreshCreds(creds);
+}
+
 
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets';
 
 async function sheetsFetch(creds, url, options = {}) {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const res = await fetch(url, {
     ...options,
     headers: {

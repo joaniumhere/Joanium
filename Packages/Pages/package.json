@@ -1,0 +1,10 @@
+{
+  "name": "@Joanium/pages",
+  "private": true,
+  "type": "module",
+  "description": "Renderer page manifests and page modules for Joanium.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

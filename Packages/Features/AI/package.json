@@ -1,0 +1,10 @@
+{
+  "name": "@Joanium/ai",
+  "private": true,
+  "type": "module",
+  "description": "AI provider adapters and tool-calling helpers for Joanium.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

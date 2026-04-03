@@ -60,7 +60,7 @@
   font-size: 12px;
 }
 
-.projects-modal-body {
+.settings-modal-body.projects-modal-body {
   display: grid;
   grid-template-columns: minmax(320px, 0.94fr) minmax(360px, 1.06fr);
   gap: 18px;
@@ -513,7 +513,7 @@
     max-height: calc(100vh - 32px);
   }
 
-  .projects-modal-body {
+  .settings-modal-body.projects-modal-body {
     grid-template-columns: 1fr;
   }
 

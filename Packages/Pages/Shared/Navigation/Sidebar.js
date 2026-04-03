@@ -1,5 +1,3 @@
-import { buildSidebarNav } from '../../../Renderer/Application/PagesManifest.js';
-
 // NON-PAGE ICONS (kept here since they're not navigable pages)
 const ICON = {
   newChat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -68,8 +66,11 @@ function applyTheme(theme, animate = true) {
 const SPECIAL_BUTTON_IDS = new Set(['chat', 'library', 'projects']);
 
 // HTML BUILDERS
-function buildSidebarHTML(activePage) {
-  const nav = buildSidebarNav();
+function buildSidebarHTML(activePage, navigation = {}) {
+  const nav = {
+    top: navigation.top ?? [],
+    bottom: navigation.bottom ?? [],
+  };
 
   const btn = (id, icon, tip) => {
     const isActive = id === activePage ? ' active' : '';
@@ -160,6 +161,7 @@ function buildAvatarPanelHTML() {
  */
 export function initSidebar({
   activePage = 'chat',
+  navigation = { top: [], bottom: [] },
   onNewChat = () => { },
   onLibrary = () => { },
   onProjects = () => { },
@@ -185,7 +187,7 @@ export function initSidebar({
   if (!themePanelEl) throw new Error('[Sidebar] Missing #theme-panel element in the DOM.');
   if (!avatarPanelEl) throw new Error('[Sidebar] Missing #avatar-panel element in the DOM.');
 
-  sidebarEl.innerHTML = buildSidebarHTML(activePage);
+  sidebarEl.innerHTML = buildSidebarHTML(activePage, navigation);
   themePanelEl.innerHTML = buildThemePanelHTML();
   avatarPanelEl.innerHTML = buildAvatarPanelHTML();
 

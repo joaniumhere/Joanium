@@ -1,4 +1,8 @@
-import { getFreshCreds } from '../../../GoogleWorkspace.js';
+async function getFreshGoogleCreds(creds) {
+  const { getFreshCreds } = await import('../../../GoogleWorkspace.js');
+  return getFreshCreds(creds);
+}
+
 
 const PEOPLE_BASE = 'https://people.googleapis.com/v1';
 
@@ -6,7 +10,7 @@ const PERSON_FIELDS = 'names,emailAddresses,phoneNumbers,organizations,birthdays
 const BASIC_FIELDS  = 'names,emailAddresses,phoneNumbers,organizations';
 
 async function peopleFetch(creds, url, options = {}) {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const res = await fetch(url, {
     ...options,
     headers: {

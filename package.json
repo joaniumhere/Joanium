@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Your AI assistant.",
   "type": "module",
+  "workspaces": [
+    "Core/Electron",
+    "Packages/*",
+    "Packages/Features/*"
+  ],
   "imports": {
     "#capabilities/*": "./Packages/Capabilities/*",
     "#core/*": "./Core/*",

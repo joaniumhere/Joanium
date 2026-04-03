@@ -1,6 +1,3 @@
-import { getBuiltinPage } from '../../../PageRegistry.js';
-export const pageMeta = getBuiltinPage('setup');
-
 import { PROVIDERS, PROVIDERS_BY_ID } from './Providers/SetupProviders.js';
 import { initStepController } from './Steps/SetupSteps.js';
 

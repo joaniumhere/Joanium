@@ -21,6 +21,23 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function normalizeFeatureStorage(feature = {}) {
+  const raw = feature.storage;
+  if (!raw) return [];
+
+  const items = Array.isArray(raw)
+    ? raw
+    : (Array.isArray(raw.descriptors) ? raw.descriptors : [raw]);
+
+  return items
+    .filter(item => item && typeof item === 'object' && !Array.isArray(item))
+    .map(item => deepClone(item));
+}
+
+function getDefaultFeatureStorageKey(feature = {}) {
+  return normalizeFeatureStorage(feature)[0]?.key ?? feature.id;
+}
+
 
 function topologicallySortFeatures(features = []) {
   const byId = new Map(features.map(feature => [feature.id, feature]));
@@ -206,11 +223,13 @@ export class FeatureRegistry {
 
   _createContext(feature, extraContext = {}) {
     const paths = this.baseContext.paths ?? {};
+    const defaultStorageKey = getDefaultFeatureStorageKey(feature);
     return {
       ...this.baseContext,
       ...extraContext,
       feature,
       featureRegistry: this,
+      getStorage: (key = defaultStorageKey) => this.baseContext.featureStorage?.get?.(key) ?? null,
       getFeatureDataPath: (...segments) =>
         path.join(paths.FEATURES_DATA_DIR ?? '', feature.id, ...segments),
       emit: (event, payload) => this.emit(feature.id, event, payload),
@@ -253,6 +272,16 @@ export class FeatureRegistry {
     }
 
     return defaults;
+  }
+
+  getStorageDescriptors() {
+    const descriptors = [];
+
+    for (const feature of this.features) {
+      descriptors.push(...normalizeFeatureStorage(feature));
+    }
+
+    return descriptors;
   }
 
   _buildServiceConnectors() {

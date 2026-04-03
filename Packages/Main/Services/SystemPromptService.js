@@ -1,7 +1,8 @@
 import fs from 'fs';
-import * as GithubAPI from '../../Capabilities/Github/Core/API/GithubAPI.js';
+import path from 'path';
 import { buildSystemPrompt } from '../../System/Prompting/SystemPrompt.js';
 import Paths from '../Core/Paths.js';
+import { parseFrontmatter } from './FileService.js';
 
 const TTL_MS = 5 * 60_000;
 
@@ -13,15 +14,32 @@ export function invalidate() {
   _cacheTime = 0;
 }
 
+export function getDefaultPersona() {
+  try {
+    const joanaPath = path.join(Paths.PERSONAS_DIR, 'Joana.md');
+    if (fs.existsSync(joanaPath)) {
+      const raw = fs.readFileSync(joanaPath, 'utf-8');
+      const { meta, body } = parseFrontmatter(raw);
+      return {
+        filename: 'Joana.md',
+        name: meta.name || 'Joana',
+        personality: meta.personality || '',
+        description: meta.description || '',
+        instructions: body,
+      };
+    }
+  } catch (err) {
+    console.warn('[SystemPromptService] Failed to load default persona Joana:', err.message);
+  }
+  return null;
+}
+
 export async function get({ user, customInstructions, memory, connectorEngine, featureRegistry = null }) {
   const now = Date.now();
   if (_cache && now - _cacheTime < TTL_MS) return _cache;
 
-  const githubCreds = connectorEngine.getCredentials('github');
   const googleCreds = connectorEngine.getCredentials('google');
 
-  let githubUsername = null;
-  let githubRepos = [];
   let featurePromptContext = { connectedServices: [], sections: [] };
 
   if (featureRegistry?.buildPromptContext) {
@@ -35,31 +53,21 @@ export async function get({ user, customInstructions, memory, connectorEngine, f
     }
   }
 
-  if (!featurePromptContext.sections?.length && githubCreds?.token) {
-    try {
-      const ghUser = await GithubAPI.getUser(githubCreds);
-      githubUsername = ghUser.login;
-      githubRepos = await GithubAPI.getRepos(githubCreds, 20);
-    } catch (error) {
-      console.warn('[SystemPromptService] GitHub fetch failed:', error.message);
-    }
-  }
-
   let activePersona = null;
   try {
     if (fs.existsSync(Paths.ACTIVE_PERSONA_FILE)) {
       activePersona = JSON.parse(fs.readFileSync(Paths.ACTIVE_PERSONA_FILE, 'utf-8'));
+    } else {
+      activePersona = getDefaultPersona();
     }
   } catch {
-    activePersona = null;
+    activePersona = getDefaultPersona();
   }
 
   _cache = await buildSystemPrompt({
     userName: user.name,
     customInstructions,
     memory,
-    githubUsername,
-    githubRepos,
     gmailEmail: googleCreds?.email ?? null,
     activePersona,
     connectedServices: featurePromptContext.connectedServices ?? [],

@@ -44,76 +44,7 @@ export function createPersonaCardPool({
   /** @type {Set<HTMLElement>} */
   const active = new Set();
 
-  function createDefaultCard() {
-    const card = document.createElement('div');
-    card.className = 'persona-card persona-card--default';
-    card._isDefault = true;
-    card._isActive = false;
 
-    card.innerHTML = `
-      <div class="persona-active-badge" style="display:none"><div class="persona-active-badge-dot"></div>Active</div>
-      <div class="persona-avatar persona-avatar--default">
-        <img src="../../../Assets/Logo/Logo.png" alt="Joanium" width="60" height="60">
-      </div>
-      <div class="persona-info">
-        <div class="persona-name">Default Assistant</div>
-        <div class="persona-description">The standard Joanium AI - helpful, accurate, and contextually aware of your system, repos, and email.</div>
-      </div>
-      <div class="persona-personality">
-        <span class="persona-tag">helpful</span>
-        <span class="persona-tag">accurate</span>
-        <span class="persona-tag">contextual</span>
-      </div>
-      <div class="persona-card-footer">
-        <button class="persona-activate-btn" type="button" style="display:none">Set active</button>
-        <button class="persona-status-btn" disabled style="display:none">Currently active</button>
-        <button class="persona-read-btn" type="button" title="Read persona">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <button class="persona-chat-btn" type="button" title="Chat with persona">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      </div>`;
-
-    card.querySelector('.persona-activate-btn')?.addEventListener('click', async event => {
-      event.stopPropagation();
-      await onActivateDefault();
-    });
-
-    card.querySelector('.persona-read-btn')?.addEventListener('click', event => {
-      event.stopPropagation();
-      onReadPersona?.({
-        name: 'Default Assistant',
-        instructions: 'The standard Joanium AI — helpful, accurate, and contextually aware of your system, repos, and email.',
-        _isDefault: true,
-      });
-    });
-
-    card.querySelector('.persona-chat-btn')?.addEventListener('click', async event => {
-      event.stopPropagation();
-      await onChatDefault();
-    });
-
-    return card;
-  }
-
-  function updateDefaultCard(card, isActive) {
-    card._isActive = isActive;
-    card.className = `persona-card persona-card--default${isActive ? ' is-active' : ''}`;
-
-    const badge = card.querySelector('.persona-active-badge');
-    badge.style.display = isActive ? '' : 'none';
-
-    const activateBtn = card.querySelector('.persona-activate-btn');
-    const statusBtn = card.querySelector('.persona-status-btn');
-    activateBtn.style.display = isActive ? 'none' : '';
-    statusBtn.style.display = isActive ? '' : 'none';
-  }
 
   function createCustomCard() {
     const card = document.createElement('div');
@@ -204,32 +135,22 @@ export function createPersonaCardPool({
     deactivateBtn.style.display = isActive ? '' : 'none';
   }
 
-  /**
-   * Render persona items. Each item is either `{ _isDefault: true }` or a persona object.
-   * @param {Array} items
-   * @param {string|null} activeFilename - filename of the active persona, or null for default
-   */
   function render(items, activeFilename) {
     active.clear();
 
     for (const item of items) {
-      const isDefault = item._isDefault;
-      const key = isDefault ? DEFAULT_KEY : item.filename;
-      const isActive = isDefault ? !activeFilename : activeFilename === item.filename;
+      const key = item.filename;
+      const isActive = activeFilename === item.filename;
 
       let card = pool.get(key);
 
       if (!card) {
-        card = isDefault ? createDefaultCard() : createCustomCard();
+        card = createCustomCard();
         pool.set(key, card);
         container.appendChild(card);
       }
 
-      if (isDefault) {
-        updateDefaultCard(card, isActive);
-      } else {
-        updateCustomCard(card, item, isActive);
-      }
+      updateCustomCard(card, item, isActive);
 
       card.style.display = '';
       active.add(card);

@@ -1,0 +1,10 @@
+{
+  "name": "@Joanium/modals",
+  "private": true,
+  "type": "module",
+  "description": "Shared modal modules for Joanium.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

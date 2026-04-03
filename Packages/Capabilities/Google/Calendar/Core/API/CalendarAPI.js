@@ -1,9 +1,13 @@
-﻿import { getFreshCreds } from '../../../GoogleWorkspace.js';
+async function getFreshGoogleCreds(creds) {
+  const { getFreshCreds } = await import('../../../GoogleWorkspace.js');
+  return getFreshCreds(creds);
+}
+
 
 const CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3';
 
 async function calFetch(creds, url, options = {}) {
-  const fresh = await getFreshCreds(creds);
+  const fresh = await getFreshGoogleCreds(creds);
   const res = await fetch(url, {
     ...options,
     headers: {

@@ -1,5 +1,8 @@
-﻿import { getFreshCreds, startOAuthFlow, detectServices } from './GoogleWorkspace.js';
 import defineFeature from '../Core/DefineFeature.js';
+
+async function getGoogleWorkspaceModule() {
+  return import('./GoogleWorkspace.js');
+}
 
 async function getProfileEmail(accessToken) {
   const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -60,6 +63,7 @@ export default defineFeature({
           const creds = ctx.connectorEngine?.getCredentials('google');
           if (!creds?.accessToken) return { ok: false, error: 'No credentials stored' };
 
+          const { getFreshCreds } = await getGoogleWorkspaceModule();
           const freshCreds = await getFreshCreds(creds);
           const email = await getProfileEmail(freshCreds.accessToken);
           if (email) ctx.connectorEngine?.updateCredentials('google', { email });
@@ -75,6 +79,7 @@ export default defineFeature({
           return { ok: false, error: 'Client ID and Client Secret are required' };
         }
 
+        const { startOAuthFlow, detectServices } = await getGoogleWorkspaceModule();
         const tokens = await startOAuthFlow(clientId.trim(), clientSecret.trim());
         const services = await detectServices(tokens).catch(() => ({}));
         tokens.services = services;
@@ -91,6 +96,7 @@ export default defineFeature({
           return { ok: false, error: 'Google Workspace not connected' };
         }
 
+        const { detectServices } = await getGoogleWorkspaceModule();
         const services = await detectServices(creds);
         ctx.connectorEngine?.updateCredentials('google', { services });
         ctx.invalidateSystemPrompt?.();

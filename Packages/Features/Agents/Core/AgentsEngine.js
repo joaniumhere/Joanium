@@ -1,6 +1,7 @@
 ﻿import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import defineEngine from '../../../System/Contracts/DefineEngine.js';
 import { shouldRunNow } from '../../Automation/Scheduling/Scheduling.js';
 import { loadDataSources } from './loadDataSources.js';
 
@@ -515,7 +516,9 @@ export class AgentsEngine {
   }
 }
 
-export const engineMeta = {
+export const engineMeta = defineEngine({
+  id: 'agents',
+  provides: 'agentsEngine',
   needs: [
     'connectorEngine',
     'featureRegistry',
@@ -524,6 +527,11 @@ export const engineMeta = {
     'paths',
     'userService',
   ],
+  storage: {
+    key: 'agents',
+    featureKey: 'agents',
+    fileName: 'Agents.json',
+  },
   create: ({
     connectorEngine,
     featureRegistry,
@@ -531,14 +539,14 @@ export const engineMeta = {
     invalidateSystemPrompt,
     paths,
     userService,
-  }) => new AgentsEngine(featureStorage.agents, {
+  }) => new AgentsEngine(featureStorage.get('agents'), {
     connectorEngine,
     featureRegistry,
     invalidateSystemPrompt,
     paths,
     userService,
   }),
-};
+});
 
 
 

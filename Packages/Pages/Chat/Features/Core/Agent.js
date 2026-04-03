@@ -516,10 +516,14 @@ function buildToolResultContext(name, toolResult, success, remainingPlanned, ext
   return lines.join('\n');
 }
 
-export async function planRequest(userText) {
-  if (!state.selectedProvider || !state.selectedModel || !userText?.trim()) {
+export async function planRequest(messages) {
+  if (!state.selectedProvider || !state.selectedModel || !messages?.length) {
     return { skills: [], toolCalls: [] };
   }
+
+  const recentMessages = messages.slice(-4).map(m => {
+    return `${m.role.toUpperCase()}: ${m.content}`;
+  }).join('\n\n');
 
   const [skills, availableTools, workspaceSummary] = await Promise.all([
     loadEnabledSkills(),
@@ -534,10 +538,12 @@ export async function planRequest(userText) {
     'You are a planning assistant for an AI agent.',
     'Read the user request and decide which skills and tools are needed.',
     'Return exact tool calls, in order, with concrete parameters.',
+    'Always read the revelant skills first before responding to the user.',
     'If the same tool must be called multiple times with different parameters, list each call separately.',
     'If the user is asking what you know about them, their preferences, memory, profile, or prior context, do not plan tools unless they explicitly ask you to inspect a file, workspace, repo, account, email, or external service.',
     '',
-    `User request: "${userText}"`,
+    'Recent conversation:',
+    recentMessages,
     state.activeProject ? `\n${buildActiveProjectHint('planning')}` : '',
     workspaceSummary ? `\n${buildWorkspaceHint(workspaceSummary, 'planning')}` : '',
     `\n${workspaceFilePolicyHint}`,

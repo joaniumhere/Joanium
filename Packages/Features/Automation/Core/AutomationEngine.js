@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import defineEngine from '../../../System/Contracts/DefineEngine.js';
 import { loadActions } from './loadActions.js';
 import { shouldRunNow } from '../Scheduling/Scheduling.js';
 
@@ -172,8 +173,15 @@ export class AutomationEngine {
   }
 }
 
-export const engineMeta = {
+export const engineMeta = defineEngine({
+  id: 'automation',
+  provides: 'automationEngine',
   needs: ['connectorEngine', 'featureRegistry', 'featureStorage'],
+  storage: {
+    key: 'automation',
+    featureKey: 'automation',
+    fileName: 'Automations.json',
+  },
   create: ({ connectorEngine, featureRegistry, featureStorage }) =>
-    new AutomationEngine(featureStorage.automation, connectorEngine, featureRegistry),
-};
+    new AutomationEngine(featureStorage.get('automation'), connectorEngine, featureRegistry),
+});

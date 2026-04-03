@@ -23,21 +23,14 @@ function readJson(filePath) {
 export function createFeatureJsonStorage(paths, {
   featureKey,
   fileName,
-  legacyFilePath = '',
 } = {}) {
   const featureDir = path.join(paths.FEATURES_DATA_DIR, featureKey);
   const filePath = path.join(featureDir, fileName);
-  const legacyPaths = [legacyFilePath].filter(Boolean);
 
   function fallbackValue(fallback) {
     return typeof fallback === 'function'
       ? fallback()
       : deepClone(fallback);
-  }
-
-  function resolveSourcePath() {
-    if (fs.existsSync(filePath)) return filePath;
-    return legacyPaths.find(candidate => fs.existsSync(candidate)) ?? null;
   }
 
   return {
@@ -46,15 +39,7 @@ export function createFeatureJsonStorage(paths, {
     filePath,
 
     load(fallback = null) {
-      const sourcePath = resolveSourcePath();
-      const loaded = readJson(sourcePath);
-      const value = loaded ?? fallbackValue(fallback);
-
-      if (value != null && (!sourcePath || sourcePath !== filePath || loaded == null)) {
-        this.save(value);
-      }
-
-      return value;
+      return readJson(filePath) ?? fallbackValue(fallback);
     },
 
     save(data) {
@@ -64,38 +49,72 @@ export function createFeatureJsonStorage(paths, {
     },
 
     exists() {
-      return Boolean(resolveSourcePath());
+      return fs.existsSync(filePath);
     },
   };
 }
 
-export function createFeatureStorageMap(paths) {
+function normalizeRawDescriptors(raw = []) {
+  if (raw == null) return [];
+  return Array.isArray(raw) ? raw : [raw];
+}
+
+function normalizeDescriptor(paths, descriptor = {}) {
+  const key = String(descriptor.key ?? descriptor.id ?? '').trim();
+  const fileName = String(descriptor.fileName ?? '').trim();
+  if (!key || !fileName) return null;
+
+  return {
+    key,
+    featureKey: String(descriptor.featureKey ?? key).trim() || key,
+    fileName,
+  };
+}
+
+function collectStorageDescriptors(paths, { featureRegistry = null, engines = [] } = {}) {
+  const collected = [];
+
+  for (const engine of engines) {
+    collected.push(...normalizeRawDescriptors(engine.meta?.storage));
+  }
+
+  if (typeof featureRegistry?.getStorageDescriptors === 'function') {
+    collected.push(...featureRegistry.getStorageDescriptors());
+  }
+
+  const byKey = new Map();
+  for (const descriptor of collected) {
+    const normalized = normalizeDescriptor(paths, descriptor);
+    if (!normalized) continue;
+
+    if (byKey.has(normalized.key)) {
+      throw new Error(`[FeatureStorage] Duplicate storage key "${normalized.key}".`);
+    }
+
+    byKey.set(normalized.key, normalized);
+  }
+
+  return [...byKey.values()].sort((left, right) => left.key.localeCompare(right.key));
+}
+
+export function createFeatureStorageMap(paths, options = {}) {
+  const storages = Object.create(null);
+
+  for (const descriptor of collectStorageDescriptors(paths, options)) {
+    storages[descriptor.key] = createFeatureJsonStorage(paths, descriptor);
+  }
+
   return Object.freeze({
-    agents: createFeatureJsonStorage(paths, {
-      featureKey: 'agents',
-      fileName: 'Agents.json',
-      legacyFilePath: paths.AGENTS_FILE,
-    }),
-    automation: createFeatureJsonStorage(paths, {
-      featureKey: 'automation',
-      fileName: 'Automations.json',
-      legacyFilePath: paths.AUTOMATIONS_FILE,
-    }),
-    channelMessages: createFeatureJsonStorage(paths, {
-      featureKey: 'channels',
-      fileName: 'ChannelMessages.json',
-      legacyFilePath: paths.CHANNEL_MESSAGES_FILE,
-    }),
-    channels: createFeatureJsonStorage(paths, {
-      featureKey: 'channels',
-      fileName: 'Channels.json',
-      legacyFilePath: paths.CHANNELS_FILE,
-    }),
-    connectors: createFeatureJsonStorage(paths, {
-      featureKey: 'connectors',
-      fileName: 'Connectors.json',
-      legacyFilePath: paths.CONNECTORS_FILE,
-    }),
+    ...storages,
+    get(key) {
+      return storages[key] ?? null;
+    },
+    keys() {
+      return Object.keys(storages);
+    },
+    entries() {
+      return Object.entries(storages);
+    },
   });
 }
 

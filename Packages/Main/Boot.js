@@ -9,8 +9,8 @@ import { getBrowserPreviewService } from './Services/BrowserPreviewService.js';
 import { invalidate as invalidateSystemPrompt } from './Services/SystemPromptService.js';
 import * as UserService from './Services/UserService.js';
 
-function engineContextKey(name = '') {
-  return name.charAt(0).toLowerCase() + name.slice(1);
+function getProvidedKey(engine = {}) {
+  return engine.meta?.provides;
 }
 
 function unmetEngineNeeds(meta = {}, context = {}) {
@@ -20,23 +20,35 @@ function unmetEngineNeeds(meta = {}, context = {}) {
 export async function boot() {
   const featureRegistry = await FeatureRegistry.load(Paths.FEATURES_DIR);
   const browserPreviewService = getBrowserPreviewService();
-  const featureStorage = createFeatureStorageMap(Paths);
 
   // Discover engine modules and build them via engineMeta.create(context)
   const discovered = await discoverEngines(ENGINE_DISCOVERY_ROOTS);
+  const featureStorage = createFeatureStorageMap(Paths, {
+    featureRegistry,
+    engines: discovered,
+  });
+  const engines = {};
 
   // Build context incrementally so engines can request the same shared services.
   const context = {
     paths: Paths,
     featureRegistry,
     featureStorage,
+    engines,
     invalidateSystemPrompt,
     userService: UserService,
-    connectorEngine: null,
-    automationEngine: null,
-    agentsEngine: null,
-    channelEngine: null,
   };
+
+  const providers = new Map();
+  for (const engine of discovered) {
+    const key = getProvidedKey(engine);
+    if (providers.has(key)) {
+      throw new Error(
+        `[Boot] Duplicate engine provider "${key}" from ${providers.get(key)} and ${engine.filePath}`,
+      );
+    }
+    providers.set(key, engine.filePath);
+  }
 
   const pending = [...discovered];
   while (pending.length) {
@@ -52,7 +64,11 @@ export async function boot() {
 
       if (unmetEngineNeeds(meta, context).length) continue;
 
-      context[engineContextKey(name)] = meta.create(context);
+      const provideKey = getProvidedKey(pending[index]);
+      const instance = meta.create(context);
+
+      context[provideKey] = instance;
+      engines[provideKey] = instance;
       pending.splice(index, 1);
       index -= 1;
       progressed = true;
@@ -72,6 +88,7 @@ export async function boot() {
 
   featureRegistry.setBaseContext({
     connectorEngine: context.connectorEngine,
+    featureStorage,
     paths: Paths,
     invalidateSystemPrompt,
   });
@@ -92,14 +109,20 @@ export async function boot() {
   };
 }
 
-export function startEngines({ automationEngine, agentsEngine, channelEngine }) {
-  automationEngine?.start?.();
-  agentsEngine?.start?.();
-  channelEngine?.start?.();
+export function startEngines(payload = {}) {
+  const instances = payload.engines ?? Object.fromEntries(
+    Object.entries(payload).filter(([key]) => key.endsWith('Engine')),
+  );
+  for (const engine of Object.values(instances)) {
+    engine?.start?.();
+  }
 }
 
-export function stopEngines({ automationEngine, agentsEngine, channelEngine }) {
-  automationEngine?.stop?.();
-  agentsEngine?.stop?.();
-  channelEngine?.stop?.();
+export function stopEngines(payload = {}) {
+  const instances = payload.engines ?? Object.fromEntries(
+    Object.entries(payload).filter(([key]) => key.endsWith('Engine')),
+  );
+  for (const engine of Object.values(instances)) {
+    engine?.stop?.();
+  }
 }

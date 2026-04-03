@@ -1,6 +1,3 @@
-import { getBuiltinPage } from '../../../PageRegistry.js';
-export const pageMeta = getBuiltinPage('personas');
-
 import { getPersonasHTML } from './Templates/PersonasTemplate.js';
 import { createPersonaCardPool, getAvatarInitials } from './Components/PersonasCards.js';
 
@@ -78,7 +75,7 @@ function closeModal() {
 function updateBanner() {
   if (!activeBanner || !activeNameEl) return;
   activeBanner.hidden = false;
-  activeNameEl.textContent = _activePersona ? _activePersona.name : 'Default Assistant';
+  activeNameEl.textContent = _activePersona ? _activePersona.name : 'Joana';
 }
 
 function navigateToChat() {
@@ -94,14 +91,8 @@ function render(query = '') {
 
   if (!personasGrid || !_personaPool) return;
 
-  const defaultKeywords = 'default assistant helpful accurate contextual standard';
-  const lowerQuery = query.toLowerCase();
-  const showDefault = !query || defaultKeywords.includes(lowerQuery) || 'default assistant'.includes(lowerQuery);
-
   const filteredCustom = _allPersonas.filter(persona => matchesSearch(persona, query));
-  const visibleItems = [];
-  if (showDefault) visibleItems.push({ _isDefault: true });
-  visibleItems.push(...filteredCustom);
+  const visibleItems = [...filteredCustom];
 
   if (visibleItems.length === 0) {
     _personaPool.render([], null);
@@ -181,7 +172,8 @@ export function mount(outlet, { navigate }) {
     },
     onDeactivatePersona: async () => {
       await window.electronAPI?.invoke?.('reset-active-persona');
-      _activePersona = null;
+      const activeResult = await window.electronAPI?.invoke?.('get-active-persona');
+      _activePersona = activeResult?.persona ?? null;
       render(searchInput?.value?.trim() ?? '');
     },
     onChatPersona: async (persona) => {

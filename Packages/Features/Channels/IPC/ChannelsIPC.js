@@ -12,7 +12,7 @@ function persistMessages(messageStore, data) {
 
 export const ipcMeta = { needs: ['channelEngine', 'featureStorage'] };
 export function register(channelEngine, featureStorage) {
-  const messageStore = featureStorage.channelMessages;
+  const messageStore = featureStorage.get('channelMessages');
 
   ipcMain.handle('get-channels', () => {
     try { return { ok: true, channels: channelEngine.getAll() }; }

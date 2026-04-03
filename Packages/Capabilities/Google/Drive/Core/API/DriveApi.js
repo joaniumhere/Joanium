@@ -1,4 +1,8 @@
-﻿import { getFreshCreds } from '../../../GoogleWorkspace.js';
+async function getFreshGoogleCreds(creds) {
+  const { getFreshCreds } = await import('../../../GoogleWorkspace.js');
+  return getFreshCreds(creds);
+}
+
 
 const DRIVE_BASE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
@@ -24,7 +28,7 @@ const TEXT_MIMES = new Set([
 ]);
 
 async function driveFetch(credentials, url, options = {}) {
-  const fresh = await getFreshCreds(credentials);
+  const fresh = await getFreshGoogleCreds(credentials);
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -94,7 +98,7 @@ export async function getFileContent(credentials, fileId) {
   const exportConfig = EXPORT_MIMES[metadata.mimeType];
 
   if (exportConfig) {
-    const fresh = await getFreshCreds(credentials);
+    const fresh = await getFreshGoogleCreds(credentials);
     const response = await fetch(
       `${DRIVE_BASE}/files/${fileId}/export?mimeType=${encodeURIComponent(exportConfig.mime)}`,
       {
@@ -112,7 +116,7 @@ export async function getFileContent(credentials, fileId) {
   }
 
   if (TEXT_MIMES.has(metadata.mimeType) || metadata.mimeType?.startsWith('text/')) {
-    const fresh = await getFreshCreds(credentials);
+    const fresh = await getFreshGoogleCreds(credentials);
     const response = await fetch(`${DRIVE_BASE}/files/${fileId}?alt=media`, {
       headers: { Authorization: `Bearer ${fresh.accessToken}` },
     });
@@ -130,7 +134,7 @@ export async function getFileContent(credentials, fileId) {
 }
 
 export async function createFile(credentials, name, content, mimeType = 'text/plain', folderId = null) {
-  const fresh = await getFreshCreds(credentials);
+  const fresh = await getFreshGoogleCreds(credentials);
   const metadata = { name, mimeType, ...(folderId ? { parents: [folderId] } : {}) };
   const boundary = 'joanium_drive_boundary';
   const body = [
@@ -162,7 +166,7 @@ export async function createFile(credentials, name, content, mimeType = 'text/pl
 }
 
 export async function updateFileContent(credentials, fileId, content, mimeType = 'text/plain') {
-  const fresh = await getFreshCreds(credentials);
+  const fresh = await getFreshGoogleCreds(credentials);
   const response = await fetch(`${UPLOAD_BASE}/files/${fileId}?uploadType=media`, {
     method: 'PATCH',
     headers: {

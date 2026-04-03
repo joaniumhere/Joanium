@@ -1,3 +1,5 @@
+import defineEngine from '../../../System/Contracts/DefineEngine.js';
+
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -159,8 +161,15 @@ export class ConnectorEngine {
   }
 }
 
-export const engineMeta = {
+export const engineMeta = defineEngine({
+  id: 'connectors',
+  provides: 'connectorEngine',
   needs: ['featureRegistry', 'featureStorage'],
+  storage: {
+    key: 'connectors',
+    featureKey: 'connectors',
+    fileName: 'Connectors.json',
+  },
   create: ({ featureRegistry, featureStorage }) =>
-    new ConnectorEngine(featureStorage.connectors, featureRegistry),
-};
+    new ConnectorEngine(featureStorage.get('connectors'), featureRegistry),
+});

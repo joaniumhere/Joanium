@@ -63,7 +63,7 @@ async function doSendFromState() {
 
   if (lastUserMsg?.content) {
     try {
-      const plan = await planRequest(lastUserMsg.content);
+      const plan = await planRequest(state.messages);
       plannedSkills = plan.skills ?? [];
       for (const skillName of (plan.skills ?? [])) {
         const handle = live.push(`[SKILL] ${skillName}`);
@@ -188,7 +188,7 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
 
   if (text) {
     try {
-      const plan = await planRequest(text);
+      const plan = await planRequest(state.messages);
       plannedSkills = plan.skills ?? [];
 
       for (const skillName of (plan.skills ?? [])) {

@@ -1,6 +1,3 @@
-import { getBuiltinPage } from '../../../PageRegistry.js';
-export const pageMeta = getBuiltinPage('usage');
-
 import { REFRESH_BUTTON_HTML, CLEAR_BUTTON_HTML, ensureUsageStyles, getHTML } from './Templates/UsageTemplate.js';
 import { loadPricing, loadRecords, filteredRecords, computeStats, setRange, _records } from './Data/UsageData.js';
 import {

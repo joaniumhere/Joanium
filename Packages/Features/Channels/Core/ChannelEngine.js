@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import defineEngine from '../../../System/Contracts/DefineEngine.js';
 
 /* ══════════════════════════════════════════
    DEFAULT CHANNEL STATE
@@ -644,7 +645,21 @@ export class ChannelEngine {
   }
 }
 
-export const engineMeta = {
+export const engineMeta = defineEngine({
+  id: 'channels',
+  provides: 'channelEngine',
   needs: ['featureStorage'],
-  create: ({ featureStorage }) => new ChannelEngine(featureStorage.channels),
-};
+  storage: [
+    {
+      key: 'channels',
+      featureKey: 'channels',
+      fileName: 'Channels.json',
+    },
+    {
+      key: 'channelMessages',
+      featureKey: 'channels',
+      fileName: 'ChannelMessages.json',
+    },
+  ],
+  create: ({ featureStorage }) => new ChannelEngine(featureStorage.get('channels')),
+});

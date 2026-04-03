@@ -1,6 +1,3 @@
-import { getBuiltinPage } from '../../../PageRegistry.js';
-export const pageMeta = getBuiltinPage('agents');
-
 import { DATA_SOURCE_TYPES, loadAgentsFeatureRegistry } from './Config/Constants.js';
 import { createConfirmDialog } from './Components/ConfirmDialog.js';
 import { createAgentGrid } from './Components/Grid.js';
