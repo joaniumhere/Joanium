@@ -116,7 +116,7 @@ body.modal-open { overflow: hidden; }
   flex: 1 1 auto;
   min-height: 0;
   padding: 18px 30px 30px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .settings-modal-footer {
@@ -135,7 +135,8 @@ body.modal-open { overflow: hidden; }
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 24px;
-  min-height: 480px;
+  height: 100%;
+  min-height: 0;
 }
 
 .settings-tabs {
@@ -182,7 +183,19 @@ body.modal-open { overflow: hidden; }
 /* ══════════════════════════════════════════
    SETTINGS PANELS
 ══════════════════════════════════════════ */
-.settings-content { min-width: 0; min-height: 0; }
+.settings-content {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.settings-content::-webkit-scrollbar       { width: 4px; }
+.settings-content::-webkit-scrollbar-track { background: transparent; }
+.settings-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .settings-panel {
   width: 100%;
@@ -354,14 +367,6 @@ body.modal-open { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  overflow-y: auto;
-  padding-right: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-[data-settings-panel="providers"] {
-  max-height: min(480px, calc(100vh - 280px));
   overflow-y: auto;
   padding-right: 6px;
   scrollbar-width: thin;
@@ -694,7 +699,7 @@ body.modal-open { overflow: hidden; }
   .settings-shell {
     grid-template-columns: 1fr;
     gap: 18px;
-    min-height: auto;
+    height: auto;
   }
 
   .settings-tabs {
@@ -737,22 +742,6 @@ body.modal-open { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 18px;
-}
-
-[data-settings-panel="mcp"] {
-  max-height: min(480px, calc(100vh - 280px));
-  overflow-y: auto;
-  padding-right: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-[data-settings-panel="mcp"]::-webkit-scrollbar {
-  width: 4px;
-}
-
-[data-settings-panel="mcp"]::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 [data-settings-panel="mcp"]::-webkit-scrollbar-thumb {
