@@ -34,6 +34,11 @@ const SCOPES = [
   'https://www.googleapis.com/auth/documents',
   // Slides
   'https://www.googleapis.com/auth/presentations',
+  // Photos
+  'https://www.googleapis.com/auth/photoslibrary.readonly',
+  // Forms
+  'https://www.googleapis.com/auth/forms.body.readonly',
+  'https://www.googleapis.com/auth/forms.responses.readonly',
 ].join(' ');
 
 // Per-service probe endpoints (fast, minimal data)
@@ -68,6 +73,14 @@ const SERVICE_PROBES = {
   slides: {
     url: `https://www.googleapis.com/drive/v3/files?q=mimeType%3D'application%2Fvnd.google-apps.presentation'+and+trashed%3Dfalse&pageSize=1&fields=files(id)`,
     label: 'Google Slides',
+  },
+  photos: {
+    url: 'https://photoslibrary.googleapis.com/v1/albums?pageSize=1',
+    label: 'Google Photos',
+  },
+  forms: {
+    url: 'https://forms.googleapis.com/v1/forms', // 400 = API enabled; 404 = no form ID (expected)
+    label: 'Google Forms',
   },
 };
 
@@ -273,4 +286,6 @@ export const SERVICE_LABELS = {
   contacts: { icon: '👤', name: 'Google Contacts' },
   docs: { icon: '📄', name: 'Google Docs' },
   slides: { icon: '🖼️', name: 'Google Slides' },
+  photos: { icon: '🖼️', name: 'Google Photos' },
+  forms: { icon: '📋', name: 'Google Forms' },
 };
