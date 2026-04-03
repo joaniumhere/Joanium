@@ -26,6 +26,7 @@ const DEFAULT_KEY = '__default__';
  *   onActivatePersona: (persona: object) => Promise<void>,
  *   onDeactivatePersona: () => Promise<void>,
  *   onChatPersona: (persona: object) => Promise<void>,
+ *   onReadPersona: (persona: object) => void,
  * }} opts
  * @returns {{ render: Function, clear: Function }}
  */
@@ -36,6 +37,7 @@ export function createPersonaCardPool({
   onActivatePersona,
   onDeactivatePersona,
   onChatPersona,
+  onReadPersona,
 }) {
   /** @type {Map<string, HTMLElement>} */
   const pool = new Map();
@@ -65,17 +67,31 @@ export function createPersonaCardPool({
       <div class="persona-card-footer">
         <button class="persona-activate-btn" type="button" style="display:none">Set active</button>
         <button class="persona-status-btn" disabled style="display:none">Currently active</button>
-        <button class="persona-chat-btn" type="button">
+        <button class="persona-read-btn" type="button" title="Read persona">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="persona-chat-btn" type="button" title="Chat with persona">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Chat
         </button>
       </div>`;
 
     card.querySelector('.persona-activate-btn')?.addEventListener('click', async event => {
       event.stopPropagation();
       await onActivateDefault();
+    });
+
+    card.querySelector('.persona-read-btn')?.addEventListener('click', event => {
+      event.stopPropagation();
+      onReadPersona?.({
+        name: 'Default Assistant',
+        instructions: 'The standard Joanium AI — helpful, accurate, and contextually aware of your system, repos, and email.',
+        _isDefault: true,
+      });
     });
 
     card.querySelector('.persona-chat-btn')?.addEventListener('click', async event => {
@@ -116,11 +132,16 @@ export function createPersonaCardPool({
       <div class="persona-card-footer">
         <button class="persona-activate-btn" type="button" style="display:none">Activate</button>
         <button class="persona-deactivate-btn" type="button" style="display:none">Deactivate</button>
-        <button class="persona-chat-btn" type="button">
+        <button class="persona-read-btn" type="button" title="Read persona">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="persona-chat-btn" type="button" title="Chat with persona">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Chat
         </button>
       </div>`;
 
@@ -132,6 +153,11 @@ export function createPersonaCardPool({
     card.querySelector('.persona-deactivate-btn')?.addEventListener('click', async event => {
       event.stopPropagation();
       await onDeactivatePersona();
+    });
+
+    card.querySelector('.persona-read-btn')?.addEventListener('click', event => {
+      event.stopPropagation();
+      if (card._currentPersona) onReadPersona?.(card._currentPersona);
     });
 
     card.querySelector('.persona-chat-btn')?.addEventListener('click', async event => {

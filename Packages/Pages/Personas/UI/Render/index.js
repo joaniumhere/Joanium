@@ -1,17 +1,8 @@
-export const pageMeta = {
-  id: 'personas',
-  label: 'Personas',
-  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-           <circle cx="12" cy="8" r="4"/>
-           <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
-         </svg>`,
-  css: '../Personas/UI/Styles/PersonasPage.css',
-  order: 50,
-  section: 'top',
-};
+import { getBuiltinPage } from '../../../PageRegistry.js';
+export const pageMeta = getBuiltinPage('personas');
 
 import { getPersonasHTML } from './Templates/PersonasTemplate.js';
-import { createPersonaCardPool } from './Components/PersonasCards.js';
+import { createPersonaCardPool, getAvatarInitials } from './Components/PersonasCards.js';
 
 // ── Module-level refs (reset on each mount) ──────────────────────────────────
 let activeBanner  = null;
@@ -24,6 +15,11 @@ let _navigate     = null;
 let _activePersona = null;
 let _allPersonas  = [];
 let _personaPool  = null;
+let modalBackdrop  = null;
+let modalNameEl    = null;
+let modalAvatarEl  = null;
+let modalContent   = null;
+let modalCloseBtn  = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function matchesSearch(persona, query) {
@@ -33,6 +29,50 @@ function matchesSearch(persona, query) {
     .join(' ')
     .toLowerCase()
     .includes(lowerQuery);
+}
+
+function renderMarkdown(raw = '') {
+  let text = String(raw).replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '').trim();
+  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  html = html.replace(/```([\s\S]*?)```/g, (_match, inner) => {
+    const newlineIndex = inner.indexOf('\n');
+    const code = newlineIndex >= 0 ? inner.slice(newlineIndex + 1) : inner;
+    return `</p><pre><code>${code}</code></pre><p>`;
+  });
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/^### (.+)$/gm, '</p><h3>$1</h3><p>');
+  html = html.replace(/^## (.+)$/gm,  '</p><h2>$1</h2><p>');
+  html = html.replace(/^# (.+)$/gm,   '</p><h1>$1</h1><p>');
+  html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  html = `<p>${html}</p>`;
+  html = html.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>');
+  html = html.replace(/<p>\s*<\/p>/g, '').replace(/<p><br><\/p>/g, '');
+  return html;
+}
+
+function openModal(persona) {
+  if (!modalBackdrop || !modalNameEl || !modalContent) return;
+  modalNameEl.textContent = persona.name || 'Persona';
+  if (modalAvatarEl) {
+    if (persona._isDefault) {
+      modalAvatarEl.innerHTML = `<img src="../../../Assets/Logo/Logo.png" alt="Joanium" width="36" height="36">`;
+      modalAvatarEl.className = 'persona-modal-avatar persona-modal-avatar--default';
+    } else {
+      modalAvatarEl.textContent = getAvatarInitials(persona.name);
+      modalAvatarEl.className = 'persona-modal-avatar';
+    }
+  }
+  modalContent.innerHTML = renderMarkdown(persona.instructions || persona.description || '');
+  modalBackdrop.classList.add('open');
+  document.body.classList.add('modal-open');
+}
+
+function closeModal() {
+  modalBackdrop?.classList.remove('open');
+  document.body.classList.remove('modal-open');
 }
 
 function updateBanner() {
@@ -110,6 +150,11 @@ export function mount(outlet, { navigate }) {
   searchInput    = document.getElementById('personas-search');
   searchClearBtn = document.getElementById('personas-search-clear');
   countEl        = document.getElementById('personas-count');
+  modalBackdrop  = document.getElementById('persona-modal-backdrop');
+  modalNameEl    = document.getElementById('persona-modal-name');
+  modalAvatarEl  = document.getElementById('persona-modal-avatar');
+  modalContent   = document.getElementById('persona-modal-content');
+  modalCloseBtn  = document.getElementById('persona-modal-close');
   _navigate      = navigate;
 
   _activePersona = null;
@@ -146,6 +191,9 @@ export function mount(outlet, { navigate }) {
         await navigateToChat();
       }
     },
+    onReadPersona: (persona) => {
+      openModal(persona);
+    },
   });
 
   const onSearchInput = () => {
@@ -158,15 +206,25 @@ export function mount(outlet, { navigate }) {
     render('');
     searchInput?.focus();
   };
+  const onModalClose         = () => closeModal();
+  const onModalBackdropClick = e => { if (e.target === modalBackdrop) closeModal(); };
+  const onKeydown            = e => { if (e.key === 'Escape') closeModal(); };
 
+  modalCloseBtn?.addEventListener('click', onModalClose);
+  modalBackdrop?.addEventListener('click', onModalBackdropClick);
   searchInput?.addEventListener('input', onSearchInput);
   searchClearBtn?.addEventListener('click', onSearchClear);
+  document.addEventListener('keydown', onKeydown);
 
   load();
 
   return function cleanup() {
+    closeModal();
+    modalCloseBtn?.removeEventListener('click', onModalClose);
+    modalBackdrop?.removeEventListener('click', onModalBackdropClick);
     searchInput?.removeEventListener('input', onSearchInput);
     searchClearBtn?.removeEventListener('click', onSearchClear);
+    document.removeEventListener('keydown', onKeydown);
 
     _personaPool?.clear();
     _personaPool = null;
@@ -177,5 +235,10 @@ export function mount(outlet, { navigate }) {
     searchClearBtn = null;
     countEl        = null;
     _navigate      = null;
+    modalBackdrop  = null;
+    modalNameEl    = null;
+    modalAvatarEl  = null;
+    modalContent   = null;
+    modalCloseBtn  = null;
   };
 }

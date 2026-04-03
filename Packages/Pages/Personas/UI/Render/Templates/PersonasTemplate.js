@@ -35,5 +35,24 @@ export function getPersonasHTML() {
     <div id="personas-grid" class="personas-grid"></div>
   </div>
 </main>
+
+<div id="persona-modal-backdrop">
+  <div id="persona-modal">
+    <div class="persona-modal-header">
+      <div class="persona-modal-title-group">
+        <div class="persona-modal-avatar" id="persona-modal-avatar"></div>
+        <div class="persona-modal-name" id="persona-modal-name">Persona</div>
+      </div>
+      <button class="settings-modal-close" id="persona-modal-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+        </svg>
+      </button>
+    </div>
+    <div class="persona-modal-body">
+      <div class="persona-modal-content" id="persona-modal-content"></div>
+    </div>
+  </div>
+</div>
 `;
 }
