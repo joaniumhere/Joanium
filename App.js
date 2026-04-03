@@ -1,12 +1,12 @@
 import { app, BrowserWindow } from 'electron';
 import fs from 'fs';
 
-import Paths from './Packages/Main/Core/Paths.js';
-import { create as createWindow } from './Packages/Main/Core/Window.js';
-import { isFirstRun } from './Packages/Main/Services/UserService.js';
-import { boot, startEngines, stopEngines } from './Packages/Main/Boot.js';
-import { BUILTIN_BROWSER_USER_AGENT } from './Packages/Main/Services/BrowserPreviewService.js';
-import * as MCPIPC from './Packages/Features/MCP/IPC/MCPIPC.js';
+import * as MCPIPC from '#features/MCP/IPC/MCPIPC.js';
+import { boot, startEngines, stopEngines } from '#main/Boot.js';
+import Paths from '#main/Core/Paths.js';
+import { create as createWindow } from '#main/Core/Window.js';
+import { BUILTIN_BROWSER_USER_AGENT } from '#main/Services/BrowserPreviewService.js';
+import { isFirstRun } from '#main/Services/UserService.js';
 
 app.commandLine.appendSwitch('disable-http2');
 app.commandLine.appendSwitch('lang', 'en-US');

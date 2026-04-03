@@ -1,4 +1,3 @@
-import fs   from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -34,8 +33,8 @@ export async function runAction(action, connectorEngine = null) {
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export class AutomationEngine {
-  constructor(automationsFilePath, connectorEngine = null, featureRegistry = null) {
-    this.filePath        = automationsFilePath;
+  constructor(storage, connectorEngine = null, featureRegistry = null) {
+    this.storage = storage;
     this.connectorEngine = connectorEngine;
     this.featureRegistry = featureRegistry;
     this.automations     = [];
@@ -94,13 +93,8 @@ export class AutomationEngine {
 
   _load() {
     try {
-      if (fs.existsSync(this.filePath)) {
-        const raw  = fs.readFileSync(this.filePath, 'utf-8');
-        const data = JSON.parse(raw);
-        this.automations = Array.isArray(data.automations) ? data.automations : [];
-      } else {
-        this.automations = [];
-      }
+      const data = this.storage.load(() => ({ automations: [] }));
+      this.automations = Array.isArray(data?.automations) ? data.automations : [];
     } catch (err) {
       console.error('[AutomationEngine] _load error:', err);
       this.automations = [];
@@ -109,13 +103,7 @@ export class AutomationEngine {
 
   _persist() {
     try {
-      const dir = path.dirname(this.filePath);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(
-        this.filePath,
-        JSON.stringify({ automations: this.automations }, null, 2),
-        'utf-8',
-      );
+      this.storage.save({ automations: this.automations });
     } catch (err) {
       console.error('[AutomationEngine] _persist error:', err);
     }
@@ -185,7 +173,7 @@ export class AutomationEngine {
 }
 
 export const engineMeta = {
-  needs: ['connectorEngine', 'featureRegistry'],
-  create: ({ paths, connectorEngine, featureRegistry }) =>
-    new AutomationEngine(paths.AUTOMATIONS_FILE, connectorEngine, featureRegistry),
+  needs: ['connectorEngine', 'featureRegistry', 'featureStorage'],
+  create: ({ connectorEngine, featureRegistry, featureStorage }) =>
+    new AutomationEngine(featureStorage.automation, connectorEngine, featureRegistry),
 };

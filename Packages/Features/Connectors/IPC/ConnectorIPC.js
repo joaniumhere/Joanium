@@ -1,8 +1,9 @@
 import { ipcMain } from 'electron';
-import { invalidate as invalidateSysPrompt } from '../../../Main/Services/SystemPromptService.js';
 
-export const ipcMeta = { needs: ['connectorEngine', 'featureRegistry'] };
-export function register(connectorEngine, featureRegistry = null) {
+export const ipcMeta = { needs: ['connectorEngine', 'featureRegistry', 'systemPromptService'] };
+export function register(connectorEngine, featureRegistry = null, systemPromptService = null) {
+  const invalidateSysPrompt = () => systemPromptService?.invalidate?.();
+
   ipcMain.handle('get-connectors', () => {
     try { return connectorEngine.getAll(); }
     catch (err) { console.error('[ConnectorIPC] get-connectors error:', err); return {}; }

@@ -1,12 +1,8 @@
 ﻿import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { fileURLToPath } from 'url';
 import { shouldRunNow } from '../../Automation/Scheduling/Scheduling.js';
 import { loadDataSources } from './loadDataSources.js';
-import Paths from '../../../Main/Core/Paths.js';
-import { readText, writeText } from '../../../Main/Services/UserService.js';
-import { invalidate } from '../../../Main/Services/SystemPromptService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,9 +11,9 @@ const DATA_SOURCES_DIR = path.resolve(__dirname, '..', 'DataSources');
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    USAGE TRACKING
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-async function trackUsage({ provider, model, modelName, inputTokens, outputTokens }) {
+async function trackUsage({ usageFile, provider, model, modelName, inputTokens, outputTokens }) {
   try {
-    const usageFile = Paths.USAGE_FILE;
+    if (!usageFile) return;
     const dir = path.dirname(usageFile);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
@@ -123,7 +119,7 @@ async function callModel(providerData, modelId, systemPrompt, userMessage) {
   };
 }
 
-async function callAIWithFailover(agent, systemPrompt, userMessage, allProviders) {
+async function callAIWithFailover(agent, systemPrompt, userMessage, allProviders, usageFile = '') {
   const candidates = [];
   if (agent.primaryModel?.provider && agent.primaryModel?.modelId) {
     const p = allProviders.find(x => x.provider === agent.primaryModel.provider);
@@ -141,6 +137,7 @@ async function callAIWithFailover(agent, systemPrompt, userMessage, allProviders
     try {
       const result = await callModel(provider, modelId, systemPrompt, userMessage);
       await trackUsage({
+        usageFile,
         provider: provider.provider,
         model: modelId,
         modelName: provider.models?.[modelId]?.name ?? modelId,
@@ -212,9 +209,10 @@ async function collectData(job, connectorEngine, featureRegistry = null) {
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    OUTPUT EXECUTORS
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-export async function executeOutput(output, aiResponse, agent, job, connectorEngine) {
+export async function executeOutput(output, aiResponse, agent, job, connectorEngine, dependencies = {}) {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const { invalidateSystemPrompt = () => {}, paths = {}, userService = {} } = dependencies;
 
   switch (output?.type) {
 
@@ -252,12 +250,13 @@ export async function executeOutput(output, aiResponse, agent, job, connectorEng
 
     case 'append_to_memory': {
       try {
+        if (!paths.MEMORY_FILE) break;
         const ts = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        writeText(
-          Paths.MEMORY_FILE,
-          (readText(Paths.MEMORY_FILE) || '') + `\n\n--- Agent: ${agent.name} (${ts}) ---\n${aiResponse}`
+        userService.writeText?.(
+          paths.MEMORY_FILE,
+          (userService.readText?.(paths.MEMORY_FILE) || '') + `\n\n--- Agent: ${agent.name} (${ts}) ---\n${aiResponse}`
         );
-        invalidate();
+        invalidateSystemPrompt();
       } catch (err) { console.error('[AgentsEngine] append_to_memory failed:', err.message); }
       break;
     }
@@ -284,10 +283,19 @@ export async function executeOutput(output, aiResponse, agent, job, connectorEng
    AGENTS ENGINE CLASS
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 export class AgentsEngine {
-  constructor(agentsFilePath, connectorEngine = null, featureRegistry = null) {
-    this.filePath = agentsFilePath;
+  constructor(storage, {
+    connectorEngine = null,
+    featureRegistry = null,
+    paths = {},
+    userService = {},
+    invalidateSystemPrompt = () => {},
+  } = {}) {
+    this.storage = storage;
     this.connectorEngine = connectorEngine;
     this.featureRegistry = featureRegistry;
+    this.invalidateSystemPrompt = invalidateSystemPrompt;
+    this.paths = paths;
+    this.userService = userService;
     this.agents = [];
     this._ticker = null;
     this._running = new Map();
@@ -361,20 +369,14 @@ export class AgentsEngine {
 
   _load() {
     try {
-      if (fs.existsSync(this.filePath)) {
-        const data = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
-        this.agents = Array.isArray(data.agents) ? data.agents : [];
-      } else {
-        this.agents = [];
-      }
+      const data = this.storage.load(() => ({ agents: [] }));
+      this.agents = Array.isArray(data?.agents) ? data.agents : [];
     } catch (err) { console.error('[AgentsEngine] _load error:', err); this.agents = []; }
   }
 
   _persist() {
     try {
-      const dir = path.dirname(this.filePath);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(this.filePath, JSON.stringify({ agents: this.agents }, null, 2), 'utf-8');
+      this.storage.save({ agents: this.agents });
     } catch (err) { console.error('[AgentsEngine] _persist error:', err); }
   }
 
@@ -431,8 +433,7 @@ export class AgentsEngine {
     try {
       const dataText = await collectData(job, this.connectorEngine, this.featureRegistry);
 
-      const { readModelsWithKeys } = await import('../../../Main/Services/UserService.js');
-      const allProviders = readModelsWithKeys();
+      const allProviders = this.userService.readModelsWithKeys?.() ?? [];
 
       const systemPrompt = [
         `You are ${agent.name}, a proactive AI agent.`,
@@ -450,7 +451,13 @@ export class AgentsEngine {
         job.instruction ?? 'Analyze the above data and provide a helpful, actionable summary.',
       ].join('\n');
 
-      const aiResponse = await callAIWithFailover(agent, systemPrompt, userMessage, allProviders);
+      const aiResponse = await callAIWithFailover(
+        agent,
+        systemPrompt,
+        userMessage,
+        allProviders,
+        this.paths.USAGE_FILE,
+      );
       const trimmed = aiResponse.trim();
       const isNothing = trimmed === '[NOTHING]' || trimmed.toUpperCase() === '[NOTHING]';
 
@@ -476,7 +483,11 @@ export class AgentsEngine {
         if (featureOutput?.handled) {
           await featureOutput.result;
         } else {
-          await executeOutput(job.output ?? {}, trimmed, agent, job, this.connectorEngine);
+          await executeOutput(job.output ?? {}, trimmed, agent, job, this.connectorEngine, {
+            invalidateSystemPrompt: this.invalidateSystemPrompt,
+            paths: this.paths,
+            userService: this.userService,
+          });
         }
         entry.acted = true;
       }
@@ -505,9 +516,28 @@ export class AgentsEngine {
 }
 
 export const engineMeta = {
-  needs: ['connectorEngine', 'featureRegistry'],
-  create: ({ paths, connectorEngine, featureRegistry }) =>
-    new AgentsEngine(paths.AGENTS_FILE, connectorEngine, featureRegistry),
+  needs: [
+    'connectorEngine',
+    'featureRegistry',
+    'featureStorage',
+    'invalidateSystemPrompt',
+    'paths',
+    'userService',
+  ],
+  create: ({
+    connectorEngine,
+    featureRegistry,
+    featureStorage,
+    invalidateSystemPrompt,
+    paths,
+    userService,
+  }) => new AgentsEngine(featureStorage.agents, {
+    connectorEngine,
+    featureRegistry,
+    invalidateSystemPrompt,
+    paths,
+    userService,
+  }),
 };
 
 

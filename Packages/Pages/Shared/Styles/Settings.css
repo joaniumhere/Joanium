@@ -115,6 +115,8 @@ body.modal-open { overflow: hidden; }
 .settings-modal-body {
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: 18px 30px 30px;
   overflow: hidden;
 }
@@ -135,7 +137,7 @@ body.modal-open { overflow: hidden; }
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 24px;
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
 }
 
@@ -362,20 +364,13 @@ body.modal-open { overflow: hidden; }
    Properly scoped so nothing leaks out.
 ══════════════════════════════════════════ */
 
-/* Scrollable container */
+/* Scrollable container (legacy, now handled by .settings-content) */
 .providers-stack {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  overflow-y: auto;
   padding-right: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
 }
-
-.providers-stack::-webkit-scrollbar       { width: 4px; }
-.providers-stack::-webkit-scrollbar-track { background: transparent; }
-.providers-stack::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 /* Each provider row */
 .spr-row {
@@ -713,7 +708,6 @@ body.modal-open { overflow: hidden; }
   .settings-panel-header h3 { font-size: 20px; }
 
   .providers-stack {
-    max-height: min(280px, calc(100vh - 400px));
     padding-right: 4px;
   }
 
@@ -1119,7 +1113,7 @@ body.modal-open { overflow: hidden; }
 }
 
 [data-settings-panel="providers"] {
-  max-height: min(520px, calc(100vh - 260px));
+  padding-right: 4px;
 }
 
 .spr-row {
@@ -1427,11 +1421,7 @@ body.modal-open { overflow: hidden; }
    Scoped to avoid collisions with .cx-* (Connectors)
 ══════════════════════════════════════════ */
 [data-settings-panel="channels"] {
-  max-height: min(480px, calc(100vh - 280px));
-  overflow-y: auto;
-  padding-right: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  padding-right: 4px;
 }
 
 .channels-settings-panel { display: flex; flex-direction: column; gap: 0; }

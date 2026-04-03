@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "description": "Your AI assistant.",
   "type": "module",
+  "imports": {
+    "#capabilities/*": "./Packages/Capabilities/*",
+    "#core/*": "./Core/*",
+    "#features/*": "./Packages/Features/*",
+    "#main/*": "./Packages/Main/*",
+    "#modals/*": "./Packages/Modals/*",
+    "#pages/*": "./Packages/Pages/*",
+    "#renderer/*": "./Packages/Renderer/*",
+    "#system/*": "./Packages/System/*"
+  },
   "main": "App.js",
   "scripts": {
     "start": "electron .",

@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import { randomUUID } from 'crypto';
 
 /* ══════════════════════════════════════════
@@ -316,8 +314,8 @@ function splitIntoChunks(text, maxLen) {
    pipeline (agentLoop + tools + usage tracking).
 ══════════════════════════════════════════ */
 export class ChannelEngine {
-  constructor(filePath) {
-    this.filePath = filePath;
+  constructor(storage) {
+    this.storage = storage;
     this._data = null;
     this._ticker = null;
     this._processing = false;
@@ -364,12 +362,7 @@ export class ChannelEngine {
   /* ── Private helpers ── */
   _load() {
     try {
-      if (fs.existsSync(this.filePath)) {
-        const raw = fs.readFileSync(this.filePath, 'utf-8');
-        this._data = JSON.parse(raw);
-      } else {
-        this._data = JSON.parse(JSON.stringify(DEFAULT_STATE));
-      }
+      this._data = this.storage.load(() => JSON.parse(JSON.stringify(DEFAULT_STATE)));
     } catch {
       this._data = JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
@@ -380,14 +373,12 @@ export class ChannelEngine {
   }
 
   _persist() {
-    const dir = path.dirname(this.filePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     const toSave = JSON.parse(JSON.stringify(this._data));
     delete toSave.channels.whatsapp._seenSids;
     // Strip runtime-only cache fields
     delete toSave.channels.discord._botUserId;
     delete toSave.channels.slack._botUserId;
-    fs.writeFileSync(this.filePath, JSON.stringify(toSave, null, 2), 'utf-8');
+    this.storage.save(toSave);
   }
 
   /* ── Public channel management API ── */
@@ -654,5 +645,6 @@ export class ChannelEngine {
 }
 
 export const engineMeta = {
-  create: ({ paths }) => new ChannelEngine(paths.CHANNELS_FILE),
+  needs: ['featureStorage'],
+  create: ({ featureStorage }) => new ChannelEngine(featureStorage.channels),
 };

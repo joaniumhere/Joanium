@@ -1,13 +1,5 @@
-export const pageMeta = {
-  id: 'automations',
-  label: 'Automations',
-  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-           <path d="M13 2L4.5 13H11l-1 9L20.5 11H14L13 2z" stroke-linejoin="round"/>
-         </svg>`,
-  css: '../Automations/UI/Styles/AutomationsPage.css',
-  order: 20,
-  section: 'top',
-};
+import { getBuiltinPage } from '../../../PageRegistry.js';
+export const pageMeta = getBuiltinPage('automations');
 
 import { loadAutomationFeatureRegistry } from './Config/Constants.js';
 import { escapeHtml, formatActionsSummary, formatLastRun, getTriggerPresentation, generateId } from './Utils/Utils.js';

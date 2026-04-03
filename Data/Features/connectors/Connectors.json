@@ -1,0 +1,154 @@
+{
+  "connectors": {
+    "github": {
+      "enabled": true,
+      "credentials": {
+        "token": "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",
+        "username": "withinJoel",
+        "avatar": "https://avatars.githubusercontent.com/u/128782382?v=4"
+      },
+      "connectedAt": "2026-03-18T04:04:07.687Z",
+      "isFree": false,
+      "noKey": false
+    },
+    "open_meteo": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "coingecko": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "exchange_rate": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "treasury": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "fred": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": false,
+      "credentials": {
+        "apiKey": ""
+      },
+      "connectedAt": null
+    },
+    "openweathermap": {
+      "enabled": false,
+      "isFree": true,
+      "noKey": false,
+      "credentials": {
+        "apiKey": ""
+      },
+      "connectedAt": null
+    },
+    "unsplash": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": false,
+      "credentials": {
+        "apiKey": "d7fAkC6TUa8UamBJGZOWelsuPyIgNDwjns83hcuh4Kc"
+      },
+      "connectedAt": null
+    },
+    "wikipedia": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "ipgeo": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "funfacts": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "jokeapi": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "quotes": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "restcountries": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "hackernews": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "cleanuri": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": true,
+      "credentials": {},
+      "connectedAt": null
+    },
+    "nasa": {
+      "enabled": true,
+      "isFree": true,
+      "noKey": false,
+      "credentials": {
+        "apiKey": ""
+      },
+      "connectedAt": null
+    },
+    "google": {
+      "enabled": true,
+      "isFree": false,
+      "credentials": {
+        "accessToken": "ya29.a0Aa7MYirzVzmtweCdILlJOkXsUbbZp9C8xvS-uh54WEK89chEpCyamO3Js8486UiwiPhoyuH6P02HoD9nnNkIxM13nhokOf32zFlJktmY9RFzUd_LV7uY1tWUTyJrhhA4zUYw3ZcQPCerLhOOhtka3yUDEUIAWXUOO6KVSySJbUqcfyTDnweAH6XzRQvppoW29bEaXQokaCgYKAYISARESFQHGX2Mi2JCjm_2uKRw-gyEyYtYstg0207",
+        "refreshToken": "1//0gcF3KQac0BRgCgYIARAAGBASNwF-L9Ir87NAf2knY60kmKHubYKpz5XGxeY5UQEwxl8ITZaTKMjHkkxBRLdTP2BvWTQw8hNXE-Y",
+        "tokenExpiry": 1775220130912,
+        "email": "joeljollyhere@gmail.com",
+        "clientId": "859977699490-ukb26f108i4hun7qapm1lbjr0u1et0tk.apps.googleusercontent.com",
+        "clientSecret": "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",
+        "services": {
+          "drive": true,
+          "gmail": true,
+          "calendar": true
+        }
+      },
+      "connectedAt": "2026-03-30T05:24:20.869Z",
+      "noKey": false
+    }
+  }
+}

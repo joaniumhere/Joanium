@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { app } from 'electron';
+import { PAGE_DISCOVERY_ROOT } from './DiscoveryManifest.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,7 +45,7 @@ export const Paths = {
   FEATURES_DIR: path.join(ROOT, 'Packages', 'Capabilities'),
 
   // Pages (renderer)
-  PAGES_DIR: path.join(ROOT, 'Packages', 'Pages'),
+  PAGES_DIR: PAGE_DISCOVERY_ROOT,
 
   // Preload
   PRELOAD: path.join(ROOT, 'Core', 'Electron', 'Bridge', 'Preload.js'),

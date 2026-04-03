@@ -1,6 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -15,8 +12,8 @@ function buildDefaultState(featureRegistry = null) {
 }
 
 export class ConnectorEngine {
-  constructor(filePath, featureRegistry = null) {
-    this.filePath = filePath;
+  constructor(storage, featureRegistry = null) {
+    this.storage = storage;
     this.featureRegistry = featureRegistry;
     this._data = null;
   }
@@ -25,12 +22,7 @@ export class ConnectorEngine {
     const defaultState = buildDefaultState(this.featureRegistry);
 
     try {
-      if (fs.existsSync(this.filePath)) {
-        const raw = fs.readFileSync(this.filePath, 'utf-8');
-        this._data = JSON.parse(raw);
-      } else {
-        this._data = deepClone(defaultState);
-      }
+      this._data = this.storage.load(() => deepClone(defaultState));
     } catch {
       this._data = deepClone(defaultState);
     }
@@ -49,9 +41,7 @@ export class ConnectorEngine {
 
   _persist() {
     try {
-      const dir = path.dirname(this.filePath);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(this.filePath, JSON.stringify(this._data, null, 2), 'utf-8');
+      this.storage.save(this._data);
     } catch (err) {
       console.error('[ConnectorEngine] _persist error:', err);
     }
@@ -170,7 +160,7 @@ export class ConnectorEngine {
 }
 
 export const engineMeta = {
-  needs: ['featureRegistry'],
-  create: ({ paths, featureRegistry }) =>
-    new ConnectorEngine(paths.CONNECTORS_FILE, featureRegistry),
+  needs: ['featureRegistry', 'featureStorage'],
+  create: ({ featureRegistry, featureStorage }) =>
+    new ConnectorEngine(featureStorage.connectors, featureRegistry),
 };

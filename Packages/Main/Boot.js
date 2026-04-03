@@ -1,35 +1,13 @@
 import FeatureRegistry from '../Capabilities/Core/FeatureRegistry.js';
 import { setConnectorEngine as setGoogleConnectorEngine } from '../Capabilities/Google/GoogleWorkspace.js';
-
-import { getBrowserPreviewService } from './Services/BrowserPreviewService.js';
-import { invalidate as invalidateSystemPrompt } from './Services/SystemPromptService.js';
-
-import Paths from './Core/Paths.js';
+import createFeatureStorageMap from '../Features/Core/FeatureStorage.js';
+import { IPC_SCAN_DIRS, SERVICE_SCAN_DIRS, ENGINE_DISCOVERY_ROOTS } from './Core/DiscoveryManifest.js';
 import { discoverAndRegisterIPC } from './Core/DiscoverIPC.js';
 import { discoverEngines } from './Core/EngineDiscovery.js';
-
-import { fileURLToPath } from 'url';
-import path from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PACKAGES_DIR = path.resolve(__dirname, '..');
-
-const IPC_SCAN_DIRS = [
-  path.join(PACKAGES_DIR, 'Main', 'IPC'),
-  path.join(PACKAGES_DIR, 'Features'),
-];
-
-const SERVICE_SCAN_DIRS = [
-  path.join(PACKAGES_DIR, 'Main', 'Services'),
-];
-
-const ENGINE_SCAN_DIRS = [
-  path.join(PACKAGES_DIR, 'Features', 'Connectors', 'Core'),
-  path.join(PACKAGES_DIR, 'Features', 'Automation', 'Core'),
-  path.join(PACKAGES_DIR, 'Features', 'Agents', 'Core'),
-  path.join(PACKAGES_DIR, 'Features', 'Channels', 'Core'),
-];
+import Paths from './Core/Paths.js';
+import { getBrowserPreviewService } from './Services/BrowserPreviewService.js';
+import { invalidate as invalidateSystemPrompt } from './Services/SystemPromptService.js';
+import * as UserService from './Services/UserService.js';
 
 function engineContextKey(name = '') {
   return name.charAt(0).toLowerCase() + name.slice(1);
@@ -41,16 +19,19 @@ function unmetEngineNeeds(meta = {}, context = {}) {
 
 export async function boot() {
   const featureRegistry = await FeatureRegistry.load(Paths.FEATURES_DIR);
-
   const browserPreviewService = getBrowserPreviewService();
+  const featureStorage = createFeatureStorageMap(Paths);
 
   // Discover engine modules and build them via engineMeta.create(context)
-  const discovered = await discoverEngines(ENGINE_SCAN_DIRS);
+  const discovered = await discoverEngines(ENGINE_DISCOVERY_ROOTS);
 
-  // Build context incrementally — engines can reference previously-created ones
+  // Build context incrementally so engines can request the same shared services.
   const context = {
     paths: Paths,
     featureRegistry,
+    featureStorage,
+    invalidateSystemPrompt,
+    userService: UserService,
     connectorEngine: null,
     automationEngine: null,
     agentsEngine: null,
@@ -95,10 +76,8 @@ export async function boot() {
     invalidateSystemPrompt,
   });
 
-  // Register IPC modules — pass all engines + services as context
   const registered = await discoverAndRegisterIPC(IPC_SCAN_DIRS, {
     ...context,
-    featureRegistry,
     browserPreviewService,
   }, {
     serviceDirs: SERVICE_SCAN_DIRS,

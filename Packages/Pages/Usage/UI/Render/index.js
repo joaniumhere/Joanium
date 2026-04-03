@@ -1,14 +1,5 @@
-export const pageMeta = {
-  id: 'usage',
-  label: 'Usage',
-  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-           <rect x="2" y="3" width="20" height="14" rx="2"/>
-           <path d="M8 21h8M12 17v4" stroke-linecap="round"/>
-         </svg>`,
-  css: '../Usage/UI/Styles/UsagePage.css',
-  order: 70,
-  section: 'bottom',
-};
+import { getBuiltinPage } from '../../../PageRegistry.js';
+export const pageMeta = getBuiltinPage('usage');
 
 import { REFRESH_BUTTON_HTML, CLEAR_BUTTON_HTML, ensureUsageStyles, getHTML } from './Templates/UsageTemplate.js';
 import { loadPricing, loadRecords, filteredRecords, computeStats, setRange, _records } from './Data/UsageData.js';

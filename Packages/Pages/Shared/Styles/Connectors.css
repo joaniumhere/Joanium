@@ -354,26 +354,5 @@
 ══════════════════════════════════════════ */
 
 [data-settings-panel="connectors"] {
-  max-height: min(480px, calc(100vh - 280px));
-  overflow-y: auto;
-  padding-right: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-[data-settings-panel="connectors"]::-webkit-scrollbar {
-  width: 4px;
-}
-
-[data-settings-panel="connectors"]::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-[data-settings-panel="connectors"]::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-
-[data-settings-panel="connectors"]::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  padding-right: 4px;
 }
