@@ -4,10 +4,17 @@ import { chatMessages } from '../../../Shared/Core/DOM.js';
 import { openHtmlPreviewModal } from '../../../../Modals/HtmlPreviewModal.js';
 import { copyIcon, checkIcon, editIcon, retryIcon, assistantIcon } from './ChatIcons.js';
 import { buildTokenFooter, updateTimeline } from './ChatTimeline.js';
+import {
+  cloneSubAgentRunAttachment,
+  createLiveSubAgentRunTracker,
+  createSubAgentRunElement,
+  isSubAgentRunAttachment,
+} from './SubAgentPanels.js';
 
 const RENDER_THROTTLE_MS = 80;
 
 const BROWSER_TOOL_LABELS = {
+  spawn_sub_agents: 'Delegating to focused sub-agents...',
   browser_navigate: 'Opening the website...',
   browser_snapshot: 'Reading the current page...',
   browser_click: 'Clicking on the page...',
@@ -165,6 +172,10 @@ function isSupportedAttachment(attachment) {
 
   if (attachment.type === 'photo_gallery') {
     return Array.isArray(attachment.photos) && attachment.photos.length > 0;
+  }
+
+  if (attachment.type === 'subagent_run') {
+    return isSubAgentRunAttachment(attachment);
   }
 
   return false;
@@ -424,6 +435,7 @@ export function createLiveRow(doSendFromStateFn) {
   let _cursorEl = null;
   let _thinkingState = 'working';
   let _replyAttachments = [];
+  const _subAgentTracker = createLiveSubAgentRunTracker(replyMediaEl);
   // Tracks whether any expandable content has arrived (log items or reasoning).
   // The caret is shown only once this is true.
   let _hasContent = false;
@@ -530,6 +542,26 @@ export function createLiveRow(doSendFromStateFn) {
       smoothScrollToBottom();
     },
 
+    showSubAgentRun(run) {
+      if (!run) return;
+      _replyAttachments.push(cloneSubAgentRunAttachment(run));
+      replyMediaEl.appendChild(createSubAgentRunElement(run));
+      smoothScrollToBottom();
+    },
+
+    getToolExecutionHooks(toolName) {
+      return {
+        signal: null,
+        onSubAgentEvent:
+          String(toolName ?? '') === 'spawn_sub_agents'
+            ? (event) => {
+                _subAgentTracker.onEvent(event);
+                smoothScrollToBottom();
+              }
+            : null,
+      };
+    },
+
     stream(chunk) {
       if (!_streamActive) {
         _streamActive = true;
@@ -631,7 +663,11 @@ export function createLiveRow(doSendFromStateFn) {
     },
 
     getAttachments() {
-      return _replyAttachments.map((attachment) => {
+      const subAgentAttachments = _subAgentTracker.getAttachments();
+      const allAttachments = [..._replyAttachments, ...subAgentAttachments];
+
+      return allAttachments.map((attachment) => {
+        if (attachment.type === 'subagent_run') return cloneSubAgentRunAttachment(attachment);
         if (attachment.type === 'photo_gallery') return clonePhotoGalleryAttachment(attachment);
         return { ...attachment };
       });
@@ -988,7 +1024,9 @@ export function appendMessage(
       richMediaEl.className = 'agent-reply-media';
 
       msg.attachments.forEach((attachment) => {
-        if (attachment.type === 'photo_gallery') {
+        if (attachment.type === 'subagent_run') {
+          richMediaEl.appendChild(createSubAgentRunElement(attachment));
+        } else if (attachment.type === 'photo_gallery') {
           richMediaEl.appendChild(createPhotoGalleryElement(attachment));
         } else if (attachment.type === 'image') {
           richMediaEl.appendChild(buildImageFrame(attachment, 'bubble-attachment'));

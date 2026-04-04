@@ -19,12 +19,29 @@ import { SEARCH_TOOLS } from '../Search/Tools.js';
 import { DICTIONARY_TOOLS } from '../Dictionary/Tools.js';
 import { DATETIME_TOOLS } from '../DateTime/Tools.js';
 import { PASSWORD_TOOLS } from '../Password/Tools.js';
+import { SUBAGENT_TOOLS } from '../SubAgents/Tools.js';
 
 export {
-  WEATHER_TOOLS, CRYPTO_TOOLS, FINANCE_TOOLS, PHOTO_TOOLS,
-  WIKI_TOOLS, GEO_TOOLS, FUN_TOOLS, JOKE_TOOLS, QUOTE_TOOLS, COUNTRY_TOOLS,
-  ASTRONOMY_TOOLS, HACKERNEWS_TOOLS, URL_TOOLS, TERMINAL_TOOLS,
-  UTILITY_TOOLS, SEARCH_TOOLS, DICTIONARY_TOOLS, DATETIME_TOOLS, PASSWORD_TOOLS,
+  WEATHER_TOOLS,
+  CRYPTO_TOOLS,
+  FINANCE_TOOLS,
+  PHOTO_TOOLS,
+  WIKI_TOOLS,
+  GEO_TOOLS,
+  FUN_TOOLS,
+  JOKE_TOOLS,
+  QUOTE_TOOLS,
+  COUNTRY_TOOLS,
+  ASTRONOMY_TOOLS,
+  HACKERNEWS_TOOLS,
+  URL_TOOLS,
+  TERMINAL_TOOLS,
+  UTILITY_TOOLS,
+  SEARCH_TOOLS,
+  DICTIONARY_TOOLS,
+  DATETIME_TOOLS,
+  PASSWORD_TOOLS,
+  SUBAGENT_TOOLS,
 };
 
 export const STATIC_TOOLS = [
@@ -47,6 +64,7 @@ export const STATIC_TOOLS = [
   ...DICTIONARY_TOOLS,
   ...DATETIME_TOOLS,
   ...PASSWORD_TOOLS,
+  ...SUBAGENT_TOOLS,
 ];
 
 export const TOOLS = STATIC_TOOLS;
@@ -105,7 +123,7 @@ function normalizeSchemaType(type = 'string') {
 
 function schemaPropToParameter(prop = {}, required = false) {
   const fallbackType = Array.isArray(prop.anyOf)
-    ? prop.anyOf.find(value => value?.type)?.type
+    ? prop.anyOf.find((value) => value?.type)?.type
     : prop.type;
 
   return {
@@ -126,7 +144,10 @@ function normalizeMCPTool(tool) {
     category: 'mcp',
     source: 'mcp',
     parameters: Object.fromEntries(
-      Object.entries(properties).map(([key, value]) => [key, schemaPropToParameter(value, required.has(key))]),
+      Object.entries(properties).map(([key, value]) => [
+        key,
+        schemaPropToParameter(value, required.has(key)),
+      ]),
     ),
   };
 }
@@ -146,7 +167,7 @@ function getConnectorName(tool = {}) {
 }
 
 function filterToolListByConnectors(tools = [], connectorStatuses = {}) {
-  return tools.filter(tool => {
+  return tools.filter((tool) => {
     const connectorName = getConnectorName(tool);
     if (connectorName == null) return true;
     return connectorStatuses?.[connectorName]?.enabled === true;
@@ -155,7 +176,7 @@ function filterToolListByConnectors(tools = [], connectorStatuses = {}) {
 
 function filterToolListByWorkspace(tools = []) {
   if (state.workspacePath) return tools;
-  return tools.filter(tool => !WORKSPACE_SCOPED_TOOL_NAMES.has(tool.name));
+  return tools.filter((tool) => !WORKSPACE_SCOPED_TOOL_NAMES.has(tool.name));
 }
 
 export function filterToolsByConnectors(connectorStatuses = {}) {
@@ -165,7 +186,7 @@ export function filterToolsByConnectors(connectorStatuses = {}) {
 export async function getAvailableTools() {
   let connectorStatuses = {};
   try {
-    connectorStatuses = await window.electronAPI?.invoke?.('get-connectors') ?? {};
+    connectorStatuses = (await window.electronAPI?.invoke?.('get-connectors')) ?? {};
   } catch {}
 
   let mcpTools = [];
@@ -188,15 +209,20 @@ export async function getAvailableTools() {
 }
 
 export function buildToolsPrompt(tools = TOOLS) {
-  return tools.map(tool => {
-    const params = Object.entries(tool.parameters ?? {}).map(([key, value]) => (
-      `    - ${key} (${value.type}${value.required ? ', required' : ', optional'}): ${value.description}`
-    )).join('\n');
+  return tools
+    .map((tool) => {
+      const params = Object.entries(tool.parameters ?? {})
+        .map(
+          ([key, value]) =>
+            `    - ${key} (${value.type}${value.required ? ', required' : ', optional'}): ${value.description}`,
+        )
+        .join('\n');
 
-    return [
-      `* ${tool.name}`,
-      `  Description: ${tool.description}`,
-      params ? `  Parameters:\n${params}` : '  Parameters: none',
-    ].join('\n');
-  }).join('\n\n');
+      return [
+        `* ${tool.name}`,
+        `  Description: ${tool.description}`,
+        params ? `  Parameters:\n${params}` : '  Parameters: none',
+      ].join('\n');
+    })
+    .join('\n\n');
 }

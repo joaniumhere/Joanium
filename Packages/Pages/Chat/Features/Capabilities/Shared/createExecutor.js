@@ -19,6 +19,18 @@
  * @param {string[]} opts.tools - Tool names this executor handles
  * @param {Object<string, Function>} opts.handlers - Map of toolName → async (params, onStage) => string
  */
+function normalizeHooks(hooksOrOnStage) {
+  if (typeof hooksOrOnStage === 'function') {
+    return { onStage: hooksOrOnStage };
+  }
+
+  if (hooksOrOnStage && typeof hooksOrOnStage === 'object') {
+    return hooksOrOnStage;
+  }
+
+  return {};
+}
+
 export function createExecutor({ name, tools, handlers }) {
   const HANDLED = new Set(tools);
 
@@ -26,12 +38,13 @@ export function createExecutor({ name, tools, handlers }) {
     return HANDLED.has(toolName);
   }
 
-  async function execute(toolName, params, onStage = () => {}) {
+  async function execute(toolName, params, hooksOrOnStage = () => {}) {
     const handler = handlers[toolName];
     if (!handler) {
       throw new Error(`${name}: unknown tool "${toolName}"`);
     }
-    return handler(params, onStage);
+    const hooks = normalizeHooks(hooksOrOnStage);
+    return handler(params, hooks.onStage ?? (() => {}), hooks);
   }
 
   return { handles, execute };

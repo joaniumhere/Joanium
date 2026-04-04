@@ -49,6 +49,7 @@ const HIGH_RISK_BROWSER_TERMS = [
 
 const BROWSER_CONFIRMATION_SENTINEL = 'Potentially irreversible website action pending.';
 const RATE_LIMIT_BACKOFF_MS = [5000, 10000, 15000];
+const SUB_AGENT_TOOL_NAME = 'spawn_sub_agents';
 const SEARCH_ENGINE_BLOCK_PATTERNS = [
   /google\.com\/sorry/i,
   /\bunusual traffic\b/i,
@@ -75,7 +76,7 @@ function createAbortError() {
 async function waitWithAbort(delayMs, signal = null) {
   if (!delayMs) return;
   if (!signal) {
-    await new Promise(resolve => setTimeout(resolve, delayMs));
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
     return;
   }
 
@@ -122,10 +123,11 @@ export function buildFailoverCandidates(selectedProvider, selectedModel) {
   }
 
   const otherBests = state.providers
-    .filter(provider => provider.provider !== selectedProvider.provider)
-    .map(provider => {
-      const entries = Object.entries(provider.models ?? {})
-        .sort(([, a], [, b]) => (a.rank ?? 999) - (b.rank ?? 999));
+    .filter((provider) => provider.provider !== selectedProvider.provider)
+    .map((provider) => {
+      const entries = Object.entries(provider.models ?? {}).sort(
+        ([, a], [, b]) => (a.rank ?? 999) - (b.rank ?? 999),
+      );
       if (!entries.length) return null;
       const [bestId, bestInfo] = entries[0];
       return { provider, modelId: bestId, rank: bestInfo.rank ?? 999 };
@@ -148,7 +150,7 @@ export function buildFailoverCandidates(selectedProvider, selectedModel) {
 async function loadEnabledSkills() {
   try {
     const res = await window.electronAPI?.invoke?.('get-skills');
-    return (res?.skills ?? []).filter(skill => skill.enabled === true);
+    return (res?.skills ?? []).filter((skill) => skill.enabled === true);
   } catch {
     return [];
   }
@@ -157,7 +159,9 @@ async function loadEnabledSkills() {
 async function loadWorkspaceSummary() {
   if (!state.workspacePath) return null;
   try {
-    const res = await window.electronAPI?.invoke?.('inspect-workspace', { rootPath: state.workspacePath });
+    const res = await window.electronAPI?.invoke?.('inspect-workspace', {
+      rootPath: state.workspacePath,
+    });
     return res?.ok ? res.summary : null;
   } catch {
     return null;
@@ -179,9 +183,13 @@ function buildActiveProjectHint(mode = 'runtime') {
   }
 
   if (mode === 'planning') {
-    lines.push('Treat this project folder as the default workspace for file, code, and terminal requests.');
+    lines.push(
+      'Treat this project folder as the default workspace for file, code, and terminal requests.',
+    );
   } else {
-    lines.push('This project is currently open. Treat this workspace as the default directory unless the user asks for another one.');
+    lines.push(
+      'This project is currently open. Treat this workspace as the default directory unless the user asks for another one.',
+    );
   }
 
   return lines.join('\n');
@@ -189,35 +197,39 @@ function buildActiveProjectHint(mode = 'runtime') {
 
 function buildSkillsCatalogue(skills) {
   if (!skills.length) return '  (none)';
-  return skills.map(skill =>
-    `  - "${skill.name}": ${skill.trigger?.trim() || skill.description?.trim() || 'general assistant skill'}`,
-  ).join('\n');
+  return skills
+    .map(
+      (skill) =>
+        `  - "${skill.name}": ${skill.trigger?.trim() || skill.description?.trim() || 'general assistant skill'}`,
+    )
+    .join('\n');
 }
 
 function buildSelectedSkillsBlock(selectedSkillNames, skills) {
-  const selected = skills.filter(skill => selectedSkillNames.includes(skill.name));
+  const selected = skills.filter((skill) => selectedSkillNames.includes(skill.name));
   if (!selected.length) return '';
 
   return [
     '## Selected Skills',
     'Apply the following skill docs for this specific request. Ignore non-selected skills unless the user explicitly asks for them.',
     '',
-    ...selected.map(skill => [
-      `### ${skill.name}`,
-      skill.trigger ? `When to use: ${skill.trigger}` : '',
-      skill.description ? `Description: ${skill.description}` : '',
-      skill.body?.trim() || '',
-    ].filter(Boolean).join('\n\n')),
+    ...selected.map((skill) =>
+      [
+        `### ${skill.name}`,
+        skill.trigger ? `When to use: ${skill.trigger}` : '',
+        skill.description ? `Description: ${skill.description}` : '',
+        skill.body?.trim() || '',
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+    ),
   ].join('\n\n');
 }
 
 function buildWorkspaceHint(summary, mode = 'runtime') {
   if (!summary) return '';
 
-  const lines = [
-    '[USER WORKSPACE]',
-    `Path: ${summary.path}`,
-  ];
+  const lines = ['[USER WORKSPACE]', `Path: ${summary.path}`];
 
   if (summary.languages?.length) lines.push(`Languages: ${summary.languages.join(', ')}`);
   if (summary.frameworks?.length) lines.push(`Frameworks: ${summary.frameworks.join(', ')}`);
@@ -241,16 +253,26 @@ function buildWorkspaceHint(summary, mode = 'runtime') {
 
   if (summary.notes?.length) {
     lines.push('Notes:');
-    lines.push(...summary.notes.map(note => `- ${note}`));
+    lines.push(...summary.notes.map((note) => `- ${note}`));
   }
 
   if (mode === 'planning') {
-    lines.push('For coding, QA, or DevOps requests, strongly prefer inspect_workspace, search_workspace, extract_file_text, read_file_chunk, read_multiple_local_files, list_directory_tree, replace_lines_in_file, insert_into_file, git_status, git_diff, run_project_checks, and GitHub/MCP tools over guessing.');
+    lines.push(
+      'For coding, QA, or DevOps requests, strongly prefer inspect_workspace, search_workspace, extract_file_text, read_file_chunk, read_multiple_local_files, list_directory_tree, replace_lines_in_file, insert_into_file, git_status, git_diff, run_project_checks, and GitHub/MCP tools over guessing.',
+    );
   } else {
-    lines.push('When the user asks you to code, debug, test, review, or deploy, use the local workspace tools and stay inside this directory unless the user says otherwise.');
-    lines.push('Prefer inspect_workspace, search_workspace, extract_file_text, read_file_chunk, read_multiple_local_files, list_directory_tree, replace_lines_in_file, insert_into_file, copy_item, move_item, git_status, git_diff, run_project_checks, and apply_file_patch before falling back to raw shell commands.');
-    lines.push('Use assess_shell_command before risky shell work. Only set allow_risky=true when the user explicitly requested the risky action.');
-    lines.push('Use start_local_server for long-running dev servers or watchers instead of run_shell_command.');
+    lines.push(
+      'When the user asks you to code, debug, test, review, or deploy, use the local workspace tools and stay inside this directory unless the user says otherwise.',
+    );
+    lines.push(
+      'Prefer inspect_workspace, search_workspace, extract_file_text, read_file_chunk, read_multiple_local_files, list_directory_tree, replace_lines_in_file, insert_into_file, copy_item, move_item, git_status, git_diff, run_project_checks, and apply_file_patch before falling back to raw shell commands.',
+    );
+    lines.push(
+      'Use assess_shell_command before risky shell work. Only set allow_risky=true when the user explicitly requested the risky action.',
+    );
+    lines.push(
+      'Use start_local_server for long-running dev servers or watchers instead of run_shell_command.',
+    );
   }
 
   return lines.join('\n');
@@ -274,17 +296,25 @@ function buildWorkspaceFilePolicyHint() {
   ].join('\n');
 }
 
+function filterToolsForRun(tools = [], options = {}) {
+  const filter = typeof options.toolFilter === 'function' ? options.toolFilter : null;
+  if (!filter) return tools;
+  return tools.filter((tool) => filter(tool));
+}
+
 function normalizePlanResult(parsed, validSkillNames, validToolNames) {
   const toolCalls = (parsed.toolCalls ?? parsed.tools ?? [])
-    .map(entry => {
+    .map((entry) => {
       if (typeof entry === 'string') return { name: entry, params: {} };
       if (typeof entry?.name === 'string') return { name: entry.name, params: entry.params ?? {} };
       return null;
     })
-    .filter(toolCall => toolCall && validToolNames.has(toolCall.name));
+    .filter((toolCall) => toolCall && validToolNames.has(toolCall.name));
 
   return {
-    skills: (parsed.skills ?? []).filter(name => typeof name === 'string' && validSkillNames.has(name)),
+    skills: (parsed.skills ?? []).filter(
+      (name) => typeof name === 'string' && validSkillNames.has(name),
+    ),
     toolCalls,
   };
 }
@@ -298,6 +328,29 @@ function buildToolPrivacyBlock() {
     'If an internal step fails, recover silently when possible and describe only the user-facing outcome.',
     'If the user asks what you know about them, their preferences, memory, profile, or prior context, answer from the existing conversation, memory, and system context first.',
     'Do not use tools for personal-context questions unless the user explicitly asks you to inspect a file, workspace, repo, account, email, or external service.',
+  ].join('\n');
+}
+
+function buildSubAgentPlanningHint(tools = []) {
+  if (!tools.some((tool) => tool.name === SUB_AGENT_TOOL_NAME)) return '';
+
+  return [
+    'For medium or high complexity requests that can be split into parallel research, investigation, or verification tracks, prefer planning spawn_sub_agents.',
+    'Use delegation only when it will materially improve speed, coverage, or accuracy.',
+    'Give each delegated agent a narrow title, a specific goal, and a clear deliverable.',
+  ].join(' ');
+}
+
+function buildSubAgentCapabilityBlock(tools = []) {
+  if (!tools.some((tool) => tool.name === SUB_AGENT_TOOL_NAME)) return '';
+
+  return [
+    '## Delegation',
+    'If the task is medium or high complexity and can be decomposed into parallel workstreams, you may call spawn_sub_agents.',
+    'Use delegated agents for focused investigation, verification, and analysis when that will improve speed or coverage.',
+    'Give each sub-agent a clear title, a narrow goal, and a concrete deliverable.',
+    'Reserve the final synthesis, user communication, and any write actions for yourself.',
+    'Avoid delegation for trivial or tightly serial tasks.',
   ].join('\n');
 }
 
@@ -317,10 +370,12 @@ function looksLikeBrowserAutomationTool(tool = {}) {
     tool.name,
     tool.description,
     ...Object.keys(tool.parameters ?? {}),
-    ...Object.values(tool.parameters ?? {}).map(param => param?.description ?? ''),
-  ].join(' ').toLowerCase();
+    ...Object.values(tool.parameters ?? {}).map((param) => param?.description ?? ''),
+  ]
+    .join(' ')
+    .toLowerCase();
 
-  return BROWSER_TOOL_HINTS.some(hint => haystack.includes(hint));
+  return BROWSER_TOOL_HINTS.some((hint) => haystack.includes(hint));
 }
 
 function getBrowserAutomationTools(tools = []) {
@@ -342,7 +397,7 @@ function buildBrowserAutomationBlock(browserTools = []) {
 
   const listedTools = browserTools
     .slice(0, 12)
-    .map(tool => `- ${tool.name}: ${tool.description || 'MCP browser tool'}`)
+    .map((tool) => `- ${tool.name}: ${tool.description || 'MCP browser tool'}`)
     .join('\n');
 
   return [
@@ -358,7 +413,9 @@ function buildBrowserAutomationBlock(browserTools = []) {
     'Stop and ask for explicit confirmation before any irreversible website action such as a final booking, reservation, checkout, purchase, or payment submission.',
     'If login, CAPTCHA, OTP, 2FA, or payment details are required, ask the user for that step clearly and continue after they reply.',
     listedTools ? `Browser-capable tools currently available:\n${listedTools}` : '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function buildBrowserConfirmationPrompt() {
@@ -373,7 +430,9 @@ function isBrowserConfirmationPromptText(text) {
 }
 
 function looksLikeBrowserConfirmationReply(text) {
-  const normalized = String(text ?? '').trim().toLowerCase();
+  const normalized = String(text ?? '')
+    .trim()
+    .toLowerCase();
   if (!normalized) return false;
 
   return [
@@ -390,7 +449,7 @@ function looksLikeBrowserConfirmationReply(text) {
     'book it',
     'submit it',
     'complete it',
-  ].some(phrase => normalized === phrase || normalized.includes(phrase));
+  ].some((phrase) => normalized === phrase || normalized.includes(phrase));
 }
 
 function hasPendingBrowserApproval(messages = []) {
@@ -418,16 +477,16 @@ function hasPendingBrowserApproval(messages = []) {
 function isPotentiallyIrreversibleBrowserAction(tool, params) {
   if (!looksLikeBrowserAutomationTool(tool)) return false;
 
-  const haystack = [
-    tool.name,
-    tool.description,
-    stringifyForAnalysis(params),
-  ].join(' ').toLowerCase();
+  const haystack = [tool.name, tool.description, stringifyForAnalysis(params)]
+    .join(' ')
+    .toLowerCase();
 
-  if (HIGH_RISK_BROWSER_TERMS.some(term => haystack.includes(term))) return true;
+  if (HIGH_RISK_BROWSER_TERMS.some((term) => haystack.includes(term))) return true;
 
   const hasSubmitWord = /\b(submit|confirm|complete|reserve|book)\b/.test(haystack);
-  const hasCommerceWord = /\b(ticket|booking|reservation|checkout|order|payment|purchase)\b/.test(haystack);
+  const hasCommerceWord = /\b(ticket|booking|reservation|checkout|order|payment|purchase)\b/.test(
+    haystack,
+  );
   return hasSubmitWord && hasCommerceWord;
 }
 
@@ -443,13 +502,15 @@ function stringifyToolResult(toolResult) {
 function looksLikeInternalToolLeak(text) {
   const value = String(text ?? '').trim();
   if (!value) return false;
-  return INTERNAL_TOOL_LEAK_PATTERNS.some(pattern => pattern.test(value));
+  return INTERNAL_TOOL_LEAK_PATTERNS.some((pattern) => pattern.test(value));
 }
 
 function normalizeToolLogText(value, maxLength = 120) {
-  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  const text = String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!text) return '';
-  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+  return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
 }
 
 function buildToolLogLabel(name) {
@@ -463,7 +524,7 @@ function buildToolFailureLabel(name, err) {
 
 function hasSearchEngineBlocker(toolResult) {
   const text = stringifyToolResult(toolResult);
-  return SEARCH_ENGINE_BLOCK_PATTERNS.some(pattern => pattern.test(text));
+  return SEARCH_ENGINE_BLOCK_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 function buildBrowserResultInstruction(toolMeta = null, toolResult = '') {
@@ -484,7 +545,64 @@ function buildBrowserResultInstruction(toolMeta = null, toolResult = '') {
   ].join(' ');
 }
 
-function buildToolResultContext(name, toolResult, success, remainingPlanned, extraInstruction = '') {
+function buildSubAgentResultSummary(run = {}) {
+  const agents = Array.isArray(run?.agents) ? run.agents : [];
+  const completed = agents.filter((agent) => agent?.status === 'completed').length;
+  const errored = agents.filter((agent) => agent?.status === 'error').length;
+  const aborted = agents.filter((agent) => agent?.status === 'aborted').length;
+  const lines = [
+    `Delegation complete: ${agents.length} sub-agent${agents.length === 1 ? '' : 's'} total, ${completed} completed${errored ? `, ${errored} errored` : ''}${aborted ? `, ${aborted} stopped` : ''}.`,
+  ];
+
+  if (run.coordinationGoal) {
+    lines.push(`Team objective: ${run.coordinationGoal}`);
+  }
+
+  if (run.summary) {
+    lines.push(`Run status: ${run.summary}`);
+  }
+
+  if (run.synthesis) {
+    lines.push('', 'Coordinator handoff:');
+    lines.push(run.synthesis);
+  }
+
+  const visibleAgents = agents.slice(0, 4);
+  if (visibleAgents.length) {
+    lines.push('', 'Key delegated findings:');
+    visibleAgents.forEach((agent) => {
+      const summary = String(agent?.summary ?? agent?.finalReply ?? '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const compact = summary.length > 180 ? `${summary.slice(0, 177)}...` : summary;
+      lines.push(
+        `- ${agent?.title ?? agent?.id ?? 'Sub-agent'}: ${compact || 'No handoff returned.'}`,
+      );
+    });
+  }
+
+  if (agents.length > visibleAgents.length) {
+    lines.push(
+      `- ${agents.length - visibleAgents.length} additional delegated handoff(s) are available in the sub-agent panel.`,
+    );
+  }
+
+  lines.push('');
+  lines.push('The detailed child outputs are already visible in the sub-agent panel.');
+  lines.push(
+    'Continue locally now. Do not wait for more delegated output, and do not call spawn_sub_agents again unless a distinct unresolved gap remains.',
+  );
+
+  return lines.join('\n');
+}
+
+function buildToolResultContext(
+  name,
+  toolResult,
+  success,
+  remainingPlanned,
+  extraInstruction = '',
+) {
   const resultText = stringifyToolResult(toolResult);
   const lines = [
     'Internal execution context for the assistant only. Never quote or mention this block to the user.',
@@ -501,16 +619,36 @@ function buildToolResultContext(name, toolResult, success, remainingPlanned, ext
     lines.push('');
   }
 
+  if (name === SUB_AGENT_TOOL_NAME && success) {
+    lines.push('Delegation follow-up:');
+    lines.push('Treat the coordinator handoff above as your working brief.');
+    lines.push('Do not wait for child agents to speak again or ask them for the same information.');
+    if (remainingPlanned > 0) {
+      lines.push('Execute the next planned step yourself now.');
+    } else {
+      lines.push(
+        'Your next step should usually be the requested implementation or the final user-facing answer.',
+      );
+    }
+    lines.push('');
+  }
+
   if (remainingPlanned > 0) {
-    lines.push(`You still have ${remainingPlanned} more planned background step(s) to execute before answering the user.`);
+    lines.push(
+      `You still have ${remainingPlanned} more planned background step(s) to execute before answering the user.`,
+    );
     lines.push('Call the next tool now and do not answer the user yet.');
   } else {
-    lines.push('If you are finished gathering information, write the final answer for the user now.');
+    lines.push(
+      'If you are finished gathering information, write the final answer for the user now.',
+    );
     lines.push('Do not mention tool names, tool calls, hidden planning, or raw execution markers.');
   }
 
   if (resultText.includes('[TERMINAL:')) {
-    lines.push('The UI already handles embedded terminal output. Do not repeat raw [TERMINAL:...] markers.');
+    lines.push(
+      'The UI already handles embedded terminal output. Do not repeat raw [TERMINAL:...] markers.',
+    );
   }
 
   return lines.join('\n');
@@ -521,9 +659,12 @@ export async function planRequest(messages) {
     return { skills: [], toolCalls: [] };
   }
 
-  const recentMessages = messages.slice(-4).map(m => {
-    return `${m.role.toUpperCase()}: ${m.content}`;
-  }).join('\n\n');
+  const recentMessages = messages
+    .slice(-4)
+    .map((m) => {
+      return `${m.role.toUpperCase()}: ${m.content}`;
+    })
+    .join('\n\n');
 
   const [skills, availableTools, workspaceSummary] = await Promise.all([
     loadEnabledSkills(),
@@ -532,6 +673,7 @@ export async function planRequest(messages) {
   ]);
   const browserTools = getBrowserAutomationTools(availableTools);
   const browserPlanningHint = buildBrowserPlanningHint(browserTools);
+  const subAgentPlanningHint = buildSubAgentPlanningHint(availableTools);
   const workspaceFilePolicyHint = buildWorkspaceFilePolicyHint();
 
   const planPrompt = [
@@ -548,6 +690,7 @@ export async function planRequest(messages) {
     workspaceSummary ? `\n${buildWorkspaceHint(workspaceSummary, 'planning')}` : '',
     `\n${workspaceFilePolicyHint}`,
     browserPlanningHint ? `\n${browserPlanningHint}` : '',
+    subAgentPlanningHint ? `\n${subAgentPlanningHint}` : '',
     '',
     'Available skills:',
     buildSkillsCatalogue(skills),
@@ -584,8 +727,8 @@ export async function planRequest(messages) {
     const parsed = JSON.parse(result.text.slice(start, end + 1));
     return normalizePlanResult(
       parsed,
-      new Set(skills.map(skill => skill.name)),
-      new Set(availableTools.map(tool => tool.name)),
+      new Set(skills.map((skill) => skill.name)),
+      new Set(availableTools.map((tool) => tool.name)),
     );
   } catch (err) {
     console.warn('[Agent] Planning failed:', err.message);
@@ -593,7 +736,15 @@ export async function planRequest(messages) {
   }
 }
 
-export async function agentLoop(messages, live, plannedSkills = [], plannedToolCalls = [], systemPrompt, signal = null) {
+export async function agentLoop(
+  messages,
+  live,
+  plannedSkills = [],
+  plannedToolCalls = [],
+  systemPrompt,
+  signal = null,
+  options = {},
+) {
   const loopMessages = [...messages];
   const MAX_TURNS = 10;
   const MAX_REWRITE_ATTEMPTS = 2;
@@ -602,53 +753,69 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
   let rewriteAttempts = 0;
   const totalUsage = { inputTokens: 0, outputTokens: 0 };
 
-  const [availableTools, allSkills, workspaceSummary] = await Promise.all([
+  const [rawAvailableTools, allSkills, workspaceSummary] = await Promise.all([
     getAvailableTools(),
     loadEnabledSkills(),
     loadWorkspaceSummary(),
   ]);
+  const availableTools = filterToolsForRun(rawAvailableTools, options);
 
   const toolPrivacyBlock = buildToolPrivacyBlock();
-  const browserAutomationBlock = buildBrowserAutomationBlock(getBrowserAutomationTools(availableTools));
+  const subAgentCapabilityBlock = buildSubAgentCapabilityBlock(availableTools);
+  const browserAutomationBlock = buildBrowserAutomationBlock(
+    getBrowserAutomationTools(availableTools),
+  );
   const selectedSkillBlock = buildSelectedSkillsBlock(plannedSkills, allSkills);
   const projectHint = buildActiveProjectHint('runtime');
   const workspaceHint = buildWorkspaceHint(workspaceSummary, 'runtime');
   const workspaceFilePolicyHint = buildWorkspaceFilePolicyHint();
-  const basePrompt = [systemPrompt, toolPrivacyBlock, browserAutomationBlock, selectedSkillBlock, projectHint, workspaceHint, workspaceFilePolicyHint].filter(Boolean).join('\n\n');
-  const toolMetaByName = new Map(availableTools.map(tool => [tool.name, tool]));
+  const basePrompt = [
+    systemPrompt,
+    toolPrivacyBlock,
+    subAgentCapabilityBlock,
+    browserAutomationBlock,
+    selectedSkillBlock,
+    projectHint,
+    workspaceHint,
+    workspaceFilePolicyHint,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+  const toolMetaByName = new Map(availableTools.map((tool) => [tool.name, tool]));
   let browserApprovalAvailable = hasPendingBrowserApproval(loopMessages);
 
   const candidates = [
     { provider: state.selectedProvider, modelId: state.selectedModel, note: null },
     ...buildFailoverCandidates(state.selectedProvider, state.selectedModel),
-  ].filter(candidate => candidate.provider && candidate.modelId);
+  ].filter((candidate) => candidate.provider && candidate.modelId);
 
   let usedProvider = state.selectedProvider;
   let usedModel = state.selectedModel;
 
-  const plannedToolNames = [...new Set((plannedToolCalls ?? []).map(toolCall => toolCall.name))];
+  const plannedToolNames = [...new Set((plannedToolCalls ?? []).map((toolCall) => toolCall.name))];
   const filteredPlannedTools = plannedToolNames.length
-    ? availableTools.filter(tool => plannedToolNames.includes(tool.name))
+    ? availableTools.filter((tool) => plannedToolNames.includes(tool.name))
     : [];
   const plannedTools = filteredPlannedTools.length ? filteredPlannedTools : availableTools;
 
   const callPlanHint = plannedToolCalls?.length
     ? [
-      'CALL PLAN - execute these tool calls in order before writing the final answer:',
-      ...plannedToolCalls.map((toolCall, index) => {
-        const params = Object.entries(toolCall.params ?? {})
-          .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
-          .join(', ');
-        return `${index + 1}. ${toolCall.name}(${params})`;
-      }),
-    ].join('\n')
+        'CALL PLAN - execute these tool calls in order before writing the final answer:',
+        ...plannedToolCalls.map((toolCall, index) => {
+          const params = Object.entries(toolCall.params ?? {})
+            .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+            .join(', ');
+          return `${index + 1}. ${toolCall.name}(${params})`;
+        }),
+      ].join('\n')
     : '';
 
   const sysPromptWithPlan = [basePrompt, callPlanHint].filter(Boolean).join('\n\n');
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const toolsThisTurn = toolsUsed ? availableTools : (turn === 0 ? plannedTools : availableTools);
-    const allPlannedToolsDone = !plannedToolCalls?.length || executedToolCount >= plannedToolCalls.length;
+    const toolsThisTurn = toolsUsed ? availableTools : turn === 0 ? plannedTools : availableTools;
+    const allPlannedToolsDone =
+      !plannedToolCalls?.length || executedToolCount >= plannedToolCalls.length;
     const sysPromptThisTurn = allPlannedToolsDone ? basePrompt : sysPromptWithPlan;
 
     let result = null;
@@ -656,12 +823,12 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
     let streamingStarted = false;
     let bufferedReply = '';
 
-    const onToken = chunk => {
+    const onToken = (chunk) => {
       streamingStarted = true;
       bufferedReply += chunk;
     };
 
-    const onReasoning = chunk => {
+    const onReasoning = (chunk) => {
       if (!chunk) return;
       live.streamThinking?.(chunk);
     };
@@ -703,7 +870,9 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
 
           if (rateLimited && attempt < RATE_LIMIT_BACKOFF_MS.length) {
             const delayMs = RATE_LIMIT_BACKOFF_MS[attempt];
-            live.push(`HTTP 429 on ${modelName} - waiting ${Math.round(delayMs / 1000)}s before retrying...`);
+            live.push(
+              `HTTP 429 on ${modelName} - waiting ${Math.round(delayMs / 1000)}s before retrying...`,
+            );
             await waitWithAbort(delayMs, signal);
             continue;
           }
@@ -797,7 +966,15 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
           }
         }
 
-        toolResult = await executeTool(name, params, () => { });
+        const executionHooks = live.getToolExecutionHooks?.(name);
+        toolResult = await executeTool(name, params, {
+          ...(typeof executionHooks === 'function'
+            ? { onStage: executionHooks }
+            : executionHooks && typeof executionHooks === 'object'
+              ? executionHooks
+              : {}),
+          signal,
+        });
       } catch (err) {
         success = false;
         toolResult = `Error: ${err.message}`;
@@ -814,10 +991,21 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
           live.showPhotoGallery?.(parsed);
           // Give LLM a clean text summary instead of raw JSON
           const count = parsed.photos?.length ?? 0;
-          const names = (parsed.photos ?? []).slice(0, 3).map(p => `${p.photographer} — "${p.description?.slice(0, 60)}"`).join('; ');
+          const names = (parsed.photos ?? [])
+            .slice(0, 3)
+            .map((p) => `${p.photographer} — "${p.description?.slice(0, 60)}"`)
+            .join('; ');
           llmToolResult = `Found ${count} photos on Unsplash for "${parsed.query}" (${parsed.total?.toLocaleString() ?? '?'} total available). Top results: ${names}. A visual gallery has already been displayed to the user in the chat.`;
         } catch {
           // fallback: treat as plain text
+        }
+      } else if (typeof toolResult === 'string' && toolResult.startsWith('[SUBAGENT_RESULT]')) {
+        try {
+          const parsed = JSON.parse(toolResult.slice('[SUBAGENT_RESULT]'.length));
+          llmToolResult = buildSubAgentResultSummary(parsed);
+        } catch {
+          llmToolResult =
+            'Delegated sub-agent run completed, but the handoff payload could not be parsed cleanly.';
         }
       } else if (typeof toolResult === 'string' && toolResult.includes('[TERMINAL:')) {
         live.showToolOutput?.(toolResult);
@@ -830,7 +1018,13 @@ export async function agentLoop(messages, live, plannedSkills = [], plannedToolC
 
       loopMessages.push({
         role: 'user',
-        content: buildToolResultContext(name, llmToolResult, success, remainingPlanned, browserResultInstruction),
+        content: buildToolResultContext(
+          name,
+          llmToolResult,
+          success,
+          remainingPlanned,
+          browserResultInstruction,
+        ),
         attachments: [],
       });
     }

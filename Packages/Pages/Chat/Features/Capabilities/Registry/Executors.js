@@ -19,6 +19,7 @@ import * as SearchExecutor from '../Search/Executor.js';
 import * as DictionaryExecutor from '../Dictionary/Executor.js';
 import * as DateTimeExecutor from '../DateTime/Executor.js';
 import * as PasswordExecutor from '../Password/Executor.js';
+import * as SubAgentsExecutor from '../SubAgents/Executor.js';
 
 const EXECUTORS = [
   WeatherExecutor,
@@ -40,11 +41,15 @@ const EXECUTORS = [
   DictionaryExecutor,
   DateTimeExecutor,
   PasswordExecutor,
+  SubAgentsExecutor,
   MCPExecutor,
 ];
 
 function normalizeName(name) {
-  return String(name ?? '').trim().toLowerCase().replace(/[\s\-]+/g, '_');
+  return String(name ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s\-]+/g, '_');
 }
 
 async function executorHandles(executor, toolName) {
@@ -57,9 +62,14 @@ async function executorHandles(executor, toolName) {
 async function tryFeatureExecutor(toolName, params) {
   if (!window.featureAPI?.invoke) return null;
   const boot = await getFeatureBoot();
-  const tool = (boot?.chat?.tools ?? []).find(item => item.name === toolName || item.name === normalizeName(toolName));
+  const tool = (boot?.chat?.tools ?? []).find(
+    (item) => item.name === toolName || item.name === normalizeName(toolName),
+  );
   if (!tool?.featureId) return null;
-  return window.featureAPI.invoke(tool.featureId, 'executeChatTool', { toolName: tool.name, params });
+  return window.featureAPI.invoke(tool.featureId, 'executeChatTool', {
+    toolName: tool.name,
+    params,
+  });
 }
 
 export async function executeTool(toolName, params, onStage = () => {}) {

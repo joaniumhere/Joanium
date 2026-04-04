@@ -45,6 +45,30 @@ function normalizeSection(section) {
   return null;
 }
 
+function normalizeForComparison(value = '') {
+  return String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function dedupeEntries(entries = []) {
+  const seen = new Set();
+  const deduped = [];
+
+  for (const entry of entries) {
+    const text = String(entry ?? '').trim();
+    if (!text) continue;
+    const normalized = normalizeForComparison(text);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    deduped.push(text);
+  }
+
+  return deduped;
+}
+
 function pushExtraSections(lines, sections = []) {
   for (const rawSection of sections) {
     const section = normalizeSection(rawSection);
@@ -99,17 +123,23 @@ export async function buildSystemPrompt({
   const blank = () => lines.push('');
 
   if (activePersona) {
-    push(`You are ${activePersona.name}.`);
+    const personaInstructions = activePersona.instructions?.trim() ?? '';
+    const normalizedInstructions = normalizeForComparison(personaInstructions);
+    const personaIntro = `You are ${activePersona.name}.`;
+
+    if (!normalizedInstructions.includes(normalizeForComparison(personaIntro))) {
+      push(personaIntro);
+    }
     if (activePersona.personality) push(`Your personality: ${activePersona.personality}.`);
-    if (activePersona.description) push(activePersona.description);
-    if (activePersona.instructions?.trim()) {
+    if (!personaInstructions && activePersona.description) push(activePersona.description);
+    if (personaInstructions) {
       blank();
-      push(activePersona.instructions.trim());
+      push(personaInstructions);
     }
     blank();
     push('---');
     blank();
-    push(getConfig('joaniumContext'));
+    if (getConfig('joaniumContext')) push(getConfig('joaniumContext'));
   } else {
     push(getConfig('joaniumPersona'));
   }
@@ -152,8 +182,8 @@ export async function buildSystemPrompt({
 
   blank();
 
-  const finalInst = getConfig('finalInstructions');
-  finalInst.forEach((i) => push(i));
+  const finalInst = dedupeEntries(getConfig('finalInstructions', []));
+  finalInst.forEach((instruction) => push(instruction));
 
   return lines.join('\n');
 }
