@@ -6,20 +6,15 @@ dist/
 out/
 build/
 
-# Data - local user data
-Data/User.json
-Data/Chats
-Data/Projects
-Data/User.md
-Data/WindowState.json
-Data/Skills.json
+# Config
+Config/User.json
+Config/WindowState.json
+
+# Data
+Data/
+
+# Instructions
 Instructions/
-Data/Features/Channels/Channels.json
-Data/Features/Connectors/Connectors.json
-Data/Features/Agents/Agents.json
-Data/Features/Automations/Automations.json
-Data/Usage.json
-Data/ActivePersona.json
 
 # Environment
 .env
