@@ -28,7 +28,6 @@ export async function runAction(action, connectorEngine = null) {
   console.warn(`[AutomationEngine] Unknown action type: "${action.type}"`);
 }
 
-
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  AUTOMATION ENGINE CLASS
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -38,9 +37,9 @@ export class AutomationEngine {
     this.storage = storage;
     this.connectorEngine = connectorEngine;
     this.featureRegistry = featureRegistry;
-    this.automations     = [];
-    this._ticker         = null;
-    this._running        = new Set();
+    this.automations = [];
+    this._ticker = null;
+    this._running = new Set();
   }
 
   start() {
@@ -50,7 +49,10 @@ export class AutomationEngine {
   }
 
   stop() {
-    if (this._ticker) { clearInterval(this._ticker); this._ticker = null; }
+    if (this._ticker) {
+      clearInterval(this._ticker);
+      this._ticker = null;
+    }
   }
 
   reload() {
@@ -64,23 +66,26 @@ export class AutomationEngine {
 
   saveAutomation(automation) {
     this._load();
-    const idx = this.automations.findIndex(a => a.id === automation.id);
+    const idx = this.automations.findIndex((a) => a.id === automation.id);
     if (idx >= 0) this.automations[idx] = { ...this.automations[idx], ...automation };
-    else          this.automations.push(automation);
+    else this.automations.push(automation);
     this._persist();
     return automation;
   }
 
   deleteAutomation(id) {
     this._load();
-    this.automations = this.automations.filter(a => a.id !== id);
+    this.automations = this.automations.filter((a) => a.id !== id);
     this._persist();
   }
 
   toggleAutomation(id, enabled) {
     this._load();
-    const a = this.automations.find(a => a.id === id);
-    if (a) { a.enabled = Boolean(enabled); this._persist(); }
+    const a = this.automations.find((a) => a.id === id);
+    if (a) {
+      a.enabled = Boolean(enabled);
+      this._persist();
+    }
   }
 
   clearAllHistory() {
@@ -111,9 +116,7 @@ export class AutomationEngine {
   }
 
   _runStartupAutomations() {
-    const targets = this.automations.filter(
-      a => a.enabled && a.trigger?.type === 'on_startup',
-    );
+    const targets = this.automations.filter((a) => a.enabled && a.trigger?.type === 'on_startup');
     for (const a of targets) this._execute(a);
   }
 
@@ -130,14 +133,14 @@ export class AutomationEngine {
 
     const entry = {
       timestamp: new Date().toISOString(),
-      status:    'success',
-      summary:   '',
-      error:     null,
+      status: 'success',
+      summary: '',
+      error: null,
     };
 
     try {
       const actionTypes = [];
-      for (const action of (automation.actions ?? [])) {
+      for (const action of automation.actions ?? []) {
         const featureResult = await this.featureRegistry?.runAutomationAction?.(action, {
           connectorEngine: this.connectorEngine,
         });
@@ -152,15 +155,15 @@ export class AutomationEngine {
         ? `Ran: ${actionTypes.join(', ')}`
         : 'Automation executed (no actions)';
     } catch (err) {
-      entry.status  = 'error';
-      entry.error   = err.message;
+      entry.status = 'error';
+      entry.error = err.message;
       entry.summary = `Error: ${err.message}`;
       console.error(`[AutomationEngine] Error in "${automation.name}":`, err);
     } finally {
       this._running.delete(automationId);
     }
 
-    const live = this.automations.find(a => a.id === automationId);
+    const live = this.automations.find((a) => a.id === automationId);
     if (live) {
       if (!Array.isArray(live.history)) live.history = [];
       live.history.unshift(entry);
@@ -168,7 +171,9 @@ export class AutomationEngine {
       live.lastRun = entry.timestamp;
       this._persist();
     } else {
-      console.warn(`[AutomationEngine] Automation ${automationId} not found after run — was it deleted?`);
+      console.warn(
+        `[AutomationEngine] Automation ${automationId} not found after run — was it deleted?`,
+      );
     }
   }
 }
@@ -178,10 +183,10 @@ export const engineMeta = defineEngine({
   provides: 'automationEngine',
   needs: ['connectorEngine', 'featureRegistry', 'featureStorage'],
   storage: {
-    key: 'automation',
-    featureKey: 'automation',
+    key: 'Automations',
+    featureKey: 'Automations',
     fileName: 'Automations.json',
   },
   create: ({ connectorEngine, featureRegistry, featureStorage }) =>
-    new AutomationEngine(featureStorage.get('automation'), connectorEngine, featureRegistry),
+    new AutomationEngine(featureStorage.get('Automations'), connectorEngine, featureRegistry),
 });

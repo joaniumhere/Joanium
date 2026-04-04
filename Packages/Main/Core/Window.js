@@ -1,9 +1,6 @@
 import { BrowserWindow, shell, app } from 'electron';
 import Paths from './Paths.js';
-import {
-  attachWindowStatePersistence,
-  loadWindowState,
-} from '../Services/WindowStateService.js';
+import { attachWindowStatePersistence, loadWindowState } from '../Services/WindowStateService.js';
 
 /** @type {BrowserWindow | null} */
 let _win = null;
@@ -67,18 +64,28 @@ export function create(page) {
 
   // 🚀 Preload important SPA routes after first paint
   _win.webContents.once('did-finish-load', () => {
-    _win?.webContents.send('preload-pages', [
-      'automations',
-      'agents',
-      'events',
-      'skills',
-    ]);
+    _win?.webContents.send('preload-pages', ['automations', 'agents', 'events', 'skills']);
   });
 
   // Open all external links in default browser
   _win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // Restrict developer shortcuts in the final app (packaged mode)
+  _win.webContents.on('before-input-event', (event, input) => {
+    if (app.isPackaged) {
+      const isReload = (input.control || input.meta) && input.key.toLowerCase() === 'r';
+      const isDevTools =
+        (input.control || input.meta) && input.shift && input.key.toLowerCase() === 'i';
+      const isF5 = input.key === 'F5';
+      const isF12 = input.key === 'F12';
+
+      if (isReload || isDevTools || isF5 || isF12) {
+        event.preventDefault();
+      }
+    }
   });
 
   return _win;

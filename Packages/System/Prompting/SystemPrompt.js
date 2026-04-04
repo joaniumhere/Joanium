@@ -57,7 +57,7 @@ function pushExtraSections(lines, sections = []) {
 
 let systemPromptConfig = {};
 try {
-  const spPath = path.join(PROJECT_ROOT, 'CustomInstructions', 'SystemPrompt.json');
+  const spPath = path.join(PROJECT_ROOT, 'SystemInstructions', 'SystemPrompt.json');
   if (fs.existsSync(spPath)) {
     systemPromptConfig = JSON.parse(fs.readFileSync(spPath, 'utf-8'));
   }

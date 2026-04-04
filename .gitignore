@@ -15,10 +15,10 @@ Data/User.md
 Data/WindowState.json
 Data/Skills.json
 CustomInstructions/CustomInstructions.md
-Data/Channels.json
-Data/Connectors.json
-Data/Agents.json
-Data/Automations.json
+Data/Features/Channels/Channels.json
+Data/Features/Connectors/Connectors.json
+Data/Features/Agents/Agents.json
+Data/Features/Automations/Automations.json
 Data/Usage.json
 Data/ActivePersona.json
 
