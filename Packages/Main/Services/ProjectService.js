@@ -4,6 +4,15 @@ import Paths from '../Core/Paths.js';
 
 const META_FILENAME = 'Project.json';
 const CHATS_DIRNAME = 'Chats';
+const PROJECT_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+
+function normalizeProjectId(projectId) {
+  const id = String(projectId ?? '').trim();
+  if (!PROJECT_ID_RE.test(id) || id.includes('..')) {
+    throw new Error('Invalid project id.');
+  }
+  return id;
+}
 
 function ensureProjectsDir() {
   if (!fs.existsSync(Paths.PROJECTS_DIR)) {
@@ -12,7 +21,7 @@ function ensureProjectsDir() {
 }
 
 function projectDir(projectId) {
-  return path.join(Paths.PROJECTS_DIR, String(projectId ?? '').trim());
+  return path.join(Paths.PROJECTS_DIR, normalizeProjectId(projectId));
 }
 
 function metaPath(projectId) {
@@ -112,9 +121,10 @@ function assertValidProjectInput({ name, rootPath }) {
 export function list() {
   ensureProjectsDir();
 
-  return fs.readdirSync(Paths.PROJECTS_DIR, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .map(entry => {
+  return fs
+    .readdirSync(Paths.PROJECTS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
       try {
         return withStatus(readProject(entry.name));
       } catch {
@@ -153,12 +163,15 @@ export function create({ name, rootPath, context = '' } = {}) {
 
 export function update(projectId, patch = {}) {
   const current = readProject(projectId);
-  const next = normalizeProject({
-    ...current,
-    ...patch,
-    id: current.id,
-    updatedAt: new Date().toISOString(),
-  }, current.id);
+  const next = normalizeProject(
+    {
+      ...current,
+      ...patch,
+      id: current.id,
+      updatedAt: new Date().toISOString(),
+    },
+    current.id,
+  );
 
   assertValidProjectInput(next);
   writeProject(next);

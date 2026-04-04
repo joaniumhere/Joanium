@@ -5,6 +5,33 @@ import { attachWindowStatePersistence, loadWindowState } from '../Services/Windo
 /** @type {BrowserWindow | null} */
 let _win = null;
 
+function applyPageWindowState(win, page, windowState = loadWindowState()) {
+  if (!win) return;
+
+  if (page === Paths.SETUP_PAGE) {
+    if (win.isFullScreen()) win.setFullScreen(false);
+    win.maximize();
+    return;
+  }
+
+  if (windowState.isFullScreen) {
+    win.setFullScreen(true);
+    return;
+  }
+
+  if (win.isFullScreen()) win.setFullScreen(false);
+
+  if (windowState.isMaximized) {
+    win.maximize();
+    return;
+  }
+
+  if (win.isMaximized()) win.unmaximize();
+  if (windowState.bounds) {
+    win.setBounds(windowState.bounds);
+  }
+}
+
 /**
  * Improve performance at app level (call this once in your main entry file ideally)
  */
@@ -51,13 +78,7 @@ export function create(page) {
   _win.loadURL(`file://${page}`);
 
   // Apply saved window state immediately
-  if (page === Paths.SETUP_PAGE) {
-    _win.maximize();
-  } else if (windowState.isFullScreen) {
-    _win.setFullScreen(true);
-  } else if (windowState.isMaximized) {
-    _win.maximize();
-  }
+  applyPageWindowState(_win, page, windowState);
 
   // 🚀 Defer non-critical work
   setImmediate(() => {
@@ -107,10 +128,9 @@ export function loadPage(page) {
   if (!_win) return;
 
   if (page === Paths.SETUP_PAGE || page === Paths.INDEX_PAGE) {
+    const windowState = loadWindowState();
     _win.loadURL(`file://${page}`);
-    if (page === Paths.SETUP_PAGE) {
-      _win.setFullScreen(true);
-    }
+    applyPageWindowState(_win, page, windowState);
     return;
   }
 

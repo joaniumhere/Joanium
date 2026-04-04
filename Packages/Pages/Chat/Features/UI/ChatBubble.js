@@ -44,11 +44,18 @@ function humanizeBrowserToolLog(text) {
     return `${base.replace(/\.\.\.$/, '')} failed: ${failureMatch[2]}`;
   }
 
-  const toolName = String(text ?? '').trim().split(/\s+/)[0];
+  const toolName = String(text ?? '')
+    .trim()
+    .split(/\s+/)[0];
   if (!BROWSER_TOOL_LABELS[toolName]) return text;
 
-  const remainder = String(text ?? '').trim().slice(toolName.length).trim();
-  return remainder ? `${BROWSER_TOOL_LABELS[toolName]} ${remainder}` : BROWSER_TOOL_LABELS[toolName];
+  const remainder = String(text ?? '')
+    .trim()
+    .slice(toolName.length)
+    .trim();
+  return remainder
+    ? `${BROWSER_TOOL_LABELS[toolName]} ${remainder}`
+    : BROWSER_TOOL_LABELS[toolName];
 }
 
 /* ── Attachment frame builders ── */
@@ -64,6 +71,25 @@ export function buildImageFrame(attachment, className) {
   return frame;
 }
 
+function createStaticIcon(svgMarkup) {
+  const icon = document.createElement('span');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = svgMarkup;
+  return icon;
+}
+
+function toSafeHttpUrl(rawUrl) {
+  const value = String(rawUrl ?? '').trim();
+  if (!value) return '';
+
+  try {
+    const parsed = new URL(value);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 export function buildFileFrame(attachment, className) {
   const extMatch = (attachment.name || '').match(/\.([^.]+)$/);
   const ext = extMatch ? extMatch[1].toUpperCase() : 'FILE';
@@ -71,11 +97,22 @@ export function buildFileFrame(attachment, className) {
   const frame = document.createElement('div');
   frame.className = className;
   frame.title = attachment.name || 'File';
-  frame.innerHTML = `
-    <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${attachment.name}</div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${linesText}</div>
-    <div style="margin-top:auto;font-size:10px;font-weight:bold;color:var(--text-secondary);border:1px solid var(--border-subtle);border-radius:4px;padding:2px 6px;align-self:flex-start;">${ext}</div>
-  `;
+
+  const nameEl = document.createElement('div');
+  nameEl.style.cssText =
+    'font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;';
+  nameEl.textContent = attachment.name || 'File';
+
+  const summaryEl = document.createElement('div');
+  summaryEl.style.cssText = 'font-size:11px;color:var(--text-muted);margin-top:4px;';
+  summaryEl.textContent = linesText;
+
+  const extEl = document.createElement('div');
+  extEl.style.cssText =
+    'margin-top:auto;font-size:10px;font-weight:bold;color:var(--text-secondary);border:1px solid var(--border-subtle);border-radius:4px;padding:2px 6px;align-self:flex-start;';
+  extEl.textContent = ext;
+
+  frame.append(nameEl, summaryEl, extEl);
   frame.style.display = 'flex';
   frame.style.flexDirection = 'column';
   frame.style.alignItems = 'flex-start';
@@ -96,7 +133,7 @@ function clonePhotoGalleryAttachment(gallery) {
     query: gallery?.query ?? '',
     total: gallery?.total ?? null,
     photos: Array.isArray(gallery?.photos)
-      ? gallery.photos.map(photo => ({
+      ? gallery.photos.map((photo) => ({
           id: photo?.id ?? '',
           description: photo?.description ?? 'Photo',
           thumb: photo?.thumb ?? '',
@@ -139,17 +176,21 @@ function createPhotoGalleryElement({ query, total, photos = [] }) {
 
   const header = document.createElement('div');
   header.className = 'agent-photo-gallery-header';
-  header.innerHTML = `
-    <span class="agent-photo-gallery-title">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="3"/>
-        <circle cx="8.5" cy="8.5" r="1.5"/>
-        <polyline points="21 15 16 10 5 21"/>
-      </svg>
-      ${photos.length} photos for &ldquo;${query}&rdquo;
-    </span>
-    <span class="agent-photo-gallery-meta">${(total ?? photos.length).toLocaleString()} total on Unsplash</span>
-  `;
+
+  const title = document.createElement('span');
+  title.className = 'agent-photo-gallery-title';
+  title.append(
+    createStaticIcon(
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+    ),
+    document.createTextNode(`${photos.length} photos for "${query}"`),
+  );
+
+  const metaCount = document.createElement('span');
+  metaCount.className = 'agent-photo-gallery-meta';
+  metaCount.textContent = `${(total ?? photos.length).toLocaleString()} total on Unsplash`;
+
+  header.append(title, metaCount);
   wrap.appendChild(header);
 
   const grid = document.createElement('div');
@@ -158,47 +199,68 @@ function createPhotoGalleryElement({ query, total, photos = [] }) {
   photos.forEach((photo) => {
     const card = document.createElement('a');
     card.className = 'agent-photo-card';
-    card.href = photo.photographerUrl || '#';
-    card.target = '_blank';
-    card.rel = 'noopener noreferrer';
+    const profileUrl = toSafeHttpUrl(photo.photographerUrl);
+    const pageUrl = toSafeHttpUrl(photo.pageUrl);
+    card.href = profileUrl || '#';
+    if (profileUrl) {
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+    }
     card.title = `${photo.photographer} - click to view profile`;
 
     const imgWrap = document.createElement('div');
     imgWrap.className = 'agent-photo-img-wrap';
 
     const img = document.createElement('img');
-    img.src = photo.thumb || photo.small || '';
+    img.src = toSafeHttpUrl(photo.thumb) || toSafeHttpUrl(photo.small) || '';
     img.alt = photo.description || 'Unsplash photo';
     img.loading = 'lazy';
     img.decoding = 'async';
     img.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (photo.pageUrl) window.open(photo.pageUrl, '_blank', 'noopener,noreferrer');
+      if (pageUrl) window.open(pageUrl, '_blank', 'noopener,noreferrer');
     });
     imgWrap.appendChild(img);
 
     const overlay = document.createElement('div');
     overlay.className = 'agent-photo-overlay';
-    overlay.innerHTML = `
-      <span class="agent-photo-desc">${(photo.description || '').slice(0, 60)}${photo.description?.length > 60 ? '...' : ''}</span>
-      <span class="agent-photo-likes">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        ${photo.likes?.toLocaleString() ?? 0}
-      </span>
-    `;
+
+    const descEl = document.createElement('span');
+    descEl.className = 'agent-photo-desc';
+    const description = String(photo.description || '');
+    descEl.textContent = `${description.slice(0, 60)}${description.length > 60 ? '...' : ''}`;
+
+    const likesEl = document.createElement('span');
+    likesEl.className = 'agent-photo-likes';
+    likesEl.append(
+      createStaticIcon(
+        '<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>',
+      ),
+      document.createTextNode(` ${photo.likes?.toLocaleString() ?? 0}`),
+    );
+
+    overlay.append(descEl, likesEl);
     imgWrap.appendChild(overlay);
     card.appendChild(imgWrap);
 
     const meta = document.createElement('div');
     meta.className = 'agent-photo-meta';
-    meta.innerHTML = `
-      <span class="agent-photo-photographer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        ${photo.photographer}
-      </span>
-      <span class="agent-photo-dims">${photo.width ?? '?'}x${photo.height ?? '?'}</span>
-    `;
+
+    const photographerEl = document.createElement('span');
+    photographerEl.className = 'agent-photo-photographer';
+    photographerEl.append(
+      createStaticIcon(
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+      ),
+      document.createTextNode(` ${photo.photographer}`),
+    );
+
+    const dimsEl = document.createElement('span');
+    dimsEl.className = 'agent-photo-dims';
+    dimsEl.textContent = `${photo.width ?? '?'}x${photo.height ?? '?'}`;
+
+    meta.append(photographerEl, dimsEl);
     card.appendChild(meta);
 
     grid.appendChild(card);
@@ -210,10 +272,12 @@ function createPhotoGalleryElement({ query, total, photos = [] }) {
 
 /* ── Text utilities ── */
 export function appendTextWithLineBreaks(container, text) {
-  String(text ?? '').split('\n').forEach((line, i) => {
-    if (i > 0) container.appendChild(document.createElement('br'));
-    container.appendChild(document.createTextNode(line));
-  });
+  String(text ?? '')
+    .split('\n')
+    .forEach((line, i) => {
+      if (i > 0) container.appendChild(document.createElement('br'));
+      container.appendChild(document.createTextNode(line));
+    });
 }
 
 export function smoothScrollToBottom() {
@@ -228,8 +292,13 @@ export function attachCopyEvent(btn, textToCopy) {
       await navigator.clipboard.writeText(textToCopy);
       btn.innerHTML = checkIcon();
       btn.style.color = 'var(--accent)';
-      setTimeout(() => { btn.innerHTML = copyIcon(); btn.style.color = ''; }, 2000);
-    } catch (err) { console.error('Failed to copy message:', err); }
+      setTimeout(() => {
+        btn.innerHTML = copyIcon();
+        btn.style.color = '';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy message:', err);
+    }
   };
 }
 
@@ -245,7 +314,11 @@ export function buildLogItem(rawLine) {
   let iconHtml = '';
   let displayText = rawLine;
 
-  if (String(displayText ?? '').trim().startsWith('Thinking')) {
+  if (
+    String(displayText ?? '')
+      .trim()
+      .startsWith('Thinking')
+  ) {
     displayText = 'Understanding the request...';
   }
 
@@ -426,7 +499,7 @@ export function createLiveRow(doSendFromStateFn) {
             text.style.color = success ? 'var(--text-secondary)' : '#ef4444';
           }
           if (!success) setThinkingState('error');
-        }
+        },
       };
     },
 
@@ -500,7 +573,7 @@ export function createLiveRow(doSendFromStateFn) {
           const rows = Array.from(chatMessages.querySelectorAll('.message-row'));
           const rowIdx = rows.indexOf(row);
           if (rowIdx === -1) return;
-          rows.slice(rowIdx).forEach(r => r.remove());
+          rows.slice(rowIdx).forEach((r) => r.remove());
           state.messages = state.messages.slice(0, rowIdx);
           await doSendFromStateFn();
         });
@@ -558,7 +631,7 @@ export function createLiveRow(doSendFromStateFn) {
     },
 
     getAttachments() {
-      return _replyAttachments.map(attachment => {
+      return _replyAttachments.map((attachment) => {
         if (attachment.type === 'photo_gallery') return clonePhotoGalleryAttachment(attachment);
         return { ...attachment };
       });
@@ -578,8 +651,13 @@ export async function onChatMessagesClick(e) {
       const orig = copyCodeBtn.innerHTML;
       copyCodeBtn.innerHTML = `${checkIcon()} Copied`;
       copyCodeBtn.style.color = 'var(--accent)';
-      setTimeout(() => { copyCodeBtn.innerHTML = orig; copyCodeBtn.style.color = ''; }, 2000);
-    } catch (err) { console.error('Failed to copy code:', err); }
+      setTimeout(() => {
+        copyCodeBtn.innerHTML = orig;
+        copyCodeBtn.style.color = '';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
   }
 
   const previewCodeBtn = e.target.closest('.preview-code-btn');
@@ -598,26 +676,61 @@ export async function onChatMessagesClick(e) {
     if (!codeEl) return;
     const lang = dlCodeBtn.dataset.lang || 'txt';
     const EXT_MAP = {
-      javascript: 'js', js: 'js', typescript: 'ts', ts: 'ts', python: 'py', py: 'py',
-      html: 'html', css: 'css', json: 'json', bash: 'sh', shell: 'sh', sh: 'sh',
-      sql: 'sql', java: 'java', kotlin: 'kt', swift: 'swift', rust: 'rs', go: 'go',
-      cpp: 'cpp', c: 'c', php: 'php', ruby: 'rb', yaml: 'yaml', yml: 'yml',
-      xml: 'xml', markdown: 'md', md: 'md', jsx: 'jsx', tsx: 'tsx',
-      vue: 'vue', scss: 'scss', sass: 'sass', less: 'less',
+      javascript: 'js',
+      js: 'js',
+      typescript: 'ts',
+      ts: 'ts',
+      python: 'py',
+      py: 'py',
+      html: 'html',
+      css: 'css',
+      json: 'json',
+      bash: 'sh',
+      shell: 'sh',
+      sh: 'sh',
+      sql: 'sql',
+      java: 'java',
+      kotlin: 'kt',
+      swift: 'swift',
+      rust: 'rs',
+      go: 'go',
+      cpp: 'cpp',
+      c: 'c',
+      php: 'php',
+      ruby: 'rb',
+      yaml: 'yaml',
+      yml: 'yml',
+      xml: 'xml',
+      markdown: 'md',
+      md: 'md',
+      jsx: 'jsx',
+      tsx: 'tsx',
+      vue: 'vue',
+      scss: 'scss',
+      sass: 'sass',
+      less: 'less',
     };
     const ext = EXT_MAP[lang.toLowerCase()] || lang || 'txt';
     try {
       const blob = new Blob([codeEl.textContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = `code.${ext}`;
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = `code.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       const orig = dlCodeBtn.innerHTML;
       dlCodeBtn.innerHTML = `${checkIcon()} Saved`;
       dlCodeBtn.style.color = 'var(--accent)';
-      setTimeout(() => { dlCodeBtn.innerHTML = orig; dlCodeBtn.style.color = ''; }, 2000);
-    } catch (err) { console.error('Failed to download code:', err); }
+      setTimeout(() => {
+        dlCodeBtn.innerHTML = orig;
+        dlCodeBtn.style.color = '';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to download code:', err);
+    }
   }
 }
 
@@ -645,28 +758,33 @@ function stripAssistantReasoningTags(text) {
 
 export function normalizeMessage(msg) {
   const role = msg?.role ?? 'user';
-  const content = role === 'assistant'
-    ? stripAssistantReasoningTags(msg?.content ?? '')
-    : String(msg?.content ?? '');
+  const content =
+    role === 'assistant'
+      ? stripAssistantReasoningTags(msg?.content ?? '')
+      : String(msg?.content ?? '');
 
   return {
     role,
     content,
-    attachments: Array.isArray(msg?.attachments) ? msg.attachments.filter(isSupportedAttachment) : [],
+    attachments: Array.isArray(msg?.attachments)
+      ? msg.attachments.filter(isSupportedAttachment)
+      : [],
   };
 }
 
 function isInternalAssistantToolLeak(text) {
   const value = String(text ?? '').trim();
   if (!value) return false;
-  return INTERNAL_ASSISTANT_TOOL_PATTERNS.some(pattern => pattern.test(value));
+  return INTERNAL_ASSISTANT_TOOL_PATTERNS.some((pattern) => pattern.test(value));
 }
 
 export function isInternalHiddenMessage(msg) {
   if (!msg) return false;
   if (msg.role === 'assistant') return isInternalAssistantToolLeak(msg.content);
   if (msg.role !== 'user') return false;
-  return /^\s*(?:Tool result for|Internal execution context for the assistant only)\b/i.test(String(msg.content ?? ''));
+  return /^\s*(?:Tool result for|Internal execution context for the assistant only)\b/i.test(
+    String(msg.content ?? ''),
+  );
 }
 
 export function sanitizeAssistantReply(text) {
@@ -677,13 +795,18 @@ export function sanitizeAssistantReply(text) {
 }
 
 export function sanitizeMessagesForUI(messages = []) {
-  return messages
-    .map(normalizeMessage)
-    .filter(message => !isInternalHiddenMessage(message));
+  return messages.map(normalizeMessage).filter((message) => !isInternalHiddenMessage(message));
 }
 
 /* ── appendMessage ── */
-export function appendMessage(role, content, addToState = true, scroll = true, attachments = [], doSendFromStateFn = () => { }) {
+export function appendMessage(
+  role,
+  content,
+  addToState = true,
+  scroll = true,
+  attachments = [],
+  doSendFromStateFn = () => {},
+) {
   const msg = normalizeMessage({ role, content, attachments });
   if (isInternalHiddenMessage(msg)) return null;
   if (addToState) state.messages.push(msg);
@@ -721,7 +844,7 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       bubble.classList.add('has-attachments');
       const gallery = document.createElement('div');
       gallery.className = 'bubble-attachments';
-      msg.attachments.forEach(a => {
+      msg.attachments.forEach((a) => {
         if (a.type === 'image') gallery.appendChild(buildImageFrame(a, 'bubble-attachment'));
         else if (a.type === 'file') gallery.appendChild(buildFileFrame(a, 'bubble-attachment'));
       });
@@ -785,7 +908,8 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       const saveBtn = editActions.querySelector('.bubble-edit-save');
 
       cancelBtn.addEventListener('click', () => {
-        bubble.style.transition = 'max-width 0.22s var(--ease-out-expo), width 0.22s var(--ease-out-expo), opacity 0.15s ease';
+        bubble.style.transition =
+          'max-width 0.22s var(--ease-out-expo), width 0.22s var(--ease-out-expo), opacity 0.15s ease';
         bubble.style.opacity = '0.6';
         setTimeout(() => {
           bubble.style.opacity = '';
@@ -816,7 +940,7 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
           state.messages[rowIdx] = { ...state.messages[rowIdx], content: newText };
         }
 
-        rows.slice(rowIdx + 1).forEach(r => r.remove());
+        rows.slice(rowIdx + 1).forEach((r) => r.remove());
         state.messages = state.messages.slice(0, rowIdx + 1);
 
         textEl = document.createElement('div');
@@ -842,12 +966,11 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       const rows = Array.from(chatMessages.querySelectorAll('.message-row'));
       const rowIdx = rows.indexOf(row);
       if (rowIdx === -1) return;
-      rows.slice(rowIdx + 1).forEach(r => r.remove());
+      rows.slice(rowIdx + 1).forEach((r) => r.remove());
       state.messages = state.messages.slice(0, rowIdx + 1);
       updateTimeline();
       await doSendFromStateFn();
     });
-
   } else {
     row.innerHTML = `
       ${assistantIcon()}
@@ -864,7 +987,7 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       const richMediaEl = document.createElement('div');
       richMediaEl.className = 'agent-reply-media';
 
-      msg.attachments.forEach(attachment => {
+      msg.attachments.forEach((attachment) => {
         if (attachment.type === 'photo_gallery') {
           richMediaEl.appendChild(createPhotoGalleryElement(attachment));
         } else if (attachment.type === 'image') {
@@ -888,7 +1011,7 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
       const rows = Array.from(chatMessages.querySelectorAll('.message-row'));
       const rowIdx = rows.indexOf(row);
       if (rowIdx === -1) return;
-      rows.slice(rowIdx).forEach(r => r.remove());
+      rows.slice(rowIdx).forEach((r) => r.remove());
       state.messages = state.messages.slice(0, rowIdx);
       updateTimeline();
       await doSendFromStateFn();
@@ -904,4 +1027,3 @@ export function appendMessage(role, content, addToState = true, scroll = true, a
 
   return row;
 }
-

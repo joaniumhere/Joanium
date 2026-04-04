@@ -16,7 +16,9 @@ class MCPSession extends EventEmitter {
     this._pending = new Map(); // id → { resolve, reject }
   }
 
-  _nextReqId() { return this._nextId++; }
+  _nextReqId() {
+    return this._nextId++;
+  }
 
   _dispatch(message) {
     if (message.id != null && this._pending.has(message.id)) {
@@ -67,8 +69,12 @@ class MCPSession extends EventEmitter {
   }
 
   // Subclasses implement _send and must call _dispatch on incoming messages
-  _send(_msg) { throw new Error('_send() not implemented'); }
-  async close() { /* override */ }
+  _send(_msg) {
+    throw new Error('_send() not implemented');
+  }
+  async close() {
+    /* override */
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -79,6 +85,12 @@ class MCPSession extends EventEmitter {
 export class StdioMCPSession extends MCPSession {
   constructor({ command, args = [], env = {} }) {
     super();
+    this._closed = false;
+    this._exitCode = null;
+    this._closedPromise = new Promise((resolve) => {
+      this._resolveClosed = resolve;
+    });
+
     this._proc = spawn(command, args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, ...env },
@@ -86,20 +98,23 @@ export class StdioMCPSession extends MCPSession {
     });
 
     const rl = createInterface({ input: this._proc.stdout });
-    rl.on('line', line => {
+    rl.on('line', (line) => {
       if (!line.trim()) return;
       try {
         this._dispatch(JSON.parse(line));
-      } catch { /* ignore non-JSON */ }
+      } catch {
+        /* ignore non-JSON */
+      }
     });
 
-    this._proc.stderr?.on('data', d =>
-      this.emit('stderr', d.toString()),
-    );
+    this._proc.stderr?.on('data', (d) => this.emit('stderr', d.toString()));
 
-    this._proc.on('exit', code =>
-      this.emit('close', code),
-    );
+    this._proc.on('exit', (code) => {
+      this._closed = true;
+      this._exitCode = code;
+      this._resolveClosed?.(code);
+      this.emit('close', code);
+    });
   }
 
   _send(msg) {
@@ -107,10 +122,9 @@ export class StdioMCPSession extends MCPSession {
   }
 
   async close() {
+    if (this._closed || this._proc.exitCode !== null) return this._closedPromise;
     this._proc.stdin?.end();
-    return new Promise(resolve =>
-      this._proc.on('exit', resolve),
-    );
+    return this._closedPromise;
   }
 }
 
@@ -194,6 +208,10 @@ export class MCPRegistry {
   async connect(serverConfig) {
     const { id, name, transport, url, command, args, env, builtinType } = serverConfig;
 
+    if (this._servers.has(id)) {
+      await this.disconnect(id);
+    }
+
     let session;
     if (transport === 'http') {
       session = new HttpMCPSession({ url });
@@ -225,7 +243,7 @@ export class MCPRegistry {
   async disconnect(serverId) {
     const entry = this._servers.get(serverId);
     if (!entry) return;
-    await entry.session.close().catch(() => { });
+    await entry.session.close().catch(() => {});
     this._servers.delete(serverId);
   }
 
@@ -243,13 +261,13 @@ export class MCPRegistry {
   /** Call a tool on the appropriate server. */
   async callTool(toolName, args = {}) {
     for (const [, { session, tools }] of this._servers) {
-      if (tools.some(t => t.name === toolName)) {
+      if (tools.some((t) => t.name === toolName)) {
         const result = await session.callTool(toolName, args);
         // MCP tool results: { content: [{ type, text }] }
         if (Array.isArray(result?.content)) {
           return result.content
-            .filter(b => b.type === 'text')
-            .map(b => b.text)
+            .filter((b) => b.type === 'text')
+            .map((b) => b.text)
             .join('\n');
         }
         return JSON.stringify(result);
@@ -258,13 +276,19 @@ export class MCPRegistry {
     throw new Error(`Tool "${toolName}" not found in any connected MCP server.`);
   }
 
-  getServer(id) { return this._servers.get(id); }
-  getAll() { return [...this._servers.values()].map(e => ({ ...e.meta, toolCount: e.tools.length })); }
-  isConnected(id) { return this._servers.has(id); }
+  getServer(id) {
+    return this._servers.get(id);
+  }
+  getAll() {
+    return [...this._servers.values()].map((e) => ({ ...e.meta, toolCount: e.tools.length }));
+  }
+  isConnected(id) {
+    return this._servers.has(id);
+  }
 
   async disconnectAll() {
     for (const id of this._servers.keys()) {
-      await this.disconnect(id).catch(() => { });
+      await this.disconnect(id).catch(() => {});
     }
   }
 }

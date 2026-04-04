@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import { screen } from 'electron';
 import Paths from '../Core/Paths.js';
 
@@ -14,8 +15,9 @@ const DEFAULT_STATE = {
 };
 
 function ensureDataDir() {
-  if (!fs.existsSync(Paths.DATA_DIR)) {
-    fs.mkdirSync(Paths.DATA_DIR, { recursive: true });
+  const dir = path.dirname(Paths.WINDOW_STATE_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
@@ -26,7 +28,10 @@ function isFiniteNumber(value) {
 function clampBounds(rawBounds = {}) {
   const primaryWorkArea = screen.getPrimaryDisplay().workArea;
   const width = Math.max(DEFAULT_BOUNDS.width, Math.round(rawBounds.width ?? DEFAULT_BOUNDS.width));
-  const height = Math.max(DEFAULT_BOUNDS.height, Math.round(rawBounds.height ?? DEFAULT_BOUNDS.height));
+  const height = Math.max(
+    DEFAULT_BOUNDS.height,
+    Math.round(rawBounds.height ?? DEFAULT_BOUNDS.height),
+  );
   const probe = {
     x: Math.round(rawBounds.x ?? primaryWorkArea.x),
     y: Math.round(rawBounds.y ?? primaryWorkArea.y),

@@ -6,35 +6,78 @@ import { FEATURE_DISCOVERY_ROOTS, PAGE_DISCOVERY_ROOT } from './DiscoveryManifes
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..', '..', '..');
-const EXTERNAL = app.isPackaged ? process.resourcesPath : ROOT;
+
+function getBundledRoot() {
+  return app.isPackaged ? process.resourcesPath : ROOT;
+}
+
+function getStateRoot() {
+  return app.isPackaged ? app.getPath('userData') : ROOT;
+}
 
 export const Paths = {
   ROOT,
+  get BUNDLED_ROOT() {
+    return getBundledRoot();
+  },
+  get STATE_ROOT() {
+    return getStateRoot();
+  },
 
   // Config
-  USER_FILE: path.join(EXTERNAL, 'Config', 'User.json'),
-  MODELS_FILE: path.join(EXTERNAL, 'Config', 'Models.json'),
-  WINDOW_STATE_FILE: path.join(EXTERNAL, 'Config', 'WindowState.json'),
+  get USER_FILE() {
+    return path.join(getStateRoot(), 'Config', 'User.json');
+  },
+  get MODELS_FILE() {
+    return path.join(getBundledRoot(), 'Config', 'Models.json');
+  },
+  get WINDOW_STATE_FILE() {
+    return path.join(getStateRoot(), 'Config', 'WindowState.json');
+  },
 
   // Data
-  DATA_DIR: path.join(EXTERNAL, 'Data'),
-  CHATS_DIR: path.join(EXTERNAL, 'Data', 'Chats'),
-  PROJECTS_DIR: path.join(EXTERNAL, 'Data', 'Projects'),
-  SKILLS_FILE: path.join(EXTERNAL, 'Data', 'Skills.json'),
-  ACTIVE_PERSONA_FILE: path.join(EXTERNAL, 'Data', 'ActivePersona.json'),
-  USAGE_FILE: path.join(EXTERNAL, 'Data', 'Usage.json'),
-  MCP_FILE: path.join(EXTERNAL, 'Data', 'MCPServers.json'),
-  FEATURES_DATA_DIR: path.join(EXTERNAL, 'Data', 'Features'),
+  get DATA_DIR() {
+    return path.join(getStateRoot(), 'Data');
+  },
+  get CHATS_DIR() {
+    return path.join(getStateRoot(), 'Data', 'Chats');
+  },
+  get PROJECTS_DIR() {
+    return path.join(getStateRoot(), 'Data', 'Projects');
+  },
+  get SKILLS_FILE() {
+    return path.join(getStateRoot(), 'Data', 'Skills.json');
+  },
+  get ACTIVE_PERSONA_FILE() {
+    return path.join(getStateRoot(), 'Data', 'ActivePersona.json');
+  },
+  get USAGE_FILE() {
+    return path.join(getStateRoot(), 'Data', 'Usage.json');
+  },
+  get MCP_FILE() {
+    return path.join(getStateRoot(), 'Data', 'MCPServers.json');
+  },
+  get FEATURES_DATA_DIR() {
+    return path.join(getStateRoot(), 'Data', 'Features');
+  },
 
   // Instructions
-  CUSTOM_INSTRUCTIONS_FILE: path.join(EXTERNAL, 'Instructions', 'CustomInstructions.md'),
-  MEMORY_FILE: path.join(EXTERNAL, 'Instructions', 'Memory.md'),
+  get CUSTOM_INSTRUCTIONS_FILE() {
+    return path.join(getStateRoot(), 'Instructions', 'CustomInstructions.md');
+  },
+  get MEMORY_FILE() {
+    return path.join(getStateRoot(), 'Instructions', 'Memory.md');
+  },
 
   // Skills
-  SKILLS_DIR: path.join(EXTERNAL, 'Skills'),
+  get SKILLS_DIR() {
+    return path.join(getBundledRoot(), 'Skills');
+  },
 
   // Personas
-  PERSONAS_DIR: path.join(EXTERNAL, 'Personas'),
+  get PERSONAS_DIR() {
+    return path.join(getBundledRoot(), 'Personas');
+  },
 
   // Features
   FEATURES_DIRS: FEATURE_DISCOVERY_ROOTS,

@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import Paths from '../Core/Paths.js';
 
 const DEFAULT_USER = {
@@ -58,6 +59,13 @@ const LOCAL_PROVIDER_RUNTIME = {
 export function ensureDataDir() {
   if (!fs.existsSync(Paths.DATA_DIR)) {
     fs.mkdirSync(Paths.DATA_DIR, { recursive: true });
+  }
+}
+
+function ensureParentDir(filePath) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
@@ -121,7 +129,7 @@ export function readUser() {
 }
 
 export function writeUser(updates = {}) {
-  ensureDataDir();
+  ensureParentDir(Paths.USER_FILE);
   const next = merge(readUser(), updates);
   fs.writeFileSync(Paths.USER_FILE, JSON.stringify(next, null, 2), 'utf-8');
   return next;
@@ -155,9 +163,10 @@ export function readModelsWithKeys() {
     const resolvedModels = localRuntime
       ? buildLocalModels(provider.provider, settings)
       : provider.models;
-    const configured = provider.requires_api_key === false
-      ? Boolean(endpoint && Object.keys(resolvedModels ?? {}).length)
-      : Boolean(api);
+    const configured =
+      provider.requires_api_key === false
+        ? Boolean(endpoint && Object.keys(resolvedModels ?? {}).length)
+        : Boolean(api);
 
     return {
       ...provider,
@@ -223,7 +232,7 @@ export function saveProviderConfigurations(configMap) {
     else delete nextSettings[id];
   });
 
-  ensureDataDir();
+  ensureParentDir(Paths.USER_FILE);
   const next = {
     ...merge(user, {}),
     api_keys: nextKeys,
@@ -242,6 +251,6 @@ export function readText(filePath) {
 }
 
 export function writeText(filePath, content) {
-  ensureDataDir();
+  ensureParentDir(filePath);
   fs.writeFileSync(filePath, content, 'utf-8');
 }

@@ -24,17 +24,36 @@ export class ConnectorEngine {
     const defaultState = buildDefaultState(this.featureRegistry);
 
     try {
-      this._data = this.storage.load(() => deepClone(defaultState));
+      const loaded = this.storage.load(() => deepClone(defaultState));
+      const connectors =
+        loaded?.connectors &&
+        typeof loaded.connectors === 'object' &&
+        !Array.isArray(loaded.connectors)
+          ? loaded.connectors
+          : {};
+      this._data = {
+        ...(loaded && typeof loaded === 'object' && !Array.isArray(loaded) ? loaded : {}),
+        connectors,
+      };
     } catch {
       this._data = deepClone(defaultState);
     }
 
     for (const [key, value] of Object.entries(defaultState.connectors)) {
-      if (!this._data.connectors[key]) {
+      const current = this._data.connectors[key];
+      if (!current || typeof current !== 'object' || Array.isArray(current)) {
         this._data.connectors[key] = deepClone(value);
       } else {
-        this._data.connectors[key].isFree = value.isFree ?? false;
-        this._data.connectors[key].noKey = value.noKey ?? false;
+        this._data.connectors[key] = {
+          ...deepClone(value),
+          ...current,
+          credentials: {
+            ...(value.credentials ?? {}),
+            ...(current.credentials ?? {}),
+          },
+          isFree: value.isFree ?? false,
+          noKey: value.noKey ?? false,
+        };
       }
     }
 
@@ -139,7 +158,10 @@ export class ConnectorEngine {
   updateCredentials(name, patch) {
     this._load();
     if (!this._data.connectors[name]) return;
-    this._data.connectors[name].credentials = { ...this._data.connectors[name].credentials, ...patch };
+    this._data.connectors[name].credentials = {
+      ...this._data.connectors[name].credentials,
+      ...patch,
+    };
     this._persist();
   }
 
