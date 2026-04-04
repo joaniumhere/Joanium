@@ -34,7 +34,7 @@ function buildHTML() {
           <div class="html-preview-copy">
             <div class="html-preview-kicker">Safe Preview</div>
             <h2 id="html-preview-title">Rendered HTML</h2>
-            <p class="html-preview-subtitle">Scripts, forms, popups, embeds, and navigation are blocked before rendering.</p>
+            <p class="html-preview-subtitle">Forms, popups, embeds, and navigation are blocked before rendering.</p>
           </div>
           <button class="settings-modal-close html-preview-close" id="html-preview-close" type="button" aria-label="Close HTML preview">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
