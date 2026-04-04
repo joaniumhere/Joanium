@@ -37,32 +37,38 @@ export async function getRepoTree(credentials, owner, repo, branch) {
     githubFetch(`/repos/${owner}/${repo}/git/trees/${b}?recursive=1`, credentials.token);
 
   if (branch) return tryBranch(branch);
-  try { return await tryBranch('main'); }
-  catch { return tryBranch('master'); }
+  try {
+    return await tryBranch('main');
+  } catch {
+    return tryBranch('master');
+  }
 }
 
 export async function getFileContent(credentials, owner, repo, filePath) {
-  const data = await githubFetch(
-    `/repos/${owner}/${repo}/contents/${filePath}`,
-    credentials.token,
-  );
+  const data = await githubFetch(`/repos/${owner}/${repo}/contents/${filePath}`, credentials.token);
 
-  if (Array.isArray(data))
-    throw new Error(`"${filePath}" is a directory, not a file.`);
+  if (Array.isArray(data)) throw new Error(`"${filePath}" is a directory, not a file.`);
 
   const content =
     data.encoding === 'base64'
       ? Buffer.from(data.content.replace(/\n/g, ''), 'base64').toString('utf-8')
       : data.content;
 
-  return { path: data.path, name: data.name, content, sha: data.sha, size: data.size, url: data.html_url };
+  return {
+    path: data.path,
+    name: data.name,
+    content,
+    sha: data.sha,
+    size: data.size,
+    url: data.html_url,
+  };
 }
 
 export async function getIssues(credentials, owner, repo, state = 'open', perPage = 20) {
   return githubFetch(
     `/repos/${owner}/${repo}/issues?state=${state}&per_page=${perPage}`,
     credentials.token,
-  ).then(items => items.filter(i => !i.pull_request));
+  ).then((items) => items.filter((i) => !i.pull_request));
 }
 
 export async function getPullRequests(credentials, owner, repo, state = 'open', perPage = 20) {
@@ -73,10 +79,7 @@ export async function getPullRequests(credentials, owner, repo, state = 'open', 
 }
 
 export async function getCommits(credentials, owner, repo, perPage = 20) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/commits?per_page=${perPage}`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/commits?per_page=${perPage}`, credentials.token);
 }
 
 export async function getNotifications(credentials, unreadOnly = true) {
@@ -127,16 +130,13 @@ export async function getPRFiles(credentials, owner, repo, prNumber) {
 }
 
 export async function getPRDiff(credentials, owner, repo, prNumber) {
-  const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`,
-    {
-      headers: {
-        Authorization: `Bearer ${credentials.token}`,
-        Accept: 'application/vnd.github.v3.diff',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`, {
+    headers: {
+      Authorization: `Bearer ${credentials.token}`,
+      Accept: 'application/vnd.github.v3.diff',
+      'X-GitHub-Api-Version': '2022-11-28',
     },
-  );
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.message ?? `GitHub API ${res.status}`);
@@ -145,13 +145,16 @@ export async function getPRDiff(credentials, owner, repo, prNumber) {
 }
 
 export async function getPRDetails(credentials, owner, repo, prNumber) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/pulls/${prNumber}`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/pulls/${prNumber}`, credentials.token);
 }
 
-export async function createPRReview(credentials, owner, repo, prNumber, { body, event = 'COMMENT', comments = [] }) {
+export async function createPRReview(
+  credentials,
+  owner,
+  repo,
+  prNumber,
+  { body, event = 'COMMENT', comments = [] },
+) {
   return githubFetch(`/repos/${owner}/${repo}/pulls/${prNumber}/reviews`, credentials.token, {
     method: 'POST',
     body: JSON.stringify({ body, event, comments }),
@@ -159,10 +162,7 @@ export async function createPRReview(credentials, owner, repo, prNumber, { body,
 }
 
 export async function listPRReviews(credentials, owner, repo, prNumber) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/pulls/${prNumber}/reviews`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/pulls/${prNumber}/reviews`, credentials.token);
 }
 
 export async function getPRComments(credentials, owner, repo, prNumber) {
@@ -180,8 +180,12 @@ export async function getPRChecks(credentials, owner, repo, prNumber) {
   }
 
   const [combinedStatus, checkRuns] = await Promise.all([
-    githubFetch(`/repos/${owner}/${repo}/commits/${sha}/status`, credentials.token).catch(() => null),
-    githubFetch(`/repos/${owner}/${repo}/commits/${sha}/check-runs`, credentials.token).catch(() => null),
+    githubFetch(`/repos/${owner}/${repo}/commits/${sha}/status`, credentials.token).catch(
+      () => null,
+    ),
+    githubFetch(`/repos/${owner}/${repo}/commits/${sha}/check-runs`, credentials.token).catch(
+      () => null,
+    ),
   ]);
 
   return {
@@ -194,15 +198,17 @@ export async function getPRChecks(credentials, owner, repo, prNumber) {
   };
 }
 
-export async function getWorkflowRuns(credentials, owner, repo, { branch = '', event = '', perPage = 20 } = {}) {
+export async function getWorkflowRuns(
+  credentials,
+  owner,
+  repo,
+  { branch = '', event = '', perPage = 20 } = {},
+) {
   const qs = new URLSearchParams({ per_page: String(perPage || 20) });
   if (branch) qs.set('branch', branch);
   if (event) qs.set('event', event);
 
-  return githubFetch(
-    `/repos/${owner}/${repo}/actions/runs?${qs.toString()}`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/actions/runs?${qs.toString()}`, credentials.token);
 }
 
 export async function starRepo(credentials, owner, repo) {
@@ -233,7 +239,12 @@ export async function getRepoStats(credentials, owner, repo) {
   };
 }
 
-export async function createPR(credentials, owner, repo, { title, body = '', head, base, draft = false }) {
+export async function createPR(
+  credentials,
+  owner,
+  repo,
+  { title, body = '', head, base, draft = false },
+) {
   if (!head || !base) throw new Error('createPR: head and base branches are required');
   return githubFetch(`/repos/${owner}/${repo}/pulls`, credentials.token, {
     method: 'POST',
@@ -241,7 +252,14 @@ export async function createPR(credentials, owner, repo, { title, body = '', hea
   });
 }
 
-export async function mergePR(credentials, owner, repo, prNumber, mergeMethod = 'merge', commitTitle = '') {
+export async function mergePR(
+  credentials,
+  owner,
+  repo,
+  prNumber,
+  mergeMethod = 'merge',
+  commitTitle = '',
+) {
   return githubFetch(`/repos/${owner}/${repo}/pulls/${prNumber}/merge`, credentials.token, {
     method: 'PUT',
     body: JSON.stringify({
@@ -300,11 +318,22 @@ export async function markAllNotificationsRead(credentials) {
   });
 }
 
-export async function triggerWorkflow(credentials, owner, repo, workflowId, ref = 'main', inputs = {}) {
-  return githubFetch(`/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`, credentials.token, {
-    method: 'POST',
-    body: JSON.stringify({ ref, inputs }),
-  });
+export async function triggerWorkflow(
+  credentials,
+  owner,
+  repo,
+  workflowId,
+  ref = 'main',
+  inputs = {},
+) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`,
+    credentials.token,
+    {
+      method: 'POST',
+      body: JSON.stringify({ ref, inputs }),
+    },
+  );
 }
 
 export async function getLatestWorkflowRun(credentials, owner, repo, workflowId, branch = '') {
@@ -328,7 +357,13 @@ export async function getIssueDetails(credentials, owner, repo, issueNumber) {
   return githubFetch(`/repos/${owner}/${repo}/issues/${issueNumber}`, credentials.token);
 }
 
-export async function updateIssue(credentials, owner, repo, issueNumber, { title, body, state, labels, assignees } = {}) {
+export async function updateIssue(
+  credentials,
+  owner,
+  repo,
+  issueNumber,
+  { title, body, state, labels, assignees } = {},
+) {
   const payload = {};
   if (title !== undefined) payload.title = title;
   if (body !== undefined) payload.body = body;
@@ -342,10 +377,7 @@ export async function updateIssue(credentials, owner, repo, issueNumber, { title
 }
 
 export async function getContributors(credentials, owner, repo, perPage = 30) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/contributors?per_page=${perPage}`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/contributors?per_page=${perPage}`, credentials.token);
 }
 
 export async function getLanguages(credentials, owner, repo) {
@@ -365,7 +397,14 @@ export async function getMilestones(credentials, owner, repo, state = 'open') {
   );
 }
 
-export async function createMilestone(credentials, owner, repo, title, description = '', dueOn = '') {
+export async function createMilestone(
+  credentials,
+  owner,
+  repo,
+  title,
+  description = '',
+  dueOn = '',
+) {
   const payload = { title };
   if (description) payload.description = description;
   if (dueOn) payload.due_on = dueOn;
@@ -383,11 +422,9 @@ export async function createBranch(credentials, owner, repo, branchName, sha) {
 }
 
 export async function deleteBranch(credentials, owner, repo, branchName) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/git/refs/heads/${branchName}`,
-    credentials.token,
-    { method: 'DELETE' },
-  );
+  return githubFetch(`/repos/${owner}/${repo}/git/refs/heads/${branchName}`, credentials.token, {
+    method: 'DELETE',
+  });
 }
 
 export async function getForks(credentials, owner, repo, perPage = 20) {
@@ -398,17 +435,11 @@ export async function getForks(credentials, owner, repo, perPage = 20) {
 }
 
 export async function getStargazers(credentials, owner, repo, perPage = 30) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/stargazers?per_page=${perPage}`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/stargazers?per_page=${perPage}`, credentials.token);
 }
 
 export async function getCollaborators(credentials, owner, repo) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/collaborators?per_page=50`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/collaborators?per_page=50`, credentials.token);
 }
 
 export async function compareBranches(credentials, owner, repo, base, head) {
@@ -426,7 +457,14 @@ export async function getTrafficViews(credentials, owner, repo) {
   return githubFetch(`/repos/${owner}/${repo}/traffic/views`, credentials.token);
 }
 
-export async function requestReviewers(credentials, owner, repo, prNumber, reviewers = [], teamReviewers = []) {
+export async function requestReviewers(
+  credentials,
+  owner,
+  repo,
+  prNumber,
+  reviewers = [],
+  teamReviewers = [],
+) {
   return githubFetch(
     `/repos/${owner}/${repo}/pulls/${prNumber}/requested_reviewers`,
     credentials.token,
@@ -467,15 +505,15 @@ export async function getCommitDetails(credentials, owner, repo, sha) {
 }
 
 export async function getTags(credentials, owner, repo, perPage = 20) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/tags?per_page=${perPage}`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/tags?per_page=${perPage}`, credentials.token);
 }
 
-export async function createRelease(credentials, owner, repo, {
-  tagName, name = '', body = '', draft = false, prerelease = false, targetCommitish = '',
-}) {
+export async function createRelease(
+  credentials,
+  owner,
+  repo,
+  { tagName, name = '', body = '', draft = false, prerelease = false, targetCommitish = '' },
+) {
   const payload = { tag_name: tagName, name: name || tagName, body, draft, prerelease };
   if (targetCommitish) payload.target_commitish = targetCommitish;
   return githubFetch(`/repos/${owner}/${repo}/releases`, credentials.token, {
@@ -492,9 +530,13 @@ export async function forkRepo(credentials, owner, repo, organization = '') {
   });
 }
 
-export async function updatePullRequest(credentials, owner, repo, prNumber, {
-  title, body, state, base,
-} = {}) {
+export async function updatePullRequest(
+  credentials,
+  owner,
+  repo,
+  prNumber,
+  { title, body, state, base } = {},
+) {
   const payload = {};
   if (title !== undefined) payload.title = title;
   if (body !== undefined) payload.body = body;
@@ -507,10 +549,7 @@ export async function updatePullRequest(credentials, owner, repo, prNumber, {
 }
 
 export async function getLabels(credentials, owner, repo, perPage = 50) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/labels?per_page=${perPage}`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/labels?per_page=${perPage}`, credentials.token);
 }
 
 export async function createLabel(credentials, owner, repo, name, color, description = '') {
@@ -558,18 +597,13 @@ export async function lockIssue(credentials, owner, repo, issueNumber, lockReaso
 }
 
 export async function unlockIssue(credentials, owner, repo, issueNumber) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/issues/${issueNumber}/lock`,
-    credentials.token,
-    { method: 'DELETE' },
-  );
+  return githubFetch(`/repos/${owner}/${repo}/issues/${issueNumber}/lock`, credentials.token, {
+    method: 'DELETE',
+  });
 }
 
 export async function getDeployments(credentials, owner, repo, perPage = 20) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/deployments?per_page=${perPage}`,
-    credentials.token,
-  );
+  return githubFetch(`/repos/${owner}/${repo}/deployments?per_page=${perPage}`, credentials.token);
 }
 
 export async function getRepoPermissions(credentials, owner, repo, username) {
@@ -581,14 +615,10 @@ export async function getRepoPermissions(credentials, owner, repo, username) {
 
 export async function removeLabels(credentials, owner, repo, issueNumber, labels = []) {
   // GitHub removes labels one at a time; delete via the bulk endpoint
-  return githubFetch(
-    `/repos/${owner}/${repo}/issues/${issueNumber}/labels`,
-    credentials.token,
-    {
-      method: 'PUT',          // PUT replaces the full label set; we pass remaining labels
-      body: JSON.stringify({ labels }),
-    },
-  );
+  return githubFetch(`/repos/${owner}/${repo}/issues/${issueNumber}/labels`, credentials.token, {
+    method: 'PUT', // PUT replaces the full label set; we pass remaining labels
+    body: JSON.stringify({ labels }),
+  });
 }
 
 export async function getPRRequestedReviewers(credentials, owner, repo, prNumber) {
@@ -603,15 +633,14 @@ export async function getRepoInfo(credentials, owner, repo) {
 }
 
 export async function getOrgRepos(credentials, org, perPage = 30) {
-  return githubFetch(
-    `/orgs/${org}/repos?sort=updated&per_page=${perPage}`,
-    credentials.token,
-  );
+  return githubFetch(`/orgs/${org}/repos?sort=updated&per_page=${perPage}`, credentials.token);
 }
 
 export async function watchRepo(credentials, owner, repo, subscribed = true) {
   if (!subscribed) {
-    return githubFetch(`/repos/${owner}/${repo}/subscription`, credentials.token, { method: 'DELETE' });
+    return githubFetch(`/repos/${owner}/${repo}/subscription`, credentials.token, {
+      method: 'DELETE',
+    });
   }
   return githubFetch(`/repos/${owner}/${repo}/subscription`, credentials.token, {
     method: 'PUT',
@@ -684,11 +713,9 @@ export async function getTeamMembers(credentials, org, teamSlug, perPage = 30) {
 }
 
 export async function getIssueReactions(credentials, owner, repo, issueNumber) {
-  return githubFetch(
-    `/repos/${owner}/${repo}/issues/${issueNumber}/reactions`,
-    credentials.token,
-    { headers: { Accept: 'application/vnd.github.squirrel-girl-preview+json' } },
-  );
+  return githubFetch(`/repos/${owner}/${repo}/issues/${issueNumber}/reactions`, credentials.token, {
+    headers: { Accept: 'application/vnd.github.squirrel-girl-preview+json' },
+  });
 }
 
 export async function getRepoLicense(credentials, owner, repo) {
@@ -777,7 +804,10 @@ export async function getRateLimit(credentials) {
 }
 
 export async function listWorkflows(credentials, owner, repo, perPage = 30) {
-  return githubFetch(`/repos/${owner}/${repo}/actions/workflows?per_page=${perPage}`, credentials.token);
+  return githubFetch(
+    `/repos/${owner}/${repo}/actions/workflows?per_page=${perPage}`,
+    credentials.token,
+  );
 }
 
 export async function getWorkflowDetails(credentials, owner, repo, workflowId) {
@@ -789,18 +819,21 @@ export async function getActionsRunners(credentials, owner, repo) {
 }
 
 export async function getActionsVariables(credentials, owner, repo, perPage = 30) {
-  return githubFetch(`/repos/${owner}/${repo}/actions/variables?per_page=${perPage}`, credentials.token);
+  return githubFetch(
+    `/repos/${owner}/${repo}/actions/variables?per_page=${perPage}`,
+    credentials.token,
+  );
 }
 
 export async function getActionsCache(credentials, owner, repo, perPage = 30) {
-  return githubFetch(`/repos/${owner}/${repo}/actions/caches?per_page=${perPage}`, credentials.token);
+  return githubFetch(
+    `/repos/${owner}/${repo}/actions/caches?per_page=${perPage}`,
+    credentials.token,
+  );
 }
 
 export async function getTeamRepos(credentials, org, teamSlug, perPage = 30) {
-  return githubFetch(
-    `/orgs/${org}/teams/${teamSlug}/repos?per_page=${perPage}`,
-    credentials.token,
-  );
+  return githubFetch(`/orgs/${org}/teams/${teamSlug}/repos?per_page=${perPage}`, credentials.token);
 }
 
 export async function getUserRepos(credentials, username, perPage = 30) {
@@ -850,4 +883,191 @@ export async function getRepoAutolinks(credentials, owner, repo) {
 
 export async function getCheckRunDetails(credentials, owner, repo, checkRunId) {
   return githubFetch(`/repos/${owner}/${repo}/check-runs/${checkRunId}`, credentials.token);
+}
+
+export async function createRepo(
+  credentials,
+  { name, description = '', private: isPrivate = false, autoInit = false },
+) {
+  return githubFetch('/user/repos', credentials.token, {
+    method: 'POST',
+    body: JSON.stringify({ name, description, private: isPrivate, auto_init: autoInit }),
+  });
+}
+
+export async function updateRepo(credentials, owner, repo, payload = {}) {
+  return githubFetch(`/repos/${owner}/${repo}`, credentials.token, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteRepo(credentials, owner, repo) {
+  return githubFetch(`/repos/${owner}/${repo}`, credentials.token, { method: 'DELETE' });
+}
+
+export async function getRepoContents(credentials, owner, repo, path = '', ref = '') {
+  const qs = ref ? `?ref=${encodeURIComponent(ref)}` : '';
+  return githubFetch(
+    `/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}${qs}`,
+    credentials.token,
+  );
+}
+
+export async function createOrUpdateFile(
+  credentials,
+  owner,
+  repo,
+  filePath,
+  { message, content, sha = '', branch = '' },
+) {
+  const payload = { message, content };
+  if (sha) payload.sha = sha;
+  if (branch) payload.branch = branch;
+  return githubFetch(`/repos/${owner}/${repo}/contents/${filePath}`, credentials.token, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteFile(
+  credentials,
+  owner,
+  repo,
+  filePath,
+  { message, sha, branch = '' },
+) {
+  const payload = { message, sha };
+  if (branch) payload.branch = branch;
+  return githubFetch(`/repos/${owner}/${repo}/contents/${filePath}`, credentials.token, {
+    method: 'DELETE',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getCommitComments(credentials, owner, repo, sha, perPage = 20) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/commits/${sha}/comments?per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function createCommitComment(
+  credentials,
+  owner,
+  repo,
+  sha,
+  body,
+  path = '',
+  position = null,
+) {
+  const payload = { body };
+  if (path) payload.path = path;
+  if (position !== null) payload.position = position;
+  return githubFetch(`/repos/${owner}/${repo}/commits/${sha}/comments`, credentials.token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function dismissPRReview(credentials, owner, repo, prNumber, reviewId, message) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/pulls/${prNumber}/reviews/${reviewId}/dismissals`,
+    credentials.token,
+    {
+      method: 'PUT',
+      body: JSON.stringify({ message }),
+    },
+  );
+}
+
+export async function cancelWorkflowRun(credentials, owner, repo, runId) {
+  const res = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}/cancel`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${credentials.token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    },
+  );
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+  return null;
+}
+
+export async function rerunWorkflowRun(credentials, owner, repo, runId) {
+  const res = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/actions/runs/${runId}/rerun`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${credentials.token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    },
+  );
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+  return null;
+}
+
+export async function listWorkflowRunArtifacts(credentials, owner, repo, runId, perPage = 20) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/actions/runs/${runId}/artifacts?per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function checkIfStarred(credentials, owner, repo) {
+  const res = await fetch(`https://api.github.com/user/starred/${owner}/${repo}`, {
+    headers: {
+      Authorization: `Bearer ${credentials.token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+  return res.status === 204;
+}
+
+export async function followUser(credentials, username) {
+  return githubFetch(`/user/following/${username}`, credentials.token, { method: 'PUT' });
+}
+
+export async function unfollowUser(credentials, username) {
+  return githubFetch(`/user/following/${username}`, credentials.token, { method: 'DELETE' });
+}
+
+export async function getIssueEvents(credentials, owner, repo, issueNumber, perPage = 30) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/issues/${issueNumber}/events?per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function updateGist(credentials, gistId, { description, files } = {}) {
+  const payload = {};
+  if (description !== undefined) payload.description = description;
+  if (files !== undefined) payload.files = files;
+  return githubFetch(`/gists/${gistId}`, credentials.token, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteGist(credentials, gistId) {
+  return githubFetch(`/gists/${gistId}`, credentials.token, { method: 'DELETE' });
+}
+
+export async function transferIssue(credentials, owner, repo, issueNumber, newOwner) {
+  return githubFetch(`/repos/${owner}/${repo}/issues/${issueNumber}/transfer`, credentials.token, {
+    method: 'POST',
+    body: JSON.stringify({ new_owner: newOwner }),
+  });
+}
+
+export async function replaceTopics(credentials, owner, repo, names = []) {
+  return githubFetch(`/repos/${owner}/${repo}/topics`, credentials.token, {
+    method: 'PUT',
+    headers: { Accept: 'application/vnd.github.mercy-preview+json' },
+    body: JSON.stringify({ names }),
+  });
 }
