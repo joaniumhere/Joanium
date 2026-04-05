@@ -199,9 +199,9 @@ export function getHtmlPreviewModal() {
 
   _modalApi = {
     open(html) {
+      modal.open();
       const f = frame();
       if (f) f.srcdoc = sanitizePreviewHtml(html);
-      modal.open();
       const closeBtn = document.getElementById('html-preview-close');
       closeBtn?.focus();
     },

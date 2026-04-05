@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { net } from 'electron';
 import defineEngine from '../../../System/Contracts/DefineEngine.js';
 
 /* ══════════════════════════════════════════
@@ -36,13 +37,25 @@ const DEFAULT_STATE = {
   },
 };
 
+const POLL_FAILURE_LOG_COOLDOWN_MS = 60_000;
+
+async function channelFetch(input, init) {
+  if (typeof net?.fetch === 'function') return net.fetch(input, init);
+  return fetch(input, init);
+}
+
+function getErrorMessage(err) {
+  if (err instanceof Error) return err.message;
+  return String(err ?? 'Unknown error');
+}
+
 /* ══════════════════════════════════════════
    TELEGRAM  — poll + send
 ══════════════════════════════════════════ */
 async function pollTelegram(cfg) {
   const base = `https://api.telegram.org/bot${cfg.botToken}`;
   const offset = (cfg.lastUpdateId ?? 0) + 1;
-  const res = await fetch(`${base}/getUpdates?offset=${offset}&timeout=5&limit=10`);
+  const res = await channelFetch(`${base}/getUpdates?offset=${offset}&timeout=5&limit=10`);
   if (!res.ok) throw new Error(`Telegram getUpdates HTTP ${res.status}`);
   const data = await res.json();
   if (!data.ok) throw new Error(data.description ?? 'Telegram API error');
@@ -58,7 +71,7 @@ async function pollTelegram(cfg) {
 }
 
 async function sendTelegram(botToken, chatId, text) {
-  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  const res = await channelFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text }),
@@ -76,7 +89,7 @@ async function pollWhatsApp(cfg) {
   const encodedTo = encodeURIComponent(cfg.fromNumber);
   const url = `https://api.twilio.com/2010-04-01/Accounts/${cfg.accountSid}/Messages.json?To=${encodedTo}&PageSize=10`;
   const auth = 'Basic ' + Buffer.from(`${cfg.accountSid}:${cfg.authToken}`).toString('base64');
-  const res = await fetch(url, { headers: { Authorization: auth } });
+  const res = await channelFetch(url, { headers: { Authorization: auth } });
   if (!res.ok) throw new Error(`Twilio HTTP ${res.status}`);
   const data = await res.json();
 
@@ -101,7 +114,7 @@ async function pollWhatsApp(cfg) {
 async function sendWhatsApp(cfg, to, text) {
   const body = new URLSearchParams({ From: cfg.fromNumber, To: to, Body: text });
   const auth = 'Basic ' + Buffer.from(`${cfg.accountSid}:${cfg.authToken}`).toString('base64');
-  const res = await fetch(
+  const res = await channelFetch(
     `https://api.twilio.com/2010-04-01/Accounts/${cfg.accountSid}/Messages.json`,
     {
       method: 'POST',
@@ -135,7 +148,7 @@ async function pollDiscord(cfg) {
   // Fetch our own bot user ID on first poll so we can skip self-messages
   if (!cfg._botUserId) {
     try {
-      const meRes = await fetch('https://discord.com/API/v10/users/@me', {
+      const meRes = await channelFetch('https://discord.com/API/v10/users/@me', {
         headers: { Authorization: `Bot ${cfg.botToken}` },
       });
       if (meRes.ok) {
@@ -150,7 +163,7 @@ async function pollDiscord(cfg) {
   const url = `https://discord.com/API/v10/channels/${cfg.channelId}/messages?limit=10${
     cfg.lastMessageId ? `&after=${cfg.lastMessageId}` : ''
   }`;
-  const res = await fetch(url, { headers: { Authorization: `Bot ${cfg.botToken}` } });
+  const res = await channelFetch(url, { headers: { Authorization: `Bot ${cfg.botToken}` } });
 
   if (res.status === 403) {
     throw new Error(
@@ -189,7 +202,7 @@ async function sendDiscord(botToken, channelId, text) {
   // Discord has a 2000 char limit per message — split if needed
   const chunks = splitIntoChunks(text, 1990);
   for (const chunk of chunks) {
-    const res = await fetch(`https://discord.com/API/v10/channels/${channelId}/messages`, {
+    const res = await channelFetch(`https://discord.com/API/v10/channels/${channelId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bot ${botToken}` },
       body: JSON.stringify({ content: chunk }),
@@ -223,7 +236,7 @@ async function pollSlack(cfg) {
   // Fetch our bot user ID once so we can skip our own messages
   if (!cfg._botUserId) {
     try {
-      const authRes = await fetch('https://slack.com/API/auth.test', {
+      const authRes = await channelFetch('https://slack.com/API/auth.test', {
         headers: { Authorization: `Bearer ${cfg.botToken}` },
       });
       const authData = await authRes.json();
@@ -240,7 +253,7 @@ async function pollSlack(cfg) {
     url += `&oldest=${cfg.lastMessageTs}`;
   }
 
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${cfg.botToken}` } });
+  const res = await channelFetch(url, { headers: { Authorization: `Bearer ${cfg.botToken}` } });
   if (!res.ok) throw new Error(`Slack HTTP ${res.status}`);
 
   const data = await res.json();
@@ -288,7 +301,7 @@ async function sendSlack(botToken, channelId, text) {
   // Slack has a ~40k char limit but we keep messages reasonable
   const chunks = splitIntoChunks(text, 3000);
   for (const chunk of chunks) {
-    const res = await fetch('https://slack.com/API/chat.postMessage', {
+    const res = await channelFetch('https://slack.com/API/chat.postMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${botToken}` },
       body: JSON.stringify({ channel: channelId, text: chunk }),
@@ -329,6 +342,7 @@ export class ChannelEngine {
     this._data = null;
     this._ticker = null;
     this._processing = false;
+    this._pollFailureState = new Map();
 
     // mainWindow is set after Electron app ready via setWindow()
     this._mainWindow = null;
@@ -416,6 +430,27 @@ export class ChannelEngine {
     this.storage.save(toSave);
   }
 
+  _clearPollFailure(channel) {
+    this._pollFailureState.delete(channel);
+  }
+
+  _logPollFailure(channel, err) {
+    const message = getErrorMessage(err);
+    const now = Date.now();
+    const previous = this._pollFailureState.get(channel);
+
+    if (
+      previous &&
+      previous.message === message &&
+      now - previous.loggedAt < POLL_FAILURE_LOG_COOLDOWN_MS
+    ) {
+      return;
+    }
+
+    this._pollFailureState.set(channel, { message, loggedAt: now });
+    console.warn(`[ChannelEngine] ${channel} poll failed:`, message);
+  }
+
   /* ── Public channel management API ── */
   getAll() {
     this._load();
@@ -466,7 +501,7 @@ export class ChannelEngine {
 
   /* ── Validation ── */
   async validateTelegram(botToken) {
-    const res = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+    const res = await channelFetch(`https://api.telegram.org/bot${botToken}/getMe`);
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.description ?? 'Invalid bot token');
     return { username: data.result?.username, firstName: data.result?.first_name };
@@ -474,16 +509,19 @@ export class ChannelEngine {
 
   async validateWhatsApp(accountSid, authToken) {
     const auth = 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64');
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`, {
-      headers: { Authorization: auth },
-    });
+    const res = await channelFetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`,
+      {
+        headers: { Authorization: auth },
+      },
+    );
     const data = await res.json();
     if (!res.ok) throw new Error(data.message ?? 'Invalid Twilio credentials');
     return { friendlyName: data.friendly_name };
   }
 
   async validateSlack(botToken) {
-    const res = await fetch('https://slack.com/API/auth.test', {
+    const res = await channelFetch('https://slack.com/API/auth.test', {
       headers: { Authorization: `Bearer ${botToken}` },
     });
     const data = await res.json();
@@ -492,7 +530,7 @@ export class ChannelEngine {
   }
 
   async validateDiscord(botToken) {
-    const res = await fetch('https://discord.com/API/v10/users/@me', {
+    const res = await channelFetch('https://discord.com/API/v10/users/@me', {
       headers: { Authorization: `Bot ${botToken}` },
     });
     if (!res.ok) throw new Error('Invalid Discord bot token');
@@ -502,7 +540,7 @@ export class ChannelEngine {
 
   /* ── Test that the Discord bot can actually read the channel ── */
   async validateDiscordChannel(botToken, channelId) {
-    const res = await fetch(`https://discord.com/API/v10/channels/${channelId}`, {
+    const res = await channelFetch(`https://discord.com/API/v10/channels/${channelId}`, {
       headers: { Authorization: `Bot ${botToken}` },
     });
     if (res.status === 403)
@@ -518,9 +556,12 @@ export class ChannelEngine {
 
   /* ── Test that the Slack bot can actually read the channel ── */
   async validateSlackChannel(botToken, channelId) {
-    const res = await fetch(`https://slack.com/API/conversations.info?channel=${channelId}`, {
-      headers: { Authorization: `Bearer ${botToken}` },
-    });
+    const res = await channelFetch(
+      `https://slack.com/API/conversations.info?channel=${channelId}`,
+      {
+        headers: { Authorization: `Bearer ${botToken}` },
+      },
+    );
     const data = await res.json();
     if (!data.ok) {
       if (data.error === 'channel_not_found') {
@@ -575,9 +616,10 @@ export class ChannelEngine {
     try {
       messages = await pollTelegram(cfg);
     } catch (err) {
-      console.warn('[ChannelEngine] Telegram poll failed:', err.message);
+      this._logPollFailure('Telegram', err);
       return;
     }
+    this._clearPollFailure('Telegram');
 
     if (messages.length) {
       const maxId = Math.max(...messages.map((m) => m.updateId));
@@ -590,7 +632,7 @@ export class ChannelEngine {
         let typingInterval = null;
         try {
           const sendTyping = () =>
-            fetch(`https://api.telegram.org/bot${cfg.botToken}/sendChatAction`, {
+            channelFetch(`https://api.telegram.org/bot${cfg.botToken}/sendChatAction`, {
               method: 'POST',
               headers: { 'content-type': 'application/json' },
               body: JSON.stringify({ chat_id: msg.chatId, action: 'typing' }),
@@ -620,9 +662,10 @@ export class ChannelEngine {
     try {
       messages = await pollWhatsApp(cfg);
     } catch (err) {
-      console.warn('[ChannelEngine] WhatsApp poll failed:', err.message);
+      this._logPollFailure('WhatsApp', err);
       return;
     }
+    this._clearPollFailure('WhatsApp');
 
     for (const msg of messages) {
       (async () => {
@@ -645,9 +688,10 @@ export class ChannelEngine {
     try {
       messages = await pollDiscord(cfg);
     } catch (err) {
-      console.warn('[ChannelEngine] Discord poll failed:', err.message);
+      this._logPollFailure('Discord', err);
       return;
     }
+    this._clearPollFailure('Discord');
 
     if (messages.length) {
       cfg.lastMessageId = messages[messages.length - 1].id;
@@ -659,7 +703,7 @@ export class ChannelEngine {
         let typingInterval = null;
         try {
           const sendTyping = () =>
-            fetch(`https://discord.com/API/v10/channels/${msg.channelId}/typing`, {
+            channelFetch(`https://discord.com/API/v10/channels/${msg.channelId}/typing`, {
               method: 'POST',
               headers: { Authorization: `Bot ${cfg.botToken}` },
             }).catch(() => {});
@@ -688,9 +732,10 @@ export class ChannelEngine {
     try {
       messages = await pollSlack(cfg);
     } catch (err) {
-      console.warn('[ChannelEngine] Slack poll failed:', err.message);
+      this._logPollFailure('Slack', err);
       return;
     }
+    this._clearPollFailure('Slack');
 
     if (messages.length) {
       // Store the ts of the newest message as our cursor for next poll

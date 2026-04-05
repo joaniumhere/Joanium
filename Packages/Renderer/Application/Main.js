@@ -1,13 +1,18 @@
-import { state }              from '../../System/State.js';
-import { initSidebar }        from '../../Pages/Shared/Navigation/Sidebar.js';
-import { initAboutModal }     from '../../Modals/AboutModal.js';
-import { initLibraryModal }   from '../../Modals/LibraryModal.js';
-import { initProjectsModal }  from '../../Modals/ProjectsModal.js';
-import { initSettingsModal }  from '../../Modals/SettingsModal.js';
-import { injectCSS }          from '../../System/Utils/InjectCSS.js';
+import { state } from '../../System/State.js';
+import { initSidebar } from '../../Pages/Shared/Navigation/Sidebar.js';
+import { initAboutModal } from '../../Modals/AboutModal.js';
+import { initLibraryModal } from '../../Modals/LibraryModal.js';
+import { initProjectsModal } from '../../Modals/ProjectsModal.js';
+import { initSettingsModal } from '../../Modals/SettingsModal.js';
+import { injectCSS } from '../../System/Utils/InjectCSS.js';
 import { initChannelGateway } from '../../Pages/Channels/Features/Gateway.js';
 
-import { buildSidebarNav, discoverPages, buildPagesMap, registerFeaturePages } from './PagesManifest.js';
+import {
+  buildSidebarNav,
+  discoverPages,
+  buildPagesMap,
+  registerFeaturePages,
+} from './PagesManifest.js';
 import { getFeatureBoot } from '../../Features/Core/FeatureBoot.js';
 
 // Build the PAGES map from the manifest — populated after async discovery
@@ -16,13 +21,13 @@ let PAGES = {};
 /* ══════════════════════════════════════════
    ROUTER STATE
 ══════════════════════════════════════════ */
-let _currentPage    = null;  // page key string
-let _currentCleanup = null;  // cleanup fn returned by page's mount()
-let _sidebar        = null;
-let _library        = null;
-let _projects       = null;
-let _settings       = null;
-let _about          = null;
+let _currentPage = null; // page key string
+let _currentCleanup = null; // cleanup fn returned by page's mount()
+let _sidebar = null;
+let _library = null;
+let _projects = null;
+let _settings = null;
+let _about = null;
 
 /* ══════════════════════════════════════════
    NAVIGATE
@@ -46,7 +51,11 @@ export async function navigate(page, options = {}) {
 
   // Run previous page's cleanup (cancel intervals, remove listeners, etc.)
   if (typeof _currentCleanup === 'function') {
-    try { _currentCleanup(); } catch (e) { console.warn('[App] cleanup error', e); }
+    try {
+      _currentCleanup();
+    } catch (e) {
+      console.warn('[App] cleanup error', e);
+    }
     _currentCleanup = null;
   }
 
@@ -61,10 +70,7 @@ export async function navigate(page, options = {}) {
 
     // Load module and CSS in parallel — both must be ready before mount()
     // so the stylesheet is already applied when HTML is injected (no FOUC).
-    const [mod] = await Promise.all([
-      load(),
-      css ? injectCSS(css) : Promise.resolve(),
-    ]);
+    const [mod] = await Promise.all([load(), css ? injectCSS(css) : Promise.resolve()]);
 
     outlet.innerHTML = ''; // clear loading state
 
@@ -72,19 +78,18 @@ export async function navigate(page, options = {}) {
     // and returns an optional cleanup function
     const cleanup = mod.mount(outlet, {
       settings: _settings,
-      about:    _about,
-      library:  _library,
+      about: _about,
+      library: _library,
       projects: _projects,
-      sidebar:  _sidebar,
+      sidebar: _sidebar,
       navigate, // pass navigate so pages don't need to import it
     });
 
     _currentCleanup = cleanup || null;
-    _currentPage    = page;
+    _currentPage = page;
 
     // Update sidebar active state
     _sidebar?.setActivePage(page);
-
   } catch (err) {
     console.error('[App] Failed to load page:', page, err);
     outlet.innerHTML = `<div style="padding:40px;color:var(--text-muted);font-family:var(--font-ui)">
@@ -94,6 +99,14 @@ export async function navigate(page, options = {}) {
 }
 
 async function openFreshChat() {
+  if (!state.activeProject && state.workspacePath) {
+    state.workspacePath = null;
+    window.dispatchEvent(
+      new CustomEvent('ow:workspace-changed', {
+        detail: { workspacePath: null },
+      }),
+    );
+  }
   await navigate('chat', { startFreshChat: true });
 }
 
@@ -117,12 +130,14 @@ async function openProject(project) {
     if (touched?.ok && touched.project) nextProject = touched.project;
   }
 
-  state.activeProject  = nextProject;
-  state.workspacePath  = nextProject.rootPath;
+  state.activeProject = nextProject;
+  state.workspacePath = nextProject.rootPath;
 
   // Navigate to chat with the project active
   await openFreshChat();
-  window.dispatchEvent(new CustomEvent('ow:project-changed', { detail: { project: state.activeProject } }));
+  window.dispatchEvent(
+    new CustomEvent('ow:project-changed', { detail: { project: state.activeProject } }),
+  );
   await _projects?.refreshProjects?.();
   return true;
 }
@@ -139,23 +154,30 @@ async function leaveProject() {
    Called once when index.html loads.
 ══════════════════════════════════════════ */
 async function init() {
-
   // ── Register feature-declared pages, then discover all pages ─────────
   try {
     const boot = await getFeatureBoot();
     if (boot.pages?.length) registerFeaturePages(boot.pages);
-  } catch { /* non-fatal */ }
+  } catch {
+    /* non-fatal */
+  }
   await discoverPages();
   Object.assign(PAGES, buildPagesMap());
 
   // ── Window controls ─────────────────────────────────────────────────
-  document.getElementById('btn-minimize')?.addEventListener('click', () => window.electronAPI?.send('window-minimize'));
-  document.getElementById('btn-maximize')?.addEventListener('click', () => window.electronAPI?.send('window-maximize'));
-  document.getElementById('btn-close')?.addEventListener('click',    () => window.electronAPI?.send('window-close'));
+  document
+    .getElementById('btn-minimize')
+    ?.addEventListener('click', () => window.electronAPI?.send('window-minimize'));
+  document
+    .getElementById('btn-maximize')
+    ?.addEventListener('click', () => window.electronAPI?.send('window-maximize'));
+  document
+    .getElementById('btn-close')
+    ?.addEventListener('click', () => window.electronAPI?.send('window-close'));
 
   // ── CRITICAL modals (needed immediately for sidebar avatar) ─────────────
   _settings = initSettingsModal();
-  _about    = initAboutModal();
+  _about = initAboutModal();
 
   // ── Channel Gateway — process Telegram/WhatsApp messages via agentLoop ─
   initChannelGateway();
@@ -167,19 +189,19 @@ async function init() {
   _sidebar = initSidebar({
     activePage: 'chat',
     navigation: buildSidebarNav(),
-    onNewChat:   () => openFreshChat(),
-    onLibrary:   () => _library?.isOpen() ? _library.close() : _library?.open(),
-    onProjects:  () => _projects?.isOpen() ? _projects.close() : _projects?.open(),
-    onSettings:  () => _settings.open(),
-    onAbout:     () => _about.open(),
-    onNavigate:  (pageId) => navigate(pageId),
+    onNewChat: () => openFreshChat(),
+    onLibrary: () => (_library?.isOpen() ? _library.close() : _library?.open()),
+    onProjects: () => (_projects?.isOpen() ? _projects.close() : _projects?.open()),
+    onSettings: () => _settings.open(),
+    onAbout: () => _about.open(),
+    onNavigate: (pageId) => navigate(pageId),
   });
 
   // ── User hydration ───────────────────────────────────────────────────
   const user = await _settings.loadUser().catch(() => null);
   _sidebar.setUser(user?.name ?? '');
 
-  window.addEventListener('ow:user-profile-updated', e => {
+  window.addEventListener('ow:user-profile-updated', (e) => {
     _sidebar.setUser(e.detail?.name ?? '');
   });
 
@@ -214,9 +236,11 @@ async function init() {
       },
     });
     _projects = initProjectsModal({
-      onProjectOpen:    openProject,
+      onProjectOpen: openProject,
       onProjectRemoved: leaveProject,
-      onClose: () => { _sidebar?.setActivePage(_currentPage); },
+      onClose: () => {
+        _sidebar?.setActivePage(_currentPage);
+      },
     });
   };
   if (typeof requestIdleCallback === 'function') {
@@ -229,4 +253,4 @@ async function init() {
   localStorage.removeItem('ow-pending-chat');
 }
 
-init().catch(err => console.error('[App] init failed:', err));
+init().catch((err) => console.error('[App] init failed:', err));
