@@ -10,19 +10,21 @@
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-subtle);
   transition:
-    border-color   0.2s,
-    transform      0.15s,
-    box-shadow     0.2s;
+    border-color var(--transition-mid),
+    transform var(--transition-fast),
+    box-shadow var(--transition-mid);
 }
 
-.settings-provider-row:hover {
-  border-color: color-mix(in srgb, var(--p-color) 30%, var(--border));
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .settings-provider-row:hover {
+    border-color: color-mix(in srgb, var(--p-color) 30%, var(--border));
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
 }
 
 /* ── Provider icon ── */
@@ -50,10 +52,14 @@
   color: var(--text-muted);
 }
 
-.spr-icon.icon-missing .spr-icon-img { display: none; }
+.spr-icon.icon-missing .spr-icon-img {
+  display: none;
+}
 
 /* ── Key input ── */
-.spr-key-wrap  { width: 100%; }
+.spr-key-wrap {
+  width: 100%;
+}
 
 .spr-key-input {
   width: 100%;
@@ -65,7 +71,7 @@
 /* ── Save button ── */
 .spr-save-btn {
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid color-mix(in srgb, var(--p-color) 30%, transparent);
   background: var(--p-color);
   color: #fff;
@@ -73,14 +79,24 @@
   font-weight: 600;
   cursor: pointer;
   transition:
-    transform    0.15s,
-    box-shadow   0.2s,
-    opacity      0.2s;
+    transform var(--transition-fast),
+    box-shadow var(--transition-mid),
+    opacity var(--transition-mid);
 }
 
-.spr-save-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--p-color) 40%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .spr-save-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--p-color) 40%, transparent);
+  }
 }
 
-.spr-save-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.spr-save-btn:active {
+  transform: scale(0.97);
+}
+
+.spr-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}

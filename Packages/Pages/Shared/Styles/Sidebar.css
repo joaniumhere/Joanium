@@ -13,7 +13,7 @@
   padding: 12px 0;
   gap: 2px;
   z-index: 100;
-  animation: slideInLeft 0.5s var(--ease-out-expo) both;
+  animation: slideInLeft 0.45s var(--ease-out-ui) both;
 }
 
 /* ── Sidebar logo ── */
@@ -54,22 +54,39 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  animation: fadeScaleIn 0.4s var(--motion-smooth);
+  animation: fadeScaleIn 0.38s var(--ease-out-ui) both;
   transition:
-    background   var(--transition-mid),
-    color        var(--transition-mid),
-    transform    var(--transition-fast),
-    box-shadow   var(--transition-mid);
+    background var(--transition-mid),
+    color var(--transition-mid),
+    transform var(--transition-fast),
+    box-shadow var(--transition-mid);
 }
 
-/* Stagger entrance */
-.sidebar-btn:nth-child(1) { animation-delay: 0.05s; }
-.sidebar-btn:nth-child(2) { animation-delay: 0.08s; }
-.sidebar-btn:nth-child(3) { animation-delay: 0.11s; }
-.sidebar-btn:nth-child(4) { animation-delay: 0.14s; }
+/* Stagger entrance (short gaps — feels alive, not sluggish) */
+.sidebar-btn:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.sidebar-btn:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.sidebar-btn:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.sidebar-btn:nth-child(4) {
+  animation-delay: 0.13s;
+}
 
-.sidebar-btn:hover  { background: var(--bg-hover); color: var(--text-secondary); transform: scale(1.08); }
-.sidebar-btn:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    transform: scale(1.06);
+  }
+}
+
+.sidebar-btn:active {
+  transform: scale(0.97);
+}
 
 .sidebar-btn.active {
   background: var(--bg-hover);
@@ -83,7 +100,9 @@
   stroke-width: 1.6;
 }
 
-.sidebar-spacer { flex: 1; }
+.sidebar-spacer {
+  flex: 1;
+}
 
 /* ── Tooltip ── */
 .sidebar-btn::after {
@@ -105,23 +124,29 @@
   z-index: 999;
   box-shadow: var(--shadow-sm);
   transition:
-    opacity   0.18s var(--ease-smooth),
-    transform 0.18s var(--ease-smooth);
+    opacity var(--duration-tooltip) var(--ease-out-ui),
+    transform var(--duration-tooltip) var(--ease-out-ui);
+  transform-origin: left center;
 }
 
-.sidebar-btn:hover::after {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-btn:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 /* ── Theme toggle icon swap ── */
-.sidebar-btn.theme-toggle { position: relative; overflow: hidden; }
+.sidebar-btn.theme-toggle {
+  position: relative;
+  overflow: hidden;
+}
 
 .sidebar-btn.theme-toggle .theme-icon {
   position: absolute;
   transition:
     transform 0.3s var(--ease-spring),
-    opacity   0.2s ease;
+    opacity 0.2s ease;
 }
 
 /* ── Avatar ── */
@@ -142,10 +167,18 @@
   font-family: var(--font-ui);
   transition:
     box-shadow var(--transition-mid),
-    transform  var(--transition-fast);
+    transform var(--transition-fast);
 }
 
-.sidebar-avatar:hover {
-  box-shadow: 0 0 0 2px var(--accent), 0 0 12px var(--accent-glow);
-  transform: scale(1.08);
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-avatar:hover {
+    box-shadow:
+      0 0 0 2px var(--accent),
+      0 0 12px var(--accent-glow);
+    transform: scale(1.06);
+  }
+}
+
+.sidebar-avatar:active {
+  transform: scale(0.97);
 }

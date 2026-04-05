@@ -15,7 +15,7 @@
   z-index: 200;
   box-shadow:
     0 16px 48px rgba(0, 0, 0, 0.55),
-    0 4px  12px rgba(0, 0, 0, 0.35);
+    0 4px 12px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   opacity: 0;
@@ -23,8 +23,8 @@
   pointer-events: none;
   transform-origin: left center;
   transition:
-    opacity   0.2s var(--ease-smooth),
-    transform 0.2s var(--ease-spring);
+    opacity var(--duration-surface) var(--ease-out-ui),
+    transform var(--duration-surface) var(--ease-drawer);
 }
 
 #theme-panel.open {
@@ -39,7 +39,7 @@
   font-family: var(--font-ui);
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--font-tracking-label);
   text-transform: uppercase;
   color: var(--text-secondary);
   user-select: none;
@@ -70,11 +70,17 @@
   white-space: nowrap;
   transition:
     background var(--transition-fast),
-    color      var(--transition-fast);
+    color var(--transition-fast);
 }
 
-.theme-option:hover  { background: var(--bg-hover); color: var(--text-primary); }
-.theme-option.active { background: var(--bg-hover); color: var(--text-primary); }
+.theme-option:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.theme-option.active {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
 
 /* ── Check icon (auto-hidden, shown when active) ── */
 .theme-option-check {
@@ -85,7 +91,9 @@
   flex-shrink: 0;
   transition: opacity var(--transition-fast);
 }
-.theme-option.active .theme-option-check { opacity: 0.55; }
+.theme-option.active .theme-option-check {
+  opacity: 0.55;
+}
 
 /* ── Color swatches ── */
 .theme-swatch {
@@ -94,20 +102,37 @@
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-mid);
 }
 
-.theme-option:hover  .theme-swatch { transform: scale(1.1); }
+@media (hover: hover) and (pointer: fine) {
+  .theme-option:hover .theme-swatch {
+    transform: scale(1.06);
+  }
+}
+
 .theme-option.active .theme-swatch {
-  transform: scale(1.1);
+  transform: scale(1.06);
   box-shadow:
     inset 0 0 0 1.5px rgba(255, 255, 255, 0.3),
     0 0 0 2.5px rgba(255, 255, 255, 0.12);
 }
 
 /* conic-gradient gives a clean hard diagonal split vs linear */
-.swatch-dark     { background: conic-gradient(#1a1a1a   180deg, #cc785c 180deg); }
-.swatch-light    { background: conic-gradient(#f5f4f1   180deg, #b85c3a 180deg); }
-.swatch-midnight { background: conic-gradient(#0d1117   180deg, #4da6ff 180deg); }
-.swatch-forest   { background: conic-gradient(#111a14   180deg, #5dba6e 180deg); }
-.swatch-pinky    { background: conic-gradient(#1a0f14   180deg, #ff6eb4 180deg); }
+.swatch-dark {
+  background: conic-gradient(#1a1a1a 180deg, #cc785c 180deg);
+}
+.swatch-light {
+  background: conic-gradient(#f5f4f1 180deg, #b85c3a 180deg);
+}
+.swatch-midnight {
+  background: conic-gradient(#0d1117 180deg, #4da6ff 180deg);
+}
+.swatch-forest {
+  background: conic-gradient(#111a14 180deg, #5dba6e 180deg);
+}
+.swatch-pinky {
+  background: conic-gradient(#1a0f14 180deg, #ff6eb4 180deg);
+}

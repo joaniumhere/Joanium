@@ -9,13 +9,21 @@
   align-items: center;
   gap: 6px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--duration-surface) var(--ease-out-ui);
 }
 
-.message-row:hover .message-actions { opacity: 1; }
+.message-row:hover .message-actions {
+  opacity: 1;
+}
 
-.user-actions      { margin-right: 8px; margin-bottom: 2px; }
-.assistant-actions { margin-top: 6px;   margin-left: 2px;   }
+.user-actions {
+  margin-right: 8px;
+  margin-bottom: 2px;
+}
+.assistant-actions {
+  margin-top: 6px;
+  margin-left: 2px;
+}
 
 .action-btn {
   display: flex;
@@ -29,8 +37,18 @@
   color: var(--text-muted);
   cursor: pointer;
   transition:
-    background 0.2s,
-    color      0.2s;
+    background var(--transition-mid),
+    color var(--transition-mid),
+    transform var(--transition-fast);
 }
 
-.action-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+}
+
+.action-btn:active {
+  transform: scale(0.97);
+}

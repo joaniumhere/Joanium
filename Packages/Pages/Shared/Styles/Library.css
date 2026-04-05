@@ -20,11 +20,14 @@
   opacity: 0;
   pointer-events: none;
   transition:
-    opacity          0.25s var(--motion-decelerate),
-    backdrop-filter  0.25s var(--motion-decelerate);
+    opacity 0.25s var(--ease-out-ui),
+    backdrop-filter 0.25s var(--ease-out-ui);
 }
 
-#library-modal-backdrop.open { opacity: 1; pointer-events: auto; }
+#library-modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 #library-panel {
   width: min(820px, calc(100vw - 64px));
@@ -57,7 +60,9 @@
   width: min(100%, 680px);
 }
 
-.library-list-shell { min-height: 0; }
+.library-list-shell {
+  min-height: 0;
+}
 
 /* ══════════════════════════════════════════
    SEARCH BAR
@@ -90,7 +95,7 @@
   outline: none;
   transition:
     border-color var(--transition-fast),
-    box-shadow   var(--transition-fast);
+    box-shadow var(--transition-fast);
 }
 
 #library-search:focus {
@@ -125,10 +130,10 @@
   border: 1px solid transparent;
   animation: fadeScaleIn 0.35s var(--motion-smooth);
   transition:
-    background     var(--transition-fast),
-    transform      var(--transition-fast),
-    border-color   var(--transition-fast),
-    box-shadow     var(--transition-fast);
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .lp-item:hover {
@@ -138,8 +143,13 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
 }
 
-.lp-item.active { background: var(--accent-dim); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
-.lp-item.active .lp-item-title { color: var(--accent); }
+.lp-item.active {
+  background: var(--accent-dim);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.lp-item.active .lp-item-title {
+  color: var(--accent);
+}
 
 /* ── Item info ── */
 .lp-item-info {
@@ -160,7 +170,10 @@
   transition: color var(--transition-fast);
 }
 
-.lp-item-meta { font-size: 11px; color: var(--text-muted); }
+.lp-item-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
 
 /* ── Delete button ── */
 .lp-delete-btn {
@@ -179,17 +192,29 @@
   transform: scale(0.85);
   margin-left: 8px;
   transition:
-    opacity     0.15s ease,
-    transform   0.15s ease,
-    background  var(--transition-fast),
-    color       var(--transition-fast);
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
-.lp-item:hover .lp-delete-btn { opacity: 1; transform: scale(1); }
+.lp-item:hover .lp-delete-btn {
+  opacity: 1;
+  transform: scale(1);
+}
 
-.lp-delete-btn:hover  { background: rgba(220, 60, 60, 0.12); color: #f87171; }
-.lp-delete-btn:active { transform: scale(0.92); }
-.lp-delete-btn svg    { width: 14px; height: 14px; pointer-events: none; }
+.lp-delete-btn:hover {
+  background: rgba(220, 60, 60, 0.12);
+  color: #f87171;
+}
+.lp-delete-btn:active {
+  transform: scale(0.92);
+}
+.lp-delete-btn svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
 
 /* ══════════════════════════════════════════
    EMPTY STATE
@@ -208,10 +233,14 @@
    RESPONSIVE
 ══════════════════════════════════════════ */
 @media (max-width: 860px) {
-  #library-modal-backdrop { padding: 18px; }
+  #library-modal-backdrop {
+    padding: 18px;
+  }
   #library-panel {
     width: min(100vw - 36px, 760px);
     max-height: calc(100vh - 36px);
   }
-  .lp-list { min-height: 260px; }
+  .lp-list {
+    min-height: 260px;
+  }
 }

@@ -18,7 +18,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  animation: greetingReveal 0.7s var(--ease-out-expo) 0.25s both;
+  animation: greetingReveal 0.65s var(--ease-out-ui) 0.2s both;
 }
 
 .welcome-icon {
@@ -27,15 +27,15 @@
   color: var(--accent);
   filter: drop-shadow(0 0 8px var(--accent-glow));
   animation:
-    orbitSpin  10s  linear      infinite,
-    glowPulse   4s  ease-in-out infinite;
+    orbitSpin 10s linear infinite,
+    glowPulse 4s ease-in-out infinite;
 }
 
 .welcome-title {
-  font-size: 32px;
+  font-size: clamp(1.75rem, 4vw + 1rem, 2rem);
   font-weight: 500;
   color: var(--text-primary);
-  letter-spacing: -0.5px;
+  letter-spacing: var(--font-tracking-display);
 }
 
 .welcome-subtitle {
@@ -44,7 +44,7 @@
   font-size: 14px;
   line-height: 1.7;
   color: var(--text-muted);
-  animation: fadeIn 0.5s var(--ease-out-expo) 0.42s both;
+  animation: fadeIn 0.45s var(--ease-out-ui) 0.38s both;
 }
 
 #welcome .chips {
@@ -54,7 +54,7 @@
   gap: 10px;
   max-width: 760px;
   margin-top: 6px;
-  animation: fadeIn 0.55s var(--ease-out-expo) 0.54s both;
+  animation: fadeIn 0.48s var(--ease-out-ui) 0.48s both;
 }
 
 #welcome .chip {
@@ -64,26 +64,32 @@
   min-height: 38px;
   padding: 0 14px;
   border: 1px solid var(--border-subtle);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
   color: var(--text-secondary);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
   transition:
-    transform 0.18s var(--ease-spring),
+    transform var(--transition-fast),
     border-color var(--transition-theme),
     background var(--transition-theme),
     color var(--transition-theme),
     box-shadow var(--transition-theme);
 }
 
-#welcome .chip:hover {
-  transform: translateY(-1px);
-  color: var(--text-primary);
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--border-subtle));
-  background: color-mix(in srgb, var(--accent-glow) 18%, var(--bg-tertiary));
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent-glow) 18%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  #welcome .chip:hover {
+    transform: translateY(-1px);
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border-subtle));
+    background: color-mix(in srgb, var(--accent-glow) 18%, var(--bg-tertiary));
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--accent-glow) 18%, transparent);
+  }
+}
+
+#welcome .chip:active {
+  transform: scale(0.97);
 }
 
 #welcome .chip:focus-visible {
