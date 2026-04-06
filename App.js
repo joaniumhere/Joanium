@@ -20,6 +20,10 @@ app.whenReady().then(async () => {
   if (!fs.existsSync(Paths.PROJECTS_DIR)) fs.mkdirSync(Paths.PROJECTS_DIR, { recursive: true });
   if (!fs.existsSync(Paths.FEATURES_DATA_DIR))
     fs.mkdirSync(Paths.FEATURES_DATA_DIR, { recursive: true });
+  if (!fs.existsSync(Paths.USER_SKILLS_DIR))
+    fs.mkdirSync(Paths.USER_SKILLS_DIR, { recursive: true });
+  if (!fs.existsSync(Paths.USER_PERSONAS_DIR))
+    fs.mkdirSync(Paths.USER_PERSONAS_DIR, { recursive: true });
 
   engines = await boot();
   startEngines(engines);

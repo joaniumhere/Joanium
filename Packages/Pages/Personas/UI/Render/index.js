@@ -2,34 +2,43 @@ import { getPersonasHTML } from './Templates/PersonasTemplate.js';
 import { createPersonaCardPool, getAvatarInitials } from './Components/PersonasCards.js';
 
 // ── Module-level refs (reset on each mount) ──────────────────────────────────
-let activeBanner  = null;
-let activeNameEl  = null;
-let personasGrid  = null;
-let searchInput   = null;
+let activeBanner = null;
+let activeNameEl = null;
+let personasGrid = null;
+let searchInput = null;
 let searchClearBtn = null;
-let countEl       = null;
-let _navigate     = null;
+let countEl = null;
+let _navigate = null;
 let _activePersona = null;
-let _allPersonas  = [];
-let _personaPool  = null;
-let modalBackdrop  = null;
-let modalNameEl    = null;
-let modalAvatarEl  = null;
-let modalContent   = null;
-let modalCloseBtn  = null;
+let _allPersonas = [];
+let _personaPool = null;
+let modalBackdrop = null;
+let modalNameEl = null;
+let modalAvatarEl = null;
+let modalContent = null;
+let modalCloseBtn = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function matchesSearch(persona, query) {
   if (!query) return true;
   const lowerQuery = query.toLowerCase();
-  return [persona.name, persona.personality, persona.description, persona.instructions, persona.filename]
+  return [
+    persona.name,
+    persona.publisher,
+    persona.personality,
+    persona.description,
+    persona.instructions,
+    persona.filename,
+  ]
     .join(' ')
     .toLowerCase()
     .includes(lowerQuery);
 }
 
 function renderMarkdown(raw = '') {
-  let text = String(raw).replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '').trim();
+  let text = String(raw)
+    .replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '')
+    .trim();
   let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   html = html.replace(/```([\s\S]*?)```/g, (_match, inner) => {
     const newlineIndex = inner.indexOf('\n');
@@ -40,8 +49,8 @@ function renderMarkdown(raw = '') {
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   html = html.replace(/^### (.+)$/gm, '</p><h3>$1</h3><p>');
-  html = html.replace(/^## (.+)$/gm,  '</p><h2>$1</h2><p>');
-  html = html.replace(/^# (.+)$/gm,   '</p><h1>$1</h1><p>');
+  html = html.replace(/^## (.+)$/gm, '</p><h2>$1</h2><p>');
+  html = html.replace(/^# (.+)$/gm, '</p><h1>$1</h1><p>');
   html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
   html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
   html = `<p>${html}</p>`;
@@ -91,7 +100,7 @@ function render(query = '') {
 
   if (!personasGrid || !_personaPool) return;
 
-  const filteredCustom = _allPersonas.filter(persona => matchesSearch(persona, query));
+  const filteredCustom = _allPersonas.filter((persona) => matchesSearch(persona, query));
   const visibleItems = [...filteredCustom];
 
   if (visibleItems.length === 0) {
@@ -110,7 +119,7 @@ function render(query = '') {
   const noResults = personasGrid.querySelector('.personas-no-results');
   if (noResults) noResults.style.display = 'none';
 
-  _personaPool.render(visibleItems, _activePersona?.filename ?? null);
+  _personaPool.render(visibleItems, _activePersona?.id ?? null);
 }
 
 // ── Data loading ──────────────────────────────────────────────────────────────
@@ -120,11 +129,11 @@ async function load() {
       window.electronAPI?.invoke?.('get-personas'),
       window.electronAPI?.invoke?.('get-active-persona'),
     ]);
-    _allPersonas   = personasResult?.personas ?? [];
+    _allPersonas = personasResult?.personas ?? [];
     _activePersona = activeResult?.persona ?? null;
   } catch (error) {
     console.error('[Personas] Load error:', error);
-    _allPersonas   = [];
+    _allPersonas = [];
     _activePersona = null;
   }
 
@@ -135,21 +144,21 @@ async function load() {
 export function mount(outlet, { navigate }) {
   outlet.innerHTML = getPersonasHTML();
 
-  activeBanner   = document.getElementById('personas-active-banner');
-  activeNameEl   = document.getElementById('personas-active-name');
-  personasGrid   = document.getElementById('personas-grid');
-  searchInput    = document.getElementById('personas-search');
+  activeBanner = document.getElementById('personas-active-banner');
+  activeNameEl = document.getElementById('personas-active-name');
+  personasGrid = document.getElementById('personas-grid');
+  searchInput = document.getElementById('personas-search');
   searchClearBtn = document.getElementById('personas-search-clear');
-  countEl        = document.getElementById('personas-count');
-  modalBackdrop  = document.getElementById('persona-modal-backdrop');
-  modalNameEl    = document.getElementById('persona-modal-name');
-  modalAvatarEl  = document.getElementById('persona-modal-avatar');
-  modalContent   = document.getElementById('persona-modal-content');
-  modalCloseBtn  = document.getElementById('persona-modal-close');
-  _navigate      = navigate;
+  countEl = document.getElementById('personas-count');
+  modalBackdrop = document.getElementById('persona-modal-backdrop');
+  modalNameEl = document.getElementById('persona-modal-name');
+  modalAvatarEl = document.getElementById('persona-modal-avatar');
+  modalContent = document.getElementById('persona-modal-content');
+  modalCloseBtn = document.getElementById('persona-modal-close');
+  _navigate = navigate;
 
   _activePersona = null;
-  _allPersonas   = [];
+  _allPersonas = [];
 
   _personaPool = createPersonaCardPool({
     container: personasGrid,
@@ -198,9 +207,13 @@ export function mount(outlet, { navigate }) {
     render('');
     searchInput?.focus();
   };
-  const onModalClose         = () => closeModal();
-  const onModalBackdropClick = e => { if (e.target === modalBackdrop) closeModal(); };
-  const onKeydown            = e => { if (e.key === 'Escape') closeModal(); };
+  const onModalClose = () => closeModal();
+  const onModalBackdropClick = (e) => {
+    if (e.target === modalBackdrop) closeModal();
+  };
+  const onKeydown = (e) => {
+    if (e.key === 'Escape') closeModal();
+  };
 
   modalCloseBtn?.addEventListener('click', onModalClose);
   modalBackdrop?.addEventListener('click', onModalBackdropClick);
@@ -220,17 +233,17 @@ export function mount(outlet, { navigate }) {
 
     _personaPool?.clear();
     _personaPool = null;
-    activeBanner   = null;
-    activeNameEl   = null;
-    personasGrid   = null;
-    searchInput    = null;
+    activeBanner = null;
+    activeNameEl = null;
+    personasGrid = null;
+    searchInput = null;
     searchClearBtn = null;
-    countEl        = null;
-    _navigate      = null;
-    modalBackdrop  = null;
-    modalNameEl    = null;
-    modalAvatarEl  = null;
-    modalContent   = null;
-    modalCloseBtn  = null;
+    countEl = null;
+    _navigate = null;
+    modalBackdrop = null;
+    modalNameEl = null;
+    modalAvatarEl = null;
+    modalContent = null;
+    modalCloseBtn = null;
   };
 }

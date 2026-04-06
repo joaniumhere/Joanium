@@ -1,8 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import { buildSystemPrompt } from '../../System/Prompting/SystemPrompt.js';
-import Paths from '../Core/Paths.js';
-import { parseFrontmatter } from './FileService.js';
+import * as ContentLibraryService from './ContentLibraryService.js';
 
 const TTL_MS = 5 * 60_000;
 
@@ -15,26 +12,16 @@ export function invalidate() {
 }
 
 export function getDefaultPersona() {
-  try {
-    const joanaPath = path.join(Paths.PERSONAS_DIR, 'Joana.md');
-    if (fs.existsSync(joanaPath)) {
-      const raw = fs.readFileSync(joanaPath, 'utf-8');
-      const { meta, body } = parseFrontmatter(raw);
-      return {
-        filename: 'Joana.md',
-        name: meta.name || 'Joana',
-        personality: meta.personality || '',
-        description: meta.description || '',
-        instructions: body,
-      };
-    }
-  } catch (err) {
-    console.warn('[SystemPromptService] Failed to load default persona Joana:', err.message);
-  }
-  return null;
+  return ContentLibraryService.getDefaultPersona();
 }
 
-export async function get({ user, customInstructions, memory, connectorEngine, featureRegistry = null }) {
+export async function get({
+  user,
+  customInstructions,
+  memory,
+  connectorEngine,
+  featureRegistry = null,
+}) {
   const now = Date.now();
   if (_cache && now - _cacheTime < TTL_MS) return _cache;
 
@@ -55,11 +42,7 @@ export async function get({ user, customInstructions, memory, connectorEngine, f
 
   let activePersona = null;
   try {
-    if (fs.existsSync(Paths.ACTIVE_PERSONA_FILE)) {
-      activePersona = JSON.parse(fs.readFileSync(Paths.ACTIVE_PERSONA_FILE, 'utf-8'));
-    } else {
-      activePersona = getDefaultPersona();
-    }
+    activePersona = ContentLibraryService.readActivePersona() ?? getDefaultPersona();
   } catch {
     activePersona = getDefaultPersona();
   }

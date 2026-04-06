@@ -1,33 +1,16 @@
 import { ipcMain } from 'electron';
-import fs from 'fs';
-import path from 'path';
-import Paths from '../Core/Paths.js';
-import { invalidate as invalidateSysPrompt, getDefaultPersona } from '../Services/SystemPromptService.js';
-import { parseFrontmatter } from '../Services/FileService.js';
+import {
+  invalidate as invalidateSysPrompt,
+  getDefaultPersona,
+} from '../Services/SystemPromptService.js';
+import * as ContentLibraryService from '../Services/ContentLibraryService.js';
 
 export const ipcMeta = { needs: [] };
 export function register() {
   /* ── List all personas ── */
   ipcMain.handle('get-personas', () => {
     try {
-      if (!fs.existsSync(Paths.PERSONAS_DIR)) return { ok: true, personas: [] };
-
-      const files = fs.readdirSync(Paths.PERSONAS_DIR).filter(f => f.endsWith('.md'));
-      const personas = files.map(filename => {
-        try {
-          const raw = fs.readFileSync(path.join(Paths.PERSONAS_DIR, filename), 'utf-8');
-          const { meta, body } = parseFrontmatter(raw);
-          return {
-            filename,
-            name: meta.name || filename.replace('.md', ''),
-            personality: meta.personality || '',
-            description: meta.description || '',
-            instructions: body,
-          };
-        } catch { return null; }
-      }).filter(Boolean);
-
-      return { ok: true, personas };
+      return { ok: true, personas: ContentLibraryService.readPersonas() };
     } catch (err) {
       return { ok: false, error: err.message, personas: [] };
     }
@@ -36,21 +19,10 @@ export function register() {
   /* ── Get active persona ── */
   ipcMain.handle('get-active-persona', () => {
     try {
-      if (!fs.existsSync(Paths.ACTIVE_PERSONA_FILE)) return { ok: true, persona: getDefaultPersona() };
-
-      const data = JSON.parse(fs.readFileSync(Paths.ACTIVE_PERSONA_FILE, 'utf-8'));
-
-      // Verify the persona file still exists — if deleted, clear active
-      if (data?.filename) {
-        const personaPath = path.join(Paths.PERSONAS_DIR, data.filename);
-        if (!fs.existsSync(personaPath)) {
-          fs.unlinkSync(Paths.ACTIVE_PERSONA_FILE);
-          invalidateSysPrompt();
-          return { ok: true, persona: getDefaultPersona() };
-        }
-      }
-
-      return { ok: true, persona: data };
+      return {
+        ok: true,
+        persona: ContentLibraryService.readActivePersona() ?? getDefaultPersona(),
+      };
     } catch {
       return { ok: true, persona: getDefaultPersona() };
     }
@@ -59,13 +31,7 @@ export function register() {
   /* ── Set active persona ── */
   ipcMain.handle('set-active-persona', (_e, personaData) => {
     try {
-      const dir = path.dirname(Paths.ACTIVE_PERSONA_FILE);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(
-        Paths.ACTIVE_PERSONA_FILE,
-        JSON.stringify(personaData, null, 2),
-        'utf-8',
-      );
+      ContentLibraryService.setActivePersona(personaData);
       invalidateSysPrompt();
       return { ok: true };
     } catch (err) {
@@ -76,8 +42,7 @@ export function register() {
   /* ── Reset to default assistant ── */
   ipcMain.handle('reset-active-persona', () => {
     try {
-      if (fs.existsSync(Paths.ACTIVE_PERSONA_FILE))
-        fs.unlinkSync(Paths.ACTIVE_PERSONA_FILE);
+      ContentLibraryService.resetActivePersona();
       invalidateSysPrompt();
       return { ok: true };
     } catch (err) {

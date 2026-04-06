@@ -9,9 +9,17 @@ export { escapeHtml };
  * @returns {string}
  */
 export function getAvatarInitials(name) {
-  const parts = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+  const parts = String(name ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  return String(name ?? '').trim().slice(0, 2).toUpperCase() || 'AI';
+  return (
+    String(name ?? '')
+      .trim()
+      .slice(0, 2)
+      .toUpperCase() || 'AI'
+  );
 }
 
 const DEFAULT_KEY = '__default__';
@@ -44,8 +52,6 @@ export function createPersonaCardPool({
   /** @type {Set<HTMLElement>} */
   const active = new Set();
 
-
-
   function createCustomCard() {
     const card = document.createElement('div');
     card.className = 'persona-card';
@@ -56,7 +62,16 @@ export function createPersonaCardPool({
       <div class="persona-active-badge" style="display:none"><div class="persona-active-badge-dot"></div>Active</div>
       <div class="persona-avatar"></div>
       <div class="persona-info">
-        <div class="persona-name"></div>
+        <div class="persona-name-row">
+          <div class="persona-name"></div>
+          <span class="persona-verified" hidden aria-label="Verified Joanium persona" title="Verified Joanium persona">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12.75l2.25 2.25L15 9.75" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 3l2.6 1.2 2.84-.34 1.2 2.6 2.36 1.62-.8 2.74.8 2.74-2.36 1.62-1.2 2.6-2.84-.34L12 21l-2.6-1.2-2.84.34-1.2-2.6L3 15.92l.8-2.74L3 10.44l2.36-1.62 1.2-2.6 2.84.34L12 3z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </div>
+        <div class="persona-publisher"></div>
         <div class="persona-description" style="display:none"></div>
       </div>
       <div class="persona-personality"></div>
@@ -76,22 +91,22 @@ export function createPersonaCardPool({
         </button>
       </div>`;
 
-    card.querySelector('.persona-activate-btn')?.addEventListener('click', async event => {
+    card.querySelector('.persona-activate-btn')?.addEventListener('click', async (event) => {
       event.stopPropagation();
       if (card._currentPersona) await onActivatePersona(card._currentPersona);
     });
 
-    card.querySelector('.persona-deactivate-btn')?.addEventListener('click', async event => {
+    card.querySelector('.persona-deactivate-btn')?.addEventListener('click', async (event) => {
       event.stopPropagation();
       await onDeactivatePersona();
     });
 
-    card.querySelector('.persona-read-btn')?.addEventListener('click', event => {
+    card.querySelector('.persona-read-btn')?.addEventListener('click', (event) => {
       event.stopPropagation();
       if (card._currentPersona) onReadPersona?.(card._currentPersona);
     });
 
-    card.querySelector('.persona-chat-btn')?.addEventListener('click', async event => {
+    card.querySelector('.persona-chat-btn')?.addEventListener('click', async (event) => {
       event.stopPropagation();
       if (card._currentPersona) await onChatPersona(card._currentPersona);
     });
@@ -103,12 +118,15 @@ export function createPersonaCardPool({
     card._currentPersona = persona;
     card._isActive = isActive;
     card.className = `persona-card${isActive ? ' is-active' : ''}`;
+    card.dataset.personaId = persona.id;
 
     const badge = card.querySelector('.persona-active-badge');
     badge.style.display = isActive ? '' : 'none';
 
     card.querySelector('.persona-avatar').textContent = getAvatarInitials(persona.name);
     card.querySelector('.persona-name').textContent = persona.name;
+    card.querySelector('.persona-publisher').textContent = persona.publisher;
+    card.querySelector('.persona-verified').hidden = persona.isVerified !== true;
 
     const descEl = card.querySelector('.persona-description');
     if (persona.description) {
@@ -121,10 +139,10 @@ export function createPersonaCardPool({
     const tagsEl = card.querySelector('.persona-personality');
     const tags = (persona.personality || '')
       .split(',')
-      .map(tag => tag.trim())
+      .map((tag) => tag.trim())
       .filter(Boolean)
       .slice(0, 5)
-      .map(tag => `<span class="persona-tag">${escapeHtml(tag)}</span>`)
+      .map((tag) => `<span class="persona-tag">${escapeHtml(tag)}</span>`)
       .join('');
     tagsEl.innerHTML = tags;
     tagsEl.style.display = tags ? '' : 'none';
@@ -139,8 +157,8 @@ export function createPersonaCardPool({
     active.clear();
 
     for (const item of items) {
-      const key = item.filename;
-      const isActive = activeFilename === item.filename;
+      const key = item.id;
+      const isActive = activeFilename === item.id;
 
       let card = pool.get(key);
 
