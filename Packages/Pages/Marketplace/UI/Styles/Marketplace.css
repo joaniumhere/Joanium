@@ -67,7 +67,7 @@
   display: inline-flex;
   gap: 8px;
   padding: 6px;
-  border-radius: 18px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
   border: 1px solid var(--border-subtle);
   margin-bottom: 18px;
@@ -81,7 +81,7 @@
   font-size: 12.5px;
   font-weight: 600;
   padding: 9px 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   transition:
     background var(--transition-fast),
@@ -170,7 +170,7 @@
   font-size: 12px;
   font-weight: 600;
   padding: 9px 12px;
-  border-radius: 12px;
+  border-radius: 8px;
   outline: none;
   transition:
     border-color var(--transition-fast),
@@ -185,7 +185,7 @@
 .marketplace-error {
   margin-bottom: 18px;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: 10px;
   background: rgba(205, 76, 76, 0.08);
   border: 1px solid rgba(205, 76, 76, 0.22);
   color: #fca5a5;
@@ -203,7 +203,7 @@
   text-align: center;
   background: var(--bg-secondary);
   border: 1.5px dashed var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: 14px;
   animation: fadeIn 0.4s var(--ease-out-expo) both;
 }
 
@@ -247,7 +247,7 @@
 .marketplace-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: 8px !important;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -276,7 +276,7 @@
 .marketplace-modal-icon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--accent-dim);
   border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   display: flex;
@@ -417,7 +417,7 @@
 .marketplace-card-install-btn,
 .marketplace-install-btn {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px !important;
   padding: 9px 14px;
   font-family: var(--font-ui);
   font-size: 12px;
@@ -470,7 +470,7 @@
   gap: 12px;
   margin-top: 18px;
   padding: 12px 16px;
-  border-radius: 14px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
@@ -520,7 +520,7 @@
   flex-direction: column;
   background: var(--bg-secondary);
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  border-radius: var(--radius-lg);
+  border-radius: 8px !important;
   box-shadow: 0 32px 96px rgba(0, 0, 0, 0.35);
   transform: translateY(20px) scale(0.96);
   transition: transform 0.3s var(--ease-spring);
@@ -568,7 +568,7 @@
 .marketplace-modal-status {
   margin-bottom: 14px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: 10px;
   font-size: 12.5px;
   line-height: 1.6;
 }
@@ -647,7 +647,7 @@
 .marketplace-modal-content pre {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 14px 16px;
   overflow-x: auto;
   margin: 12px 0;
