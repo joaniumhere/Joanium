@@ -26,6 +26,12 @@
       "to": "Config/WindowState.json"
     }
   ],
+  "publish": {
+    "provider": "github",
+    "owner": "Joanium",
+    "repo": "Joanium",
+    "vPrefixedTagName": true
+  },
   "win": {
     "icon": "Assets/Logo/Logo.ico"
   },

@@ -102,7 +102,7 @@ jobs:
       - name: Build application
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build -- ${{ matrix.target }} --publish never
+        run: npm run build -- ${{ matrix.target }} --publish always
       - name: Rename and upload executable
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

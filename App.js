@@ -7,6 +7,7 @@ import Paths from '#main/Core/Paths.js';
 import { create as createWindow } from '#main/Core/Window.js';
 import { BUILTIN_BROWSER_USER_AGENT } from '#main/Services/BrowserPreviewService.js';
 import { isFirstRun } from '#main/Services/UserService.js';
+import { setupAutoUpdates } from '#main/Services/AutoUpdateService.js';
 
 app.commandLine.appendSwitch('disable-http2');
 app.commandLine.appendSwitch('lang', 'en-US');
@@ -15,6 +16,10 @@ app.userAgentFallback = BUILTIN_BROWSER_USER_AGENT;
 let engines = null;
 
 app.whenReady().then(async () => {
+  if (app.isPackaged && !process.argv.includes('--dev')) {
+    setupAutoUpdates();
+  }
+
   if (!fs.existsSync(Paths.DATA_DIR)) fs.mkdirSync(Paths.DATA_DIR, { recursive: true });
   if (!fs.existsSync(Paths.CHATS_DIR)) fs.mkdirSync(Paths.CHATS_DIR, { recursive: true });
   if (!fs.existsSync(Paths.PROJECTS_DIR)) fs.mkdirSync(Paths.PROJECTS_DIR, { recursive: true });
