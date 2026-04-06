@@ -1,11 +1,70 @@
 name: Upload Release Asset
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag_name: ${{ steps.prepare.outputs.tag_name }}
+      version: ${{ steps.prepare.outputs.version }}
+    steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Set version, commit, tag and create release
+        id: prepare
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION="$(node ./Scripts/SetVersionByDate.mjs)"
+          TAG_NAME="v${VERSION}"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if ! git diff --quiet package.json; then
+            git add package.json
+            git commit -m "chore(release): bump version to ${VERSION}"
+            git push origin HEAD
+          else
+            echo "Version already set to ${VERSION}; no commit needed."
+          fi
+
+          git fetch --tags
+          if ! git rev-parse "${TAG_NAME}" >/dev/null 2>&1; then
+            git tag "${TAG_NAME}"
+            git push origin "${TAG_NAME}"
+          else
+            echo "Tag ${TAG_NAME} already exists."
+          fi
+
+          if ! gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            gh release create "${TAG_NAME}" \
+              --title "Release ${VERSION}" \
+              --notes "Automated release for ${VERSION}"
+          else
+            echo "Release ${TAG_NAME} already exists."
+          fi
+
   build-and-upload:
+    needs: prepare-release
     strategy:
       matrix:
         include:
@@ -24,11 +83,13 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     permissions:
-      contents: write # Needed for uploading to the release
+      contents: write
 
     steps:
-      - name: Checkout codebase
+      - name: Checkout tagged release
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.tag_name }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -48,21 +109,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
+          set -euo pipefail
           cd dist
 
-          # Find the appropriate built file (handles if it's in a subdirectory like dist/mac/)
-          FILE=$(find . -maxdepth 2 -type f -name "*.${{ matrix.ext }}" | head -n 1)
-
-          if [ -n "$FILE" ]; then
-            echo "Found target file: $FILE"
-            
-            # Move and rename the file into the dist directory root
-            mv "$FILE" "${{ matrix.new_name }}"
-            echo "Renamed executable to: ${{ matrix.new_name }}"
-            
-            # Upload the renamed file to the current release using GitHub CLI
-            gh release upload ${{ github.event.release.tag_name }} "${{ matrix.new_name }}" --clobber
-          else
+          FILE="$(find . -maxdepth 2 -type f -name "*.${{ matrix.ext }}" | head -n 1)"
+          if [ -z "$FILE" ]; then
             echo "Could not find any .${{ matrix.ext }} file in the dist folder."
             exit 1
           fi
+
+          mv "$FILE" "${{ matrix.new_name }}"
+          gh release upload "${{ needs.prepare-release.outputs.tag_name }}" "${{ matrix.new_name }}" --clobber
