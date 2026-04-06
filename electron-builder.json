@@ -14,20 +14,16 @@
   ],
   "extraResources": [
     {
-      "from": "Config/Models.json",
-      "to": "Config/Models.json"
+      "from": "Config/Models",
+      "to": "Config/Models"
     },
     {
       "from": "Config/WindowState.json",
       "to": "Config/WindowState.json"
     },
     {
-      "from": "Skills",
-      "to": "Skills"
-    },
-    {
-      "from": "Personas",
-      "to": "Personas"
+      "from": "Marketplace/Persona/Joanium/Joana.md",
+      "to": "Marketplace/Persona/Joanium/Joana.md"
     }
   ],
   "win": {
