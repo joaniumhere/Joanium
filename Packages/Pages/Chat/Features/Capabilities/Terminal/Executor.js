@@ -1148,8 +1148,6 @@ export const { handles, execute } = createExecutor({
       ].join('\n');
     },
 
-    // ─── NEW HANDLERS: SURGICAL LINE EDITING ──────────────────────────────────
-
     delete_lines: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -1325,8 +1323,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Wrapped ${changed} line${changed !== 1 ? 's' : ''} with prefix="${prefix}" suffix="${suffix}" in ${filePath}`;
     },
 
-    // ─── NEW HANDLERS: REGEX & BATCH EDITING ──────────────────────────────────
-
     find_replace_regex: async (params, onStage) => {
       const { path: filePath, pattern, replacement } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -1440,8 +1436,6 @@ export const { handles, execute } = createExecutor({
 
       return `✅ Inserted ${insertLines.length} line${insertLines.length !== 1 ? 's' : ''} ${position} ${targets.length} marker${targets.length !== 1 ? 's' : ''} ("${marker}") in ${filePath}`;
     },
-
-    // ─── NEW HANDLERS: FILE MANAGEMENT & TRANSFORM ────────────────────────────
 
     backup_file: async (params, onStage) => {
       const { path: filePath } = params;
@@ -2427,6 +2421,955 @@ export const { handles, execute } = createExecutor({
 
       await ipcWriteFile(filePath, joinLines(converted));
       return `✅ Converted indentation to ${direction} (${spacesPerTab} spaces per tab) — ${changed} line${changed !== 1 ? 's' : ''} changed in ${filePath}`;
+    },
+
+    trace_symbol: async (params, onStage) => {
+      const { symbol, path: rootPath } = params;
+      if (!symbol?.trim()) throw new Error('Missing required param: symbol');
+      const resolvedRoot = resolveWorkingDirectory(rootPath);
+      if (!resolvedRoot) throw new Error('No workspace is open.');
+
+      onStage(`🔍 Tracing all usages of "${symbol}" across workspace`);
+
+      const escaped = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      // Run three passes in parallel: definition, import/export, call-site
+      const [defResult, importResult, callResult] = await Promise.all([
+        window.electronAPI?.invoke?.('search-workspace', {
+          rootPath: resolvedRoot,
+          query: `(function|class|const|let|var|def|type|interface)\\s+${escaped}`,
+          maxResults: 30,
+        }),
+        window.electronAPI?.invoke?.('search-workspace', {
+          rootPath: resolvedRoot,
+          query: `import.*${escaped}|export.*${escaped}`,
+          maxResults: 30,
+        }),
+        window.electronAPI?.invoke?.('search-workspace', {
+          rootPath: resolvedRoot,
+          query: symbol,
+          maxResults: 100,
+        }),
+      ]);
+
+      const defMatches = defResult?.matches ?? [];
+      const importMatches = importResult?.matches ?? [];
+      const allMatches = callResult?.matches ?? [];
+
+      // Separate call-sites from definitions/imports
+      const defPaths = new Set(defMatches.map((m) => `${m.path}:${m.lineNumber}`));
+      const importPaths = new Set(importMatches.map((m) => `${m.path}:${m.lineNumber}`));
+      const callSites = allMatches.filter(
+        (m) =>
+          !defPaths.has(`${m.path}:${m.lineNumber}`) &&
+          !importPaths.has(`${m.path}:${m.lineNumber}`),
+      );
+
+      // Group call-sites by file
+      const byFile = {};
+      for (const m of callSites) {
+        (byFile[m.path] = byFile[m.path] || []).push(m);
+      }
+
+      const lines = [`Symbol trace: "${symbol}" in ${resolvedRoot}`, ''];
+
+      if (defMatches.length) {
+        lines.push(`### DEFINITIONS (${defMatches.length})`);
+        for (const m of defMatches) lines.push(`  ${m.path}:${m.lineNumber} — ${m.line.trim()}`);
+        lines.push('');
+      }
+
+      if (importMatches.length) {
+        lines.push(`### IMPORTS / EXPORTS (${importMatches.length})`);
+        for (const m of importMatches) lines.push(`  ${m.path}:${m.lineNumber} — ${m.line.trim()}`);
+        lines.push('');
+      }
+
+      const fileCount = Object.keys(byFile).length;
+      lines.push(
+        `### CALL SITES (${callSites.length} across ${fileCount} file${fileCount !== 1 ? 's' : ''})`,
+      );
+      for (const [filePath, hits] of Object.entries(byFile)) {
+        lines.push(`  📄 ${filePath}`);
+        for (const h of hits.slice(0, 8))
+          lines.push(`     line ${h.lineNumber}: ${h.line.trim().slice(0, 120)}`);
+        if (hits.length > 8) lines.push(`     … +${hits.length - 8} more`);
+      }
+
+      return lines.join('\n');
+    },
+
+    // 2. PROFILE FILE COMPLEXITY
+    // Gives the AI a complexity fingerprint of a file: function lengths, nesting
+    // depth, largest functions, TODO density — in one call.
+    profile_file_complexity: async (params, onStage) => {
+      const { path: filePath } = params;
+      if (!filePath?.trim()) throw new Error('Missing required param: path');
+
+      onStage(`📊 Profiling complexity of ${filePath}`);
+      const { content, totalLines } = await ipcReadFile(filePath);
+      const fileLines = splitLines(content);
+      const lang = detectLang(filePath);
+
+      // Detect function start lines using simple heuristics
+      const fnStartRe =
+        /^(?:export\s+)?(?:async\s+)?(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\(|class\s+(\w+)|def\s+(\w+)|(?:public|private|protected)\s+\w+\s+(\w+)\s*\()/;
+      const openBrace = /[{(]/g;
+      const closeBrace = /[})]/g;
+
+      const functions = [];
+      let currentFn = null;
+      let depth = 0;
+      let startDepth = 0;
+      let maxNesting = 0;
+      let localMaxNesting = 0;
+
+      for (let i = 0; i < fileLines.length; i++) {
+        const trimmed = fileLines[i].trim();
+        const m = trimmed.match(fnStartRe);
+
+        if (m && depth <= 1) {
+          if (currentFn) {
+            currentFn.endLine = i;
+            currentFn.length = i - currentFn.startLine;
+            currentFn.maxNesting = localMaxNesting;
+            functions.push(currentFn);
+          }
+          const name = m[1] || m[2] || m[3] || m[4] || m[5] || '(anonymous)';
+          currentFn = { name, startLine: i + 1, endLine: i + 1, length: 0, maxNesting: 0 };
+          startDepth = depth;
+          localMaxNesting = 0;
+        }
+
+        const opens = (trimmed.match(openBrace) || []).length;
+        const closes = (trimmed.match(closeBrace) || []).length;
+        depth += opens - closes;
+        depth = Math.max(0, depth);
+        if (depth > maxNesting) maxNesting = depth;
+        if (depth > localMaxNesting) localMaxNesting = depth;
+      }
+
+      if (currentFn) {
+        currentFn.endLine = fileLines.length;
+        currentFn.length = fileLines.length - currentFn.startLine;
+        currentFn.maxNesting = localMaxNesting;
+        functions.push(currentFn);
+      }
+
+      // Complexity stats
+      const blankLines = fileLines.filter((l) => !l.trim()).length;
+      const commentLines = fileLines.filter((l) => /^\s*(\/\/|#|\/\*|\*|<!--)/.test(l)).length;
+      const todoCount = fileLines.filter((l) => /(TODO|FIXME|HACK|XXX)/i.test(l)).length;
+      const avgFnLen = functions.length
+        ? Math.round(functions.reduce((a, f) => a + f.length, 0) / functions.length)
+        : 0;
+      const longThreshold = params.long_function_threshold ?? 40;
+      const longFns = functions
+        .filter((f) => f.length > longThreshold)
+        .sort((a, b) => b.length - a.length);
+
+      const complexScore = Math.round(
+        maxNesting * 10 +
+          longFns.length * 5 +
+          todoCount * 2 +
+          (totalLines > 300 ? (totalLines - 300) / 30 : 0),
+      );
+
+      const lines = [
+        `Complexity profile: ${filePath}`,
+        `Language: ${lang} | Lines: ${totalLines} | Functions: ${functions.length}`,
+        `Blank: ${blankLines} | Comments: ${commentLines} | TODOs: ${todoCount}`,
+        `Max nesting depth: ${maxNesting} | Avg function length: ${avgFnLen} lines`,
+        `Complexity score: ${complexScore} (higher = more complex)`,
+        '',
+      ];
+
+      if (longFns.length) {
+        lines.push(`### LONG FUNCTIONS (> ${longThreshold} lines)`);
+        for (const f of longFns.slice(0, 10)) {
+          lines.push(
+            `  ${f.name} — lines ${f.startLine}–${f.endLine} (${f.length} lines, max nesting: ${f.maxNesting})`,
+          );
+        }
+        lines.push('');
+      }
+
+      // Top 5 by nesting
+      const deepFns = [...functions].sort((a, b) => b.maxNesting - a.maxNesting).slice(0, 5);
+      if (deepFns.length) {
+        lines.push('### MOST DEEPLY NESTED');
+        for (const f of deepFns) {
+          lines.push(`  ${f.name} — line ${f.startLine} (max depth: ${f.maxNesting})`);
+        }
+        lines.push('');
+      }
+
+      lines.push('### ALL FUNCTIONS');
+      for (const f of functions) {
+        const flag = f.length > longThreshold ? ' ⚠️' : '';
+        lines.push(`  line ${f.startLine}: ${f.name} (${f.length} lines)${flag}`);
+      }
+
+      return lines.join('\n');
+    },
+
+    // 3. MAP IMPORTS
+    // Gives the AI a full picture of what a file depends on and where each
+    // dependency comes from — internal vs external, grouped cleanly.
+    map_imports: async (params, onStage) => {
+      const { path: filePath } = params;
+      if (!filePath?.trim()) throw new Error('Missing required param: path');
+
+      onStage(`🗺️ Mapping imports in ${filePath}`);
+      const { content, totalLines } = await ipcReadFile(filePath);
+      const fileLines = splitLines(content);
+      const lang = detectLang(filePath);
+
+      const imports = [];
+
+      // JS/TS patterns
+      const jsImportRe = /^import\s+(.+?)\s+from\s+['"](.+?)['"]/;
+      const jsRequireRe = /(?:const|let|var)\s+(.+?)\s*=\s*require\(['"](.+?)['"]\)/;
+      const jsDynamicRe = /import\(['"](.+?)['"]\)/;
+      const jsExportFromRe = /^export\s+.+\s+from\s+['"](.+?)['"]/;
+      // Python
+      const pyImportRe = /^import\s+(\S+)/;
+      const pyFromRe = /^from\s+(\S+)\s+import\s+(.+)/;
+
+      for (let i = 0; i < fileLines.length; i++) {
+        const line = fileLines[i].trim();
+
+        let m;
+        if ((m = line.match(jsImportRe))) {
+          imports.push({ line: i + 1, what: m[1].trim(), from: m[2], kind: 'import' });
+        } else if ((m = line.match(jsExportFromRe))) {
+          imports.push({ line: i + 1, what: '(re-export)', from: m[1], kind: 'export-from' });
+        } else if ((m = line.match(jsRequireRe))) {
+          imports.push({ line: i + 1, what: m[1].trim(), from: m[2], kind: 'require' });
+        } else if ((m = line.match(jsDynamicRe))) {
+          imports.push({ line: i + 1, what: '(dynamic)', from: m[1], kind: 'dynamic' });
+        } else if ((m = line.match(pyFromRe))) {
+          imports.push({ line: i + 1, what: m[2].trim(), from: m[1], kind: 'from-import' });
+        } else if ((m = line.match(pyImportRe))) {
+          imports.push({ line: i + 1, what: m[1], from: m[1], kind: 'import' });
+        }
+      }
+
+      if (!imports.length) return `No imports found in ${filePath} (${totalLines} lines).`;
+
+      const internal = imports.filter((i) => i.from.startsWith('.') || i.from.startsWith('/'));
+      const external = imports.filter((i) => !i.from.startsWith('.') && !i.from.startsWith('/'));
+      const nodeBuiltins = new Set([
+        'fs',
+        'path',
+        'os',
+        'http',
+        'https',
+        'crypto',
+        'events',
+        'stream',
+        'url',
+        'util',
+        'child_process',
+        'cluster',
+        'net',
+        'tls',
+        'dns',
+        'readline',
+        'vm',
+        'zlib',
+        'buffer',
+        'assert',
+        'perf_hooks',
+        'worker_threads',
+        'timers',
+      ]);
+      const stdlib = external.filter((i) => nodeBuiltins.has(i.from.split('/')[0]));
+      const thirdParty = external.filter((i) => !nodeBuiltins.has(i.from.split('/')[0]));
+
+      const lines = [
+        `Import map: ${filePath}`,
+        `Total: ${imports.length} imports | Internal: ${internal.length} | Third-party: ${thirdParty.length} | Stdlib: ${stdlib.length}`,
+        '',
+      ];
+
+      if (internal.length) {
+        lines.push('### INTERNAL (relative/absolute)');
+        for (const imp of internal) {
+          lines.push(`  line ${imp.line}: ${imp.what}  ←  "${imp.from}" [${imp.kind}]`);
+        }
+        lines.push('');
+      }
+
+      if (thirdParty.length) {
+        lines.push('### THIRD-PARTY PACKAGES');
+        // Group by package name
+        const byPkg = {};
+        for (const imp of thirdParty) {
+          const pkg = imp.from.split('/')[0];
+          (byPkg[pkg] = byPkg[pkg] || []).push(imp);
+        }
+        for (const [pkg, imps] of Object.entries(byPkg)) {
+          lines.push(`  ${pkg}`);
+          for (const imp of imps) lines.push(`    line ${imp.line}: ${imp.what}  ←  "${imp.from}"`);
+        }
+        lines.push('');
+      }
+
+      if (stdlib.length) {
+        lines.push('### STDLIB / BUILT-INS');
+        for (const imp of stdlib) {
+          lines.push(`  line ${imp.line}: ${imp.what}  ←  "${imp.from}"`);
+        }
+        lines.push('');
+      }
+
+      const dynamic = imports.filter((i) => i.kind === 'dynamic');
+      if (dynamic.length) {
+        lines.push('### DYNAMIC IMPORTS');
+        for (const imp of dynamic) lines.push(`  line ${imp.line}: "${imp.from}"`);
+      }
+
+      return lines.join('\n');
+    },
+
+    // 4. FIND DEAD EXPORTS
+    // Finds symbols that are exported from a file but never imported anywhere
+    // else in the workspace. Instantly spots dead code.
+    find_dead_exports: async (params, onStage) => {
+      const { path: filePath, workspace_path } = params;
+      if (!filePath?.trim()) throw new Error('Missing required param: path');
+
+      const rootPath = resolveWorkingDirectory(workspace_path);
+      if (!rootPath) throw new Error('No workspace is open. Provide workspace_path.');
+
+      onStage(`🪦 Scanning for dead exports in ${filePath}`);
+      const { content } = await ipcReadFile(filePath);
+      const fileLines = splitLines(content);
+
+      // Extract all exported names
+      const exportedSymbols = [];
+      const exportRe =
+        /^export\s+(?:default\s+)?(?:function|class|const|let|var|type|interface|enum)\s+(\w+)/;
+      const namedExportRe = /^export\s+\{([^}]+)\}/;
+
+      for (let i = 0; i < fileLines.length; i++) {
+        const line = fileLines[i].trim();
+        let m;
+        if ((m = line.match(exportRe))) {
+          exportedSymbols.push({ name: m[1], line: i + 1 });
+        } else if ((m = line.match(namedExportRe))) {
+          const names = m[1].split(',').map((s) =>
+            s
+              .trim()
+              .split(/\s+as\s+/)
+              .pop()
+              .trim(),
+          );
+          for (const name of names) {
+            if (name) exportedSymbols.push({ name, line: i + 1 });
+          }
+        }
+      }
+
+      if (!exportedSymbols.length) return `No exported symbols found in ${filePath}.`;
+
+      onStage(`Checking ${exportedSymbols.length} exports against workspace...`);
+
+      const results = await Promise.all(
+        exportedSymbols.map(async (sym) => {
+          const result = await window.electronAPI?.invoke?.('search-workspace', {
+            rootPath,
+            query: sym.name,
+            maxResults: 10,
+          });
+          const matches = (result?.matches ?? []).filter(
+            (m) => !m.path.endsWith(filePath.split('/').pop()), // exclude the source file itself
+          );
+          return { ...sym, usages: matches.length };
+        }),
+      );
+
+      const dead = results.filter((r) => r.usages === 0);
+      const used = results.filter((r) => r.usages > 0);
+
+      const lines = [
+        `Dead export analysis: ${filePath}`,
+        `Exports checked: ${results.length} | Dead: ${dead.length} | Used: ${used.length}`,
+        '',
+      ];
+
+      if (dead.length) {
+        lines.push(`### DEAD EXPORTS (never imported elsewhere)`);
+        for (const s of dead) lines.push(`  line ${s.line}: ${s.name}`);
+        lines.push('');
+      }
+
+      if (used.length) {
+        lines.push(`### USED EXPORTS`);
+        for (const s of used)
+          lines.push(
+            `  line ${s.line}: ${s.name}  (${s.usages} reference${s.usages !== 1 ? 's' : ''} in workspace)`,
+          );
+      }
+
+      return lines.join('\n');
+    },
+
+    // 5. COMPARE JSON FILES
+    // Deep semantic diff of two JSON files. Shows added, removed, changed keys
+    // with full dot-notation paths. Far smarter than a line diff for configs.
+    compare_json_files: async (params, onStage) => {
+      const { path_a, path_b } = params;
+      if (!path_a?.trim()) throw new Error('Missing required param: path_a');
+      if (!path_b?.trim()) throw new Error('Missing required param: path_b');
+
+      onStage(`🔬 Deep-comparing JSON files`);
+      const [fileA, fileB] = await Promise.all([ipcReadFile(path_a), ipcReadFile(path_b)]);
+
+      let jsonA, jsonB;
+      try {
+        jsonA = JSON.parse(fileA.content);
+      } catch (e) {
+        throw new Error(`${path_a} is not valid JSON: ${e.message}`);
+      }
+      try {
+        jsonB = JSON.parse(fileB.content);
+      } catch (e) {
+        throw new Error(`${path_b} is not valid JSON: ${e.message}`);
+      }
+
+      const added = [];
+      const removed = [];
+      const changed = [];
+      const unchanged = [];
+
+      function deepDiff(a, b, path = '') {
+        const allKeys = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+        for (const key of allKeys) {
+          const fullPath = path ? `${path}.${key}` : key;
+          const aVal = a?.[key];
+          const bVal = b?.[key];
+
+          if (!(key in (a ?? {}))) {
+            added.push({ path: fullPath, value: bVal });
+          } else if (!(key in (b ?? {}))) {
+            removed.push({ path: fullPath, value: aVal });
+          } else if (
+            typeof aVal === 'object' &&
+            aVal !== null &&
+            typeof bVal === 'object' &&
+            bVal !== null &&
+            !Array.isArray(aVal) &&
+            !Array.isArray(bVal)
+          ) {
+            deepDiff(aVal, bVal, fullPath);
+          } else {
+            const aStr = JSON.stringify(aVal);
+            const bStr = JSON.stringify(bVal);
+            if (aStr !== bStr) {
+              changed.push({ path: fullPath, from: aVal, to: bVal });
+            } else {
+              unchanged.push(fullPath);
+            }
+          }
+        }
+      }
+
+      deepDiff(jsonA, jsonB);
+
+      const nameA = path_a.split('/').pop();
+      const nameB = path_b.split('/').pop();
+
+      const lines = [
+        `JSON comparison: ${nameA} → ${nameB}`,
+        `Added: ${added.length} | Removed: ${removed.length} | Changed: ${changed.length} | Unchanged: ${unchanged.length}`,
+        '',
+      ];
+
+      if (added.length) {
+        lines.push(`### ADDED (in ${nameB}, not in ${nameA})`);
+        for (const a of added) lines.push(`  + ${a.path}: ${JSON.stringify(a.value).slice(0, 80)}`);
+        lines.push('');
+      }
+      if (removed.length) {
+        lines.push(`### REMOVED (in ${nameA}, not in ${nameB})`);
+        for (const r of removed)
+          lines.push(`  - ${r.path}: ${JSON.stringify(r.value).slice(0, 80)}`);
+        lines.push('');
+      }
+      if (changed.length) {
+        lines.push(`### CHANGED`);
+        for (const c of changed) {
+          lines.push(`  ~ ${c.path}`);
+          lines.push(`      was: ${JSON.stringify(c.from).slice(0, 80)}`);
+          lines.push(`      now: ${JSON.stringify(c.to).slice(0, 80)}`);
+        }
+        lines.push('');
+      }
+      if (!added.length && !removed.length && !changed.length) {
+        lines.push('✅ Files are semantically identical.');
+      }
+
+      return lines.join('\n');
+    },
+
+    // 6. EXTRACT ENV VARS
+    // Scans a whole workspace for every environment variable reference
+    // (process.env.X, os.getenv, import.meta.env, etc.) and lists them all.
+    // Lets the AI instantly know what env vars a project needs.
+    extract_env_vars: async (params, onStage) => {
+      const rootPath = resolveWorkingDirectory(params.path);
+      if (!rootPath) throw new Error('No workspace is open.');
+
+      onStage(`🌍 Scanning for environment variable references`);
+
+      const patterns = [
+        'process.env.',
+        'import.meta.env.',
+        'os.getenv(',
+        'os.environ',
+        'ENV[',
+        'System.getenv(',
+        'dotenv',
+      ];
+
+      const allMatches = [];
+      for (const pattern of patterns) {
+        const result = await window.electronAPI?.invoke?.('search-workspace', {
+          rootPath,
+          query: pattern,
+          maxResults: 100,
+        });
+        if (result?.matches) allMatches.push(...result.matches);
+      }
+
+      if (!allMatches.length) return `No environment variable references found in ${rootPath}.`;
+
+      // Extract actual var names
+      const varNames = new Map(); // varName -> Set of file paths
+      const varRe =
+        /(?:process\.env|import\.meta\.env)\.([A-Z_][A-Z0-9_]*)|os\.getenv\(['"]([A-Z_][A-Z0-9_]*)['"]|ENV\[['"]([A-Z_][A-Z0-9_]*)['"]/g;
+
+      for (const match of allMatches) {
+        let m;
+        varRe.lastIndex = 0;
+        while ((m = varRe.exec(match.line)) !== null) {
+          const name = m[1] || m[2] || m[3];
+          if (name) {
+            if (!varNames.has(name)) varNames.set(name, new Set());
+            varNames.get(name).add(match.path);
+          }
+        }
+      }
+
+      const sorted = [...varNames.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+      const lines = [
+        `Environment variables in ${rootPath}:`,
+        `Found ${sorted.length} unique variable${sorted.length !== 1 ? 's' : ''} across ${new Set(allMatches.map((m) => m.path)).size} files`,
+        '',
+        '### VARIABLES',
+        ...sorted.map(
+          ([name, files]) =>
+            `  ${name.padEnd(35)} used in ${files.size} file${files.size !== 1 ? 's' : ''}`,
+        ),
+        '',
+        '### .env TEMPLATE',
+        '# Copy this to .env and fill in values:',
+        ...sorted.map(([name]) => `${name}=`),
+      ];
+
+      return lines.join('\n');
+    },
+
+    // 7. GET CALL GRAPH
+    // For a single file, maps which functions call which other functions.
+    // Gives the AI a mental model of internal execution flow instantly.
+    get_call_graph: async (params, onStage) => {
+      const { path: filePath } = params;
+      if (!filePath?.trim()) throw new Error('Missing required param: path');
+
+      onStage(`📞 Building call graph for ${filePath}`);
+      const { content, totalLines } = await ipcReadFile(filePath);
+      const fileLines = splitLines(content);
+
+      // Phase 1: detect function boundaries
+      const fnBoundaryRe =
+        /^(?:export\s+)?(?:async\s+)?function\s+(\w+)|^(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\(|^(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?function/;
+      const functions = [];
+      let depth = 0;
+      let current = null;
+
+      for (let i = 0; i < fileLines.length; i++) {
+        const trimmed = fileLines[i].trim();
+        const m = trimmed.match(fnBoundaryRe);
+        if (m && depth <= 1) {
+          if (current) {
+            current.endLine = i;
+            functions.push(current);
+          }
+          current = { name: m[1] || m[2] || m[3], startLine: i, endLine: i, calls: [] };
+        }
+        depth += (trimmed.match(/\{/g) || []).length - (trimmed.match(/\}/g) || []).length;
+        depth = Math.max(0, depth);
+      }
+      if (current) {
+        current.endLine = fileLines.length - 1;
+        functions.push(current);
+      }
+
+      // Phase 2: for each function, find calls to other known functions
+      const fnNames = new Set(functions.map((f) => f.name));
+
+      for (const fn of functions) {
+        const body = fileLines.slice(fn.startLine, fn.endLine + 1).join('\n');
+        for (const name of fnNames) {
+          if (name === fn.name) continue;
+          const callRe = new RegExp(`\\b${name}\\s*\\(`, 'g');
+          if (callRe.test(body)) fn.calls.push(name);
+        }
+      }
+
+      if (!functions.length) return `No functions found in ${filePath}.`;
+
+      const lines = [
+        `Call graph: ${filePath} (${totalLines} lines, ${functions.length} functions)`,
+        '',
+      ];
+
+      for (const fn of functions) {
+        if (fn.calls.length) {
+          lines.push(`  ${fn.name}  →  ${fn.calls.join(', ')}`);
+        } else {
+          lines.push(`  ${fn.name}  →  (no internal calls)`);
+        }
+      }
+
+      // Also find which functions are called by nobody (entry points)
+      const calledByAnyone = new Set(functions.flatMap((f) => f.calls));
+      const entryPoints = functions.filter((f) => !calledByAnyone.has(f.name));
+      if (entryPoints.length) {
+        lines.push('');
+        lines.push('### ENTRY POINTS (not called by other functions in this file)');
+        for (const fn of entryPoints) lines.push(`  ${fn.name}  (line ${fn.startLine + 1})`);
+      }
+
+      return lines.join('\n');
+    },
+
+    // 8. AUDIT DEPENDENCIES
+    // Cross-references the package.json/requirements.txt against actual imports
+    // in the source. Finds unused declared deps and undeclared used packages.
+    audit_dependencies: async (params, onStage) => {
+      const rootPath = resolveWorkingDirectory(params.path);
+      if (!rootPath) throw new Error('No workspace is open.');
+
+      onStage(`📦 Auditing dependencies`);
+
+      // Read package.json
+      let declaredDeps = new Set();
+      let declaredDevDeps = new Set();
+      let pkgType = 'unknown';
+
+      try {
+        const pkgResult = await ipcReadFile(`${rootPath}/package.json`);
+        const pkg = JSON.parse(pkgResult.content);
+        pkgType = 'node';
+        Object.keys(pkg.dependencies ?? {}).forEach((d) => declaredDeps.add(d));
+        Object.keys(pkg.devDependencies ?? {}).forEach((d) => declaredDevDeps.add(d));
+      } catch {
+        // try requirements.txt
+        try {
+          const reqResult = await ipcReadFile(`${rootPath}/requirements.txt`);
+          pkgType = 'python';
+          for (const line of splitLines(reqResult.content)) {
+            const pkg = line
+              .trim()
+              .split(/[>=<!]/)[0]
+              .trim()
+              .toLowerCase();
+            if (pkg && !pkg.startsWith('#')) declaredDeps.add(pkg);
+          }
+        } catch {
+          return 'No package.json or requirements.txt found in workspace root.';
+        }
+      }
+
+      // Scan workspace for actual imports
+      const importResult = await window.electronAPI?.invoke?.('search-workspace', {
+        rootPath,
+        query: pkgType === 'node' ? "from '|require('" : 'import |from ',
+        maxResults: 500,
+      });
+
+      const usedPackages = new Set();
+      const importLineRe =
+        pkgType === 'node'
+          ? /(?:from|require)\s*\(?['"]([^./][^'"]*)['"]/g
+          : /^(?:import|from)\s+(\S+)/gm;
+
+      for (const match of importResult?.matches ?? []) {
+        let m;
+        importLineRe.lastIndex = 0;
+        while ((m = importLineRe.exec(match.line)) !== null) {
+          const pkg = m[1]
+            .split('/')[0]
+            .replace(/^@[^/]+\/[^/]+.*/, (s) => s.split('/').slice(0, 2).join('/'));
+          if (pkg && !pkg.startsWith('.')) usedPackages.add(pkg.toLowerCase());
+        }
+      }
+
+      const allDeclared = new Set([...declaredDeps, ...declaredDevDeps]);
+      const unused = [...allDeclared].filter((d) => !usedPackages.has(d.toLowerCase()));
+      const undeclared = [...usedPackages].filter((u) => !allDeclared.has(u));
+
+      const lines = [
+        `Dependency audit: ${rootPath}`,
+        `Declared: ${allDeclared.size} (${declaredDeps.size} prod, ${declaredDevDeps.size} dev) | Used in code: ${usedPackages.size}`,
+        `Potentially unused: ${unused.length} | Potentially undeclared: ${undeclared.length}`,
+        '',
+      ];
+
+      if (undeclared.length) {
+        lines.push('### ⚠️  USED BUT NOT DECLARED (possible missing deps)');
+        for (const d of undeclared.sort()) lines.push(`  ${d}`);
+        lines.push('');
+      }
+
+      if (unused.length) {
+        lines.push('### 🗑️  DECLARED BUT NOT FOUND IN CODE (possibly unused)');
+        for (const d of unused.sort())
+          lines.push(`  ${d}  [${declaredDevDeps.has(d) ? 'devDep' : 'dep'}]`);
+        lines.push('');
+      }
+
+      if (!undeclared.length && !unused.length) {
+        lines.push('✅ All declared dependencies appear to be used and all imports are declared.');
+      }
+
+      return lines.join('\n');
+    },
+
+    // 9. SMART GREP
+    // Multi-pattern grep with AND/OR/NOT logic across a workspace or file.
+    // e.g. "lines that contain X AND Y but NOT Z"
+    smart_grep: async (params, onStage) => {
+      const { path: filePath, workspace_path, must_contain, must_not_contain, any_of } = params;
+      if (!must_contain && !any_of) throw new Error('Provide at least must_contain or any_of.');
+
+      const rootPath = resolveWorkingDirectory(workspace_path);
+      const isFile = !!filePath?.trim();
+
+      onStage(`🔍 Smart grep${isFile ? ` in ${filePath}` : ' across workspace'}`);
+
+      let lines;
+      let fileMap = {}; // path -> lines array
+
+      if (isFile) {
+        const { content } = await ipcReadFile(filePath);
+        lines = splitLines(content);
+        fileMap[filePath] = lines;
+      } else {
+        if (!rootPath) throw new Error('Provide either path (single file) or workspace_path.');
+        // Seed with must_contain[0] or any_of[0]
+        const seedQuery = must_contain?.[0] || any_of?.[0];
+        const result = await window.electronAPI?.invoke?.('search-workspace', {
+          rootPath,
+          query: seedQuery,
+          maxResults: 300,
+        });
+        // Group matches by file, then read those files
+        const filePaths = [...new Set((result?.matches ?? []).map((m) => m.path))];
+        await Promise.all(
+          filePaths.map(async (fp) => {
+            try {
+              const { content } = await ipcReadFile(fp);
+              fileMap[fp] = splitLines(content);
+            } catch {
+              /* skip unreadable */
+            }
+          }),
+        );
+      }
+
+      const mustPatterns = (must_contain ?? []).map(
+        (p) => new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+      );
+      const notPatterns = (must_not_contain ?? []).map(
+        (p) => new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+      );
+      const anyPatterns = (any_of ?? []).map(
+        (p) => new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+      );
+
+      const hits = [];
+
+      for (const [fp, fileLines] of Object.entries(fileMap)) {
+        for (let i = 0; i < fileLines.length; i++) {
+          const line = fileLines[i];
+          if (mustPatterns.length && !mustPatterns.every((re) => re.test(line))) continue;
+          if (notPatterns.length && notPatterns.some((re) => re.test(line))) continue;
+          if (anyPatterns.length && !anyPatterns.some((re) => re.test(line))) continue;
+          hits.push({ path: fp, lineNum: i + 1, text: line.trim() });
+        }
+      }
+
+      if (!hits.length) return `No lines matched the given conditions.`;
+
+      const output = [
+        `Smart grep results:`,
+        must_contain?.length ? `  MUST contain: ${must_contain.join(' AND ')}` : '',
+        any_of?.length ? `  ANY OF: ${any_of.join(' | ')}` : '',
+        must_not_contain?.length ? `  MUST NOT contain: ${must_not_contain.join(', ')}` : '',
+        `  Matches: ${hits.length}`,
+        '',
+      ].filter(Boolean);
+
+      // Group by file
+      const byFile = {};
+      for (const h of hits) (byFile[h.path] = byFile[h.path] || []).push(h);
+
+      for (const [fp, fileHits] of Object.entries(byFile)) {
+        output.push(`📄 ${fp}`);
+        for (const h of fileHits.slice(0, 20))
+          output.push(`  ${h.lineNum}: ${h.text.slice(0, 120)}`);
+        if (fileHits.length > 20) output.push(`  … +${fileHits.length - 20} more`);
+        output.push('');
+      }
+
+      return output.join('\n');
+    },
+
+    // 10. SNAPSHOT WORKSPACE
+    // The ultimate "orient me fast" tool. Gives the AI a single dense summary
+    // of the entire codebase: file count, language breakdown, largest files,
+    // entry points, test coverage presence, recent git activity — all in one call.
+    snapshot_workspace: async (params, onStage) => {
+      const rootPath = resolveWorkingDirectory(params.path);
+      if (!rootPath) throw new Error('No workspace is open.');
+
+      onStage(`📸 Snapshotting workspace ${rootPath}`);
+
+      const [inspectResult, gitResult, treeResult] = await Promise.all([
+        window.electronAPI?.invoke?.('inspect-workspace', { rootPath }),
+        window.electronAPI?.invoke?.('git-status', { workingDir: rootPath }),
+        window.electronAPI?.invoke?.('list-directory-tree', {
+          dirPath: rootPath,
+          maxDepth: 3,
+          maxEntries: 300,
+        }),
+      ]);
+
+      const summary = inspectResult?.summary;
+      const treeLines = treeResult?.lines ?? [];
+
+      // Analyze tree for stats
+      const allEntries = treeLines.filter((l) => l.trim());
+      const fileEntries = allEntries.filter((l) => !l.endsWith('/'));
+      const dirEntries = allEntries.filter((l) => l.endsWith('/'));
+
+      // Language breakdown from extensions
+      const extCount = {};
+      for (const entry of fileEntries) {
+        const ext = entry.trim().split('.').pop().toLowerCase();
+        if (ext && ext.length <= 5) extCount[ext] = (extCount[ext] || 0) + 1;
+      }
+      const topExts = Object.entries(extCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+
+      // Detect entry points
+      const entryPoints = fileEntries.filter((l) => {
+        const name = l.trim().toLowerCase();
+        return [
+          'index.js',
+          'index.ts',
+          'main.js',
+          'main.ts',
+          'app.js',
+          'app.ts',
+          'server.js',
+          'server.ts',
+          'main.py',
+          'app.py',
+          '__init__.py',
+        ].some((e) => name.endsWith(e));
+      });
+
+      // Detect test files
+      const testFiles = fileEntries.filter((l) => {
+        const name = l.trim().toLowerCase();
+        return (
+          name.includes('.test.') ||
+          name.includes('.spec.') ||
+          name.includes('_test.') ||
+          name.includes('/test/') ||
+          name.includes('/__tests__/')
+        );
+      });
+
+      // Git summary
+      const gitLines = (gitResult?.stdout ?? '').split('\n').filter(Boolean);
+      const branch =
+        gitLines.find((l) => l.startsWith('On branch'))?.replace('On branch ', '') || 'unknown';
+      const changedFiles = gitLines.filter((l) => /^[MADRC?]/.test(l.trim())).length;
+
+      const lines = [
+        `╔══════════════════════════════════════════════╗`,
+        `  WORKSPACE SNAPSHOT: ${rootPath.split('/').pop()}`,
+        `╚══════════════════════════════════════════════╝`,
+        '',
+        `📁 Structure: ${fileEntries.length} files in ${dirEntries.length} directories`,
+        `🌿 Git: branch "${branch}" | ${changedFiles} changed file${changedFiles !== 1 ? 's' : ''}`,
+        '',
+      ];
+
+      if (summary) {
+        lines.push('### STACK DETECTED');
+        lines.push(`  Languages:   ${(summary.languages ?? []).join(', ') || 'unknown'}`);
+        lines.push(`  Frameworks:  ${(summary.frameworks ?? []).join(', ') || 'none'}`);
+        lines.push(`  Testing:     ${(summary.testing ?? []).join(', ') || 'none'}`);
+        lines.push(`  Infra:       ${(summary.infra ?? []).join(', ') || 'none'}`);
+        lines.push(`  Pkg manager: ${summary.packageManager || 'unknown'}`);
+        lines.push('');
+      }
+
+      lines.push('### FILE BREAKDOWN BY EXTENSION');
+      for (const [ext, count] of topExts) {
+        const bar = '█'.repeat(Math.round((count / Math.max(...topExts.map((e) => e[1]))) * 20));
+        lines.push(`  .${ext.padEnd(8)} ${String(count).padStart(4)}  ${bar}`);
+      }
+      lines.push('');
+
+      if (entryPoints.length) {
+        lines.push('### LIKELY ENTRY POINTS');
+        for (const ep of entryPoints.slice(0, 8)) lines.push(`  ${ep.trim()}`);
+        lines.push('');
+      }
+
+      lines.push(`### TEST COVERAGE`);
+      lines.push(`  Test files found: ${testFiles.length}`);
+      if (testFiles.length) {
+        for (const t of testFiles.slice(0, 5)) lines.push(`  ${t.trim()}`);
+        if (testFiles.length > 5) lines.push(`  … +${testFiles.length - 5} more`);
+      }
+      lines.push('');
+
+      if (summary?.packageScripts && Object.keys(summary.packageScripts).length) {
+        lines.push('### SCRIPTS');
+        for (const [name, cmd] of Object.entries(summary.packageScripts).slice(0, 8)) {
+          lines.push(`  ${name.padEnd(15)} ${cmd.slice(0, 70)}`);
+        }
+        lines.push('');
+      }
+
+      if (summary?.notes?.length) {
+        lines.push('### NOTES');
+        for (const note of summary.notes) lines.push(`  ⚠️  ${note}`);
+      }
+
+      return lines.join('\n');
     },
   },
 });

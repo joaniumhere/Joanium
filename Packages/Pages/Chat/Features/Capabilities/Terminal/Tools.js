@@ -1680,4 +1680,173 @@ export const TERMINAL_TOOLS = [
       },
     },
   },
+
+  {
+    name: 'trace_symbol',
+    description:
+      "Find every definition, import/export, and call site of a named symbol (function, class, variable, type) across the entire workspace. Gives the AI a complete map of where something is declared vs. where it is used — the fastest way to understand a symbol's role in the codebase.",
+    category: 'terminal',
+    parameters: {
+      symbol: {
+        type: 'string',
+        required: true,
+        description:
+          'The exact symbol name to trace (e.g. "useAuth", "UserService", "MAX_RETRIES").',
+      },
+      path: {
+        type: 'string',
+        required: false,
+        description: 'Workspace root path. Defaults to the opened workspace.',
+      },
+    },
+  },
+
+  {
+    name: 'profile_file_complexity',
+    description:
+      'Analyze a source file for complexity signals: function count and lengths, maximum nesting depth, TODO density, and a composite complexity score. Instantly tells the AI which functions are risky, which are too long, and where to focus code review.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the source file.' },
+      long_function_threshold: {
+        type: 'number',
+        required: false,
+        description: 'Lines above which a function is flagged as "long" (default: 40).',
+      },
+    },
+  },
+
+  {
+    name: 'map_imports',
+    description:
+      'Show a structured, categorized map of everything a file imports: internal (relative) modules, third-party packages (grouped by package), and stdlib/built-ins. Instantly tells the AI what a file depends on and from where.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the source file.' },
+    },
+  },
+
+  {
+    name: 'find_dead_exports',
+    description:
+      'Find exports in a file that are never imported anywhere else in the workspace. Identifies dead code, unused utilities, and stale public APIs in one call.',
+    category: 'terminal',
+    parameters: {
+      path: {
+        type: 'string',
+        required: true,
+        description: 'Absolute path to the file to check exports in.',
+      },
+      workspace_path: {
+        type: 'string',
+        required: false,
+        description: 'Workspace root to search for usages. Defaults to the opened workspace.',
+      },
+    },
+  },
+
+  {
+    name: 'compare_json_files',
+    description:
+      'Deep semantic diff of two JSON files using dot-notation key paths. Shows exactly which keys were added, removed, or changed — far more useful than a line-level diff for config files, package.json, or API response fixtures.',
+    category: 'terminal',
+    parameters: {
+      path_a: {
+        type: 'string',
+        required: true,
+        description: 'Absolute path to the first (original / left) JSON file.',
+      },
+      path_b: {
+        type: 'string',
+        required: true,
+        description: 'Absolute path to the second (modified / right) JSON file.',
+      },
+    },
+  },
+
+  {
+    name: 'extract_env_vars',
+    description:
+      'Scan a workspace for every environment variable reference (process.env.X, import.meta.env.X, os.getenv, etc.) and return a deduplicated list with file usage counts plus a ready-to-use .env template. Instantly tells the AI what configuration a project needs.',
+    category: 'terminal',
+    parameters: {
+      path: {
+        type: 'string',
+        required: false,
+        description: 'Workspace root path. Defaults to the opened workspace.',
+      },
+    },
+  },
+
+  {
+    name: 'get_call_graph',
+    description:
+      'Build a call graph for a single source file showing which functions call which other functions within the file, and which functions are entry points (not called by anyone else). Gives the AI an immediate mental model of internal execution flow.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the source file.' },
+    },
+  },
+
+  {
+    name: 'audit_dependencies',
+    description:
+      "Cross-reference a project's declared dependencies (package.json or requirements.txt) against actual imports used in the code. Surfaces packages that are declared but never imported (dead deps) and imports that are used but never declared (missing deps).",
+    category: 'terminal',
+    parameters: {
+      path: {
+        type: 'string',
+        required: false,
+        description: 'Workspace root path. Defaults to the opened workspace.',
+      },
+    },
+  },
+
+  {
+    name: 'smart_grep',
+    description:
+      'Multi-condition grep with AND / OR / NOT logic. Find lines that contain ALL of must_contain patterns, ANY of any_of patterns, and NONE of must_not_contain patterns. Works on a single file or across the whole workspace. More powerful than search_workspace for complex pattern combinations.',
+    category: 'terminal',
+    parameters: {
+      path: {
+        type: 'string',
+        required: false,
+        description: 'Absolute path to a single file to search in.',
+      },
+      workspace_path: {
+        type: 'string',
+        required: false,
+        description: 'Workspace root to search across all files. Used if path is not given.',
+      },
+      must_contain: {
+        type: 'array',
+        required: false,
+        description: 'Array of strings that must ALL be present on the line (AND logic).',
+      },
+      must_not_contain: {
+        type: 'array',
+        required: false,
+        description: 'Array of strings — lines containing any of these are excluded (NOT logic).',
+      },
+      any_of: {
+        type: 'array',
+        required: false,
+        description: 'Array of strings — at least one must be present on the line (OR logic).',
+      },
+    },
+  },
+
+  {
+    name: 'snapshot_workspace',
+    description:
+      'Generate a single dense intelligence snapshot of the entire workspace: file/directory counts, language breakdown with visual histogram, detected stack, likely entry points, test file count, git branch and dirty status, and available scripts. The best first tool to call when starting any task on an unfamiliar codebase.',
+    category: 'terminal',
+    parameters: {
+      path: {
+        type: 'string',
+        required: false,
+        description: 'Workspace root path. Defaults to the opened workspace.',
+      },
+    },
+  },
 ];
