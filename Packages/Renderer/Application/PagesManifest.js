@@ -25,8 +25,8 @@ async function loadBuiltinPages() {
   if (!Array.isArray(pages)) return [];
 
   return pages
-    .filter(page => page?.id && page?.moduleUrl)
-    .map(page => ({
+    .filter((page) => page?.id && page?.moduleUrl)
+    .map((page) => ({
       ...page,
       load: () => import(page.moduleUrl),
       css: page.css ?? null,
@@ -34,9 +34,7 @@ async function loadBuiltinPages() {
 }
 
 export function registerFeaturePages(pages = []) {
-  _featurePages = pages
-    .map(normalizeFeaturePage)
-    .filter(Boolean);
+  _featurePages = pages.map(normalizeFeaturePage).filter(Boolean);
 }
 
 export async function discoverPages() {
@@ -48,8 +46,7 @@ export async function discoverPages() {
     byId.set(page.id, page);
   }
 
-  _pagesCache = [...byId.values()]
-    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  _pagesCache = [...byId.values()].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 
   return _pagesCache;
 }
@@ -74,6 +71,13 @@ export function buildSidebarNav() {
     const item = { id: page.id, label: page.label, icon: page.icon };
     if (page.section === 'bottom') bottom.push(item);
     else top.push(item);
+  }
+
+  // Keep Marketplace anchored as the final top-section sidebar item.
+  const marketplaceIndex = top.findIndex((item) => item.id === 'marketplace');
+  if (marketplaceIndex !== -1 && marketplaceIndex !== top.length - 1) {
+    const [marketplaceItem] = top.splice(marketplaceIndex, 1);
+    top.push(marketplaceItem);
   }
 
   return { top, bottom };
