@@ -9,7 +9,7 @@ It combines multi-provider chat, workspace-aware assistance, scheduled automatio
 - Local-first state: chats, projects, skills, personas, memories, usage data, and feature state are stored on the machine instead of being hidden behind a remote app backend.
 - Multi-provider by design: Anthropic, OpenAI, Google, OpenRouter, Mistral, NVIDIA, DeepSeek, MiniMax, Ollama, and LM Studio are already wired into setup and runtime model selection.
 - Project-aware chat: the main chat experience can reason over an active workspace, inspect local files, run commands, manage attachments, and keep project-scoped chat history.
-- More than chat: Joanium ships pages and engines for automations, agents, skills, personas, marketplace installs, events, and usage analytics.
+- More than chat: Joanium ships engines for automations, agents, skills, personas, marketplace installs, events, and usage analytics.
 - Real tool surface: the assistant can use local workspace tools, document extraction, browser preview, MCP servers, connector-backed integrations, and feature-defined chat tools.
 - Extensible architecture: features, engines, IPC modules, services, and renderer pages are discovered from npm workspace packages instead of being manually hard-coded into one central file.
 
