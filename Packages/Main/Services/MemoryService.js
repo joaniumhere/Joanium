@@ -11,123 +11,116 @@ const DEFAULT_MEMORY_FILES = [
   {
     filename: 'Memory.md',
     title: 'Pinned Memory',
-    description: 'Manual catch-all personal notes that should stay easy to find.',
-    content: '# Pinned Memory\n\nDurable personal notes that do not fit another file.\n',
+    description: 'Pinned notes.',
+    content: '# Pinned Memory\n',
   },
   {
     filename: 'User.md',
     title: 'User Profile',
-    description: 'Stable background details about the user as a person.',
-    content: '# User Profile\n\nStable background details about the user as a person.\n',
+    description: 'Profile.',
+    content: '# User Profile\n',
   },
   {
     filename: 'Likes.md',
     title: 'Likes',
-    description: 'Favorite music, foods, hobbies, aesthetics, and recurring positive preferences.',
-    content:
-      '# Likes\n\nFavorite music, foods, hobbies, aesthetics, and recurring positive preferences.\n',
+    description: 'Likes.',
+    content: '# Likes\n',
   },
   {
     filename: 'Dislikes.md',
     title: 'Dislikes',
-    description: 'Clear dislikes, aversions, and recurring negative preferences.',
-    content: '# Dislikes\n\nClear dislikes, aversions, and recurring negative preferences.\n',
+    description: 'Dislikes.',
+    content: '# Dislikes\n',
   },
   {
     filename: 'Family.md',
     title: 'Family',
-    description: 'Family members, family dynamics, and important family context.',
-    content: '# Family\n\nFamily members, family dynamics, and important family context.\n',
+    description: 'Family.',
+    content: '# Family\n',
   },
   {
     filename: 'Friends.md',
     title: 'Friends',
-    description: 'Close friends, friend groups, and important friendship context.',
-    content: '# Friends\n\nClose friends, friend groups, and important friendship context.\n',
+    description: 'Friends.',
+    content: '# Friends\n',
   },
   {
     filename: 'Relationships.md',
     title: 'Relationships',
-    description: 'Romantic history, relationship preferences, and dating context.',
-    content: '# Relationships\n\nRomantic history, relationship preferences, and dating context.\n',
+    description: 'Relationships.',
+    content: '# Relationships\n',
   },
   {
     filename: 'Education.md',
     title: 'Education',
-    description: 'Schooling, teachers, subjects, studies, and learning background.',
-    content: '# Education\n\nSchooling, teachers, subjects, studies, and learning background.\n',
+    description: 'Education.',
+    content: '# Education\n',
   },
   {
     filename: 'Career.md',
     title: 'Career',
-    description: 'Personal career goals, long-term aspirations, and non-project work background.',
-    content:
-      '# Career\n\nPersonal career goals, long-term aspirations, and non-project work background.\n',
+    description: 'Career.',
+    content: '# Career\n',
   },
   {
     filename: 'Goals.md',
     title: 'Goals',
-    description: 'Longer-term goals, aspirations, and recurring plans in life.',
-    content: '# Goals\n\nLonger-term goals, aspirations, and recurring plans in life.\n',
+    description: 'Goals.',
+    content: '# Goals\n',
   },
   {
     filename: 'Health.md',
     title: 'Health',
-    description:
-      'Health preferences, sensitivities, and stable wellness context the user wants remembered.',
-    content:
-      '# Health\n\nHealth preferences, sensitivities, and stable wellness context the user wants remembered.\n',
+    description: 'Health.',
+    content: '# Health\n',
   },
   {
     filename: 'Wellbeing.md',
     title: 'Wellbeing',
-    description: 'Mood patterns, stress triggers, and what tends to help emotionally.',
-    content: '# Wellbeing\n\nMood patterns, stress triggers, and what tends to help emotionally.\n',
+    description: 'Wellbeing.',
+    content: '# Wellbeing\n',
   },
   {
     filename: 'Support.md',
     title: 'Support',
-    description: 'How to comfort, motivate, or cheer the user up when they are down.',
-    content: '# Support\n\nHow to comfort, motivate, or cheer the user up when they are down.\n',
+    description: 'Support.',
+    content: '# Support\n',
   },
   {
     filename: 'Communication.md',
     title: 'Communication',
-    description: 'Tone preferences, communication style, and how the user likes the AI to respond.',
-    content:
-      '# Communication\n\nTone preferences, communication style, and how the user likes the AI to respond.\n',
+    description: 'Style.',
+    content: '# Communication\n',
   },
   {
     filename: 'Values.md',
     title: 'Values',
-    description: 'Beliefs, values, principles, and priorities that show up repeatedly.',
-    content: '# Values\n\nBeliefs, values, principles, and priorities that show up repeatedly.\n',
+    description: 'Values.',
+    content: '# Values\n',
   },
   {
     filename: 'Habits.md',
     title: 'Habits',
-    description: 'Routines, habits, and recurring behaviors the user wants remembered.',
-    content: '# Habits\n\nRoutines, habits, and recurring behaviors the user wants remembered.\n',
+    description: 'Habits.',
+    content: '# Habits\n',
   },
   {
     filename: 'ImportantDates.md',
     title: 'Important Dates',
-    description: 'Birthdays, anniversaries, deadlines, and recurring dates that matter personally.',
-    content:
-      '# Important Dates\n\nBirthdays, anniversaries, deadlines, and recurring dates that matter personally.\n',
+    description: 'Dates.',
+    content: '# Important Dates\n',
   },
   {
     filename: 'Finance.md',
     title: 'Finance',
-    description: 'Personal finance preferences, constraints, and money-related goals.',
-    content: '# Finance\n\nPersonal finance preferences, constraints, and money-related goals.\n',
+    description: 'Finance.',
+    content: '# Finance\n',
   },
   {
     filename: 'Astrology.md',
     title: 'Astrology',
-    description: 'Astrology, spirituality, or belief-system details the user cares about.',
-    content:
-      '# Astrology\n\nAstrology, spirituality, or belief-system details the user cares about.\n',
+    description: 'Astrology.',
+    content: '# Astrology\n',
   },
 ];
 
@@ -187,6 +180,18 @@ function countBulletLines(content = '') {
   return String(content)
     .split('\n')
     .filter((line) => /^\s*[-*]\s+/.test(line)).length;
+}
+
+function stripHeading(content = '') {
+  const lines = String(content).replace(/\r\n/g, '\n').split('\n');
+  if (lines[0]?.trim().startsWith('#')) {
+    lines.shift();
+  }
+  return lines.join('\n').trim();
+}
+
+function hasMeaningfulMemoryContent(content = '') {
+  return Boolean(stripHeading(content));
 }
 
 function buildTitleFromFilename(filename) {
@@ -276,9 +281,11 @@ function getVisibleMemoryEntries() {
         title: meta?.title ?? buildTitleFromFilename(filename),
         description: meta?.description ?? 'Custom personal memory file.',
         content,
-        empty: !trimmed,
+        empty: !hasMeaningfulMemoryContent(trimmed),
         bulletCount: countBulletLines(trimmed),
-        lineCount: trimmed ? trimmed.split(/\r?\n/).length : 0,
+        lineCount: hasMeaningfulMemoryContent(trimmed)
+          ? stripHeading(trimmed).split(/\r?\n/).length
+          : 0,
       };
     })
     .sort((left, right) => {
@@ -338,15 +345,13 @@ export function searchPersonalMemory(query, limit = 5) {
     .map((entry) => {
       const haystacks = [
         normalizeForComparison(entry.filename),
-        normalizeForComparison(entry.title),
-        normalizeForComparison(entry.description),
+        normalizeForComparison(stripHeading(entry.content)),
       ];
 
       let score = 0;
       for (const term of terms) {
         if (haystacks[0].includes(term)) score += 6;
         if (haystacks[1].includes(term)) score += 5;
-        if (haystacks[2].includes(term)) score += 4;
       }
 
       const matchingLines = findMatchingLines(entry.content, terms);

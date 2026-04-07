@@ -24,15 +24,13 @@ export const { handles, execute } = createExecutor({
       }
 
       return [
-        'Personal memory files are private user notes. They do not contain workspace, code, or project details.',
-        '',
         ...files.map((file) => {
           const factsLabel = file.bulletCount
             ? `${file.bulletCount} fact${file.bulletCount === 1 ? '' : 's'}`
             : file.empty
               ? 'empty'
               : `${file.lineCount} line${file.lineCount === 1 ? '' : 's'}`;
-          return `- ${file.filename}: ${file.description} [${factsLabel}]`;
+          return `- ${file.filename} [${factsLabel}]`;
         }),
       ].join('\n');
     },
@@ -52,7 +50,7 @@ export const { handles, execute } = createExecutor({
 
       const lines = [`Personal memory matches for "${query}":`, ''];
       for (const result of results) {
-        lines.push(`- ${result.filename}: ${result.description}`);
+        lines.push(`- ${result.filename}`);
         if (Array.isArray(result.matches) && result.matches.length) {
           lines.push(`  Matches: ${result.matches.join(' | ')}`);
         }
@@ -74,12 +72,7 @@ export const { handles, execute } = createExecutor({
 
       return entries
         .map((entry) =>
-          [
-            `${entry.filename} - ${entry.description}`,
-            '```md',
-            entry.content?.trim() || '# Empty',
-            '```',
-          ].join('\n'),
+          [`${entry.filename}`, '```md', entry.content?.trim() || '# Empty', '```'].join('\n'),
         )
         .join('\n\n');
     },

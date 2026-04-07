@@ -112,17 +112,30 @@ function buildConversationTranscript(messages = []) {
 }
 
 function buildMemoryCatalogBlock(entries = []) {
-  return entries
-    .map((entry) =>
-      [
-        `FILE: ${entry.filename}`,
-        `TITLE: ${entry.title}`,
-        `DESCRIPTION: ${entry.description}`,
-        'CONTENT:',
-        entry.content?.trim() || '(empty)',
-      ].join('\n'),
-    )
-    .join('\n\n---\n\n');
+  const fileList = entries.map((entry) => entry.filename).join(', ');
+  const nonEmptyEntries = entries.filter((entry) => {
+    const lines = String(entry.content ?? '')
+      .replace(/\r\n/g, '\n')
+      .split('\n');
+    if (lines[0]?.trim().startsWith('#')) lines.shift();
+    return lines.join('\n').trim();
+  });
+
+  const sections = [];
+  if (fileList) {
+    sections.push(`Available files: ${fileList}`);
+  }
+  if (nonEmptyEntries.length) {
+    sections.push(
+      nonEmptyEntries
+        .map((entry) =>
+          [`FILE: ${entry.filename}`, 'CONTENT:', entry.content?.trim() || '(empty)'].join('\n'),
+        )
+        .join('\n\n---\n\n'),
+    );
+  }
+
+  return sections.join('\n\n');
 }
 
 function extractJsonObject(text = '') {

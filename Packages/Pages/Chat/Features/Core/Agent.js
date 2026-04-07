@@ -407,10 +407,9 @@ function buildPersonalMemoryPolicyBlock(tools = []) {
 
   return [
     '## Personal Memory Tools',
-    'Personal memory files contain only personal information about the user such as likes, dislikes, family, support preferences, education, values, and communication style.',
-    'They do NOT contain codebase, workspace, repo, terminal, or project knowledge.',
-    'Use these tools when the request is personal, emotional, preference-based, or about what you remember about the user.',
-    'Avoid personal memory tools for coding, debugging, file edits, or project work unless the user explicitly asks about their personal memory or profile.',
+    'Personal memory files are personal-only.',
+    'Use them for personal or preference-based replies.',
+    'Do not use them for coding or project work unless the user explicitly asks about personal memory.',
   ].join('\n');
 }
 
