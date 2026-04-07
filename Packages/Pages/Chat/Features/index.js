@@ -12,7 +12,7 @@ import {
   sanitizeMessagesForUI,
 } from './UI/ChatBubble.js';
 import { updateTimeline, setupScrollFeatures, bumpScrollBadge } from './UI/ChatTimeline.js';
-import { attemptMemoryUpdate, resetMemoryCounter } from './Core/ChatMemory.js';
+import { queueCurrentSessionMemorySync } from './Core/ChatMemory.js';
 import {
   saveCurrentChat,
   trackUsage,
@@ -122,7 +122,6 @@ async function doSendFromState() {
     });
     saveCurrentChat();
     bumpScrollBadge();
-    attemptMemoryUpdate().catch(() => {});
   } catch (err) {
     _currentAbortController = null;
     if (err.name === 'AbortError') {
@@ -277,8 +276,6 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
     saveCurrentChat();
     bumpScrollBadge();
     setTimeout(updateTimeline, 100);
-
-    attemptMemoryUpdate().catch(() => {});
   } catch (err) {
     _currentAbortController = null;
     if (err.name === 'AbortError') {
@@ -303,10 +300,10 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
    CHAT SESSION HELPERS
 ══════════════════════════════════════════ */
 export function startNewChat(extraCleanup = () => {}) {
+  queueCurrentSessionMemorySync('new-chat').catch(() => {});
   state.messages = [];
   state.currentChatId = null;
   state.isTyping = false;
-  resetMemoryCounter();
   if (_currentAbortController) {
     _currentAbortController.abort();
     _currentAbortController = null;
@@ -327,12 +324,12 @@ export async function loadChat(
   { updateModelLabel, buildModelDropdown, notifyModelSelectionChanged },
 ) {
   try {
+    queueCurrentSessionMemorySync('chat-switch').catch(() => {});
     const chat = await window.electronAPI?.invoke?.('load-chat', chatId, currentChatScope());
     if (!chat) return;
     state.messages = [];
     state.currentChatId = chat.id;
     state.isTyping = false;
-    resetMemoryCounter();
     document.getElementById('typing-row')?.remove();
     chatMessages.innerHTML = '';
     resetComposer();

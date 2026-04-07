@@ -12,7 +12,6 @@ export function register(connectorEngine, featureRegistry = null) {
       return await SystemPromptService.get({
         user: UserService.readUser(),
         customInstructions: UserService.readText(Paths.CUSTOM_INSTRUCTIONS_FILE),
-        memory: UserService.readText(Paths.MEMORY_FILE),
         connectorEngine,
         featureRegistry,
       });

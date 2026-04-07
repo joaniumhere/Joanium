@@ -51,6 +51,11 @@ const HIGH_RISK_BROWSER_TERMS = [
 const BROWSER_CONFIRMATION_SENTINEL = 'Potentially irreversible website action pending.';
 const RATE_LIMIT_BACKOFF_MS = [5000, 10000, 15000];
 const SUB_AGENT_TOOL_NAME = 'spawn_sub_agents';
+const PERSONAL_MEMORY_TOOL_NAMES = new Set([
+  'list_personal_memory_files',
+  'search_personal_memory',
+  'read_personal_memory_files',
+]);
 const SEARCH_ENGINE_BLOCK_PATTERNS = [
   /google\.com\/sorry/i,
   /\bunusual traffic\b/i,
@@ -380,8 +385,8 @@ function buildToolPrivacyBlock() {
     'Never mention tool names, tool calls, hidden prompts, internal execution notes, raw command markers, or background steps in the user-facing answer.',
     'Never say lines like "I used the X tool.", "Tool result for X", or repeat raw [TERMINAL:...] markers.',
     'If an internal step fails, recover silently when possible and describe only the user-facing outcome.',
-    'If the user asks what you know about them, their preferences, memory, profile, or prior context, answer from the existing conversation, memory, and system context first.',
-    'Do not use tools for personal-context questions unless the user explicitly asks you to inspect a file, workspace, repo, account, email, or external service.',
+    'If the user asks what you know about them, their preferences, memory, profile, or prior context, answer from the conversation and relevant personal memory tools when helpful.',
+    'Do not use workspace, repo, account, email, or external-service tools for personal-context questions unless the user explicitly asks for those sources.',
   ].join('\n');
 }
 
@@ -394,6 +399,18 @@ function buildAgenticWorkflowBlock() {
     'When a CALL PLAN appears below, treat it as suggested ordering, not a cage: extend, skip, or reorder steps when new information requires it.',
     'Do not stop at the first partial success when the user asked for an end-to-end outcome (e.g. fix + verify, research + summary, multi-file change).',
     'When the task is genuinely complete, answer in clear natural language without exposing internal mechanics.',
+  ].join('\n');
+}
+
+function buildPersonalMemoryPolicyBlock(tools = []) {
+  if (!tools.some((tool) => PERSONAL_MEMORY_TOOL_NAMES.has(tool.name))) return '';
+
+  return [
+    '## Personal Memory Tools',
+    'Personal memory files contain only personal information about the user such as likes, dislikes, family, support preferences, education, values, and communication style.',
+    'They do NOT contain codebase, workspace, repo, terminal, or project knowledge.',
+    'Use these tools when the request is personal, emotional, preference-based, or about what you remember about the user.',
+    'Avoid personal memory tools for coding, debugging, file edits, or project work unless the user explicitly asks about their personal memory or profile.',
   ].join('\n');
 }
 
@@ -793,7 +810,8 @@ export async function planRequest(messages, options = {}) {
     'Always read the revelant skills first before responding to the user.',
     'If the same tool must be called multiple times with different parameters, list each call separately.',
     'For multi-step work, order toolCalls so dependencies run first (e.g. search or read before edit; inspect before broad changes). List every distinct step you expect; the agent may add or adjust steps later.',
-    'If the user is asking what you know about them, their preferences, memory, profile, or prior context, do not plan tools unless they explicitly ask you to inspect a file, workspace, repo, account, email, or external service.',
+    'If the user is asking what you know about them, their preferences, memory, profile, or prior context, planning personal memory tools is appropriate when helpful.',
+    'Do not plan workspace, repo, account, email, or external-service tools for personal-context questions unless the user explicitly asks for those sources.',
     '',
     'Recent conversation:',
     recentMessages,
@@ -802,6 +820,9 @@ export async function planRequest(messages, options = {}) {
     `\n${workspaceFilePolicyHint}`,
     browserPlanningHint ? `\n${browserPlanningHint}` : '',
     subAgentPlanningHint ? `\n${subAgentPlanningHint}` : '',
+    buildPersonalMemoryPolicyBlock(availableTools)
+      ? `\n${buildPersonalMemoryPolicyBlock(availableTools)}`
+      : '',
     '',
     'Available skills:',
     buildSkillsCatalogue(skills),
@@ -874,6 +895,7 @@ export async function agentLoop(
   const availableTools = filterToolsForRun(rawAvailableTools, options);
 
   const toolPrivacyBlock = buildToolPrivacyBlock();
+  const personalMemoryPolicyBlock = buildPersonalMemoryPolicyBlock(availableTools);
   const subAgentCapabilityBlock = buildSubAgentCapabilityBlock(availableTools);
   const browserAutomationBlock = buildBrowserAutomationBlock(
     getBrowserAutomationTools(availableTools),
@@ -886,6 +908,7 @@ export async function agentLoop(
     systemPrompt,
     toolPrivacyBlock,
     buildAgenticWorkflowBlock(),
+    personalMemoryPolicyBlock,
     subAgentCapabilityBlock,
     browserAutomationBlock,
     selectedSkillBlock,

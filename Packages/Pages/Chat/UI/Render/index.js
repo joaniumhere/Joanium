@@ -1,9 +1,12 @@
 import { state } from '../../../../System/State.js';
 import { initDOM } from '../../../Shared/Core/DOM.js';
 import {
-  textarea, sendBtn,
-  modelDropdown, modelSelectorBtn,
-  projectOpenFolderBtn, projectExitBtn,
+  textarea,
+  sendBtn,
+  modelDropdown,
+  modelSelectorBtn,
+  projectOpenFolderBtn,
+  projectExitBtn,
 } from '../../../Shared/Core/DOM.js';
 
 import { getSubtitles, getTimeGreetings, getRandomGreetings } from './Messages/Messages.js';
@@ -22,10 +25,19 @@ import {
   syncWorkspacePickerVisibility,
 } from '../../Features/Composer/index.js';
 import {
-  sendMessage, startNewChat, loadChat,
-  appendMessage, showChatView,
-  setSendBtnUpdater, stopGeneration, initChatUI,
+  sendMessage,
+  startNewChat,
+  loadChat,
+  appendMessage,
+  showChatView,
+  setSendBtnUpdater,
+  stopGeneration,
+  initChatUI,
 } from '../../Features/index.js';
+import {
+  flushPendingPersonalMemorySyncs,
+  queueCurrentSessionMemorySync,
+} from '../../Features/Core/ChatMemory.js';
 import { initTerminalObserver } from '../../Features/UI/TerminalComponent.js';
 
 import { getChatHTML, ensureDropOverlay, getDropOverlay } from './Templates/ChatTemplate.js';
@@ -85,15 +97,18 @@ function getStarterPrompts() {
   return [
     {
       label: 'Review some code',
-      prompt: 'Review the code or approach I share and point out the top 3 improvements you would make.',
+      prompt:
+        'Review the code or approach I share and point out the top 3 improvements you would make.',
     },
     {
       label: 'Debug an issue',
-      prompt: 'Help me debug an issue. Ask for the code, logs, or error message you need and guide me step by step.',
+      prompt:
+        'Help me debug an issue. Ask for the code, logs, or error message you need and guide me step by step.',
     },
     {
       label: 'Plan a feature',
-      prompt: 'Help me plan a new feature with milestones, risks, and a clean implementation order.',
+      prompt:
+        'Help me plan a new feature with milestones, risks, and a clean implementation order.',
     },
     {
       label: 'Generate starter code',
@@ -120,7 +135,7 @@ function renderStarterPrompts() {
 function restoreChatFromState() {
   if (!state.messages.length) return;
   showChatView();
-  state.messages.forEach(message => {
+  state.messages.forEach((message) => {
     appendMessage(message.role, message.content, false, false, message.attachments ?? []);
   });
 }
@@ -160,6 +175,11 @@ export function mount(outlet, { settings, navigate }) {
   syncProjectUI();
   initModelSelector();
 
+  const pendingId = window._pendingChatId;
+  const shouldStartFresh = window._startFreshChat === true;
+  window._pendingChatId = null;
+  window._startFreshChat = false;
+
   // initTerminalObserver returns a cleanup function — capture it so we can
   // disconnect the MutationObserver when this page unmounts, preventing
   // observer accumulation across SPA navigations.
@@ -185,7 +205,8 @@ export function mount(outlet, { settings, navigate }) {
     sendBtn.title = 'Send';
     const hasText = textarea?.value.trim().length > 0;
     const hasAtt = state.composerAttachments.length > 0;
-    const hasUnsup = state.composerAttachments.some(a => a.type === 'image') &&
+    const hasUnsup =
+      state.composerAttachments.some((a) => a.type === 'image') &&
       !state.selectedProvider?.models?.[state.selectedModel]?.inputs?.image;
     const ready = (hasText || hasAtt) && !state.isTyping && !hasUnsup;
     sendBtn.classList.toggle('ready', ready);
@@ -195,7 +216,7 @@ export function mount(outlet, { settings, navigate }) {
 
   // ── Prompt chips ──────────────────────────────────────────────────────────
   const welcomeChips = document.querySelector('.welcome-chips');
-  const onStarterChipClick = e => {
+  const onStarterChipClick = (e) => {
     const chip = e.target.closest('.chip[data-prompt]');
     if (!chip || !textarea) return;
     textarea.value = chip.getAttribute('data-prompt');
@@ -206,9 +227,12 @@ export function mount(outlet, { settings, navigate }) {
 
   // ── Composer ──────────────────────────────────────────────────────────────
   initComposer(() => {
-    if (state.isTyping) { stopGeneration(); return; }
+    if (state.isTyping) {
+      stopGeneration();
+      return;
+    }
     const text = textarea?.value.trim() ?? '';
-    const attachments = state.composerAttachments.map(a => ({ ...a }));
+    const attachments = state.composerAttachments.map((a) => ({ ...a }));
     sendMessage({ text, attachments, sendBtnEl: sendBtn });
   });
 
@@ -226,8 +250,12 @@ export function mount(outlet, { settings, navigate }) {
   });
 
   // ── Model dropdown outside-click ─────────────────────────────────────────
-  const onDocClick = e => {
-    if (modelDropdown && !modelDropdown.contains(e.target) && !modelSelectorBtn?.contains(e.target)) {
+  const onDocClick = (e) => {
+    if (
+      modelDropdown &&
+      !modelDropdown.contains(e.target) &&
+      !modelSelectorBtn?.contains(e.target)
+    ) {
       modelDropdown.classList.remove('open');
     }
   };
@@ -235,8 +263,11 @@ export function mount(outlet, { settings, navigate }) {
 
   // ── System prompt / profile refresh ──────────────────────────────────────
   async function refreshSystemPrompt() {
-    try { state.systemPrompt = await window.electronAPI?.invoke?.('get-system-prompt') ?? ''; }
-    catch { state.systemPrompt = ''; }
+    try {
+      state.systemPrompt = (await window.electronAPI?.invoke?.('get-system-prompt')) ?? '';
+    } catch {
+      state.systemPrompt = '';
+    }
   }
   const onSettingsSaved = () => refreshSystemPrompt();
   const onUserProfileUpdated = () => syncWelcomeTitle();
@@ -255,22 +286,37 @@ export function mount(outlet, { settings, navigate }) {
   // ── Drag-and-drop ─────────────────────────────────────────────────────────
   ensureDropOverlay();
   let dragCounter = 0;
-  const onDragOver = e => { e.preventDefault(); e.stopPropagation(); };
-  const onDragEnter = e => {
-    e.preventDefault(); e.stopPropagation();
-    const overlay = getDropOverlay();
-    if (++dragCounter === 1 && overlay) { overlay.style.opacity = '1'; overlay.style.transform = 'scale(1)'; }
+  const onDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
-  const onDragLeave = e => {
-    e.preventDefault(); e.stopPropagation();
+  const onDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     const overlay = getDropOverlay();
-    if (--dragCounter === 0 && overlay) { overlay.style.opacity = '0'; overlay.style.transform = 'scale(1.02)'; }
+    if (++dragCounter === 1 && overlay) {
+      overlay.style.opacity = '1';
+      overlay.style.transform = 'scale(1)';
+    }
   };
-  const onDrop = async e => {
-    e.preventDefault(); e.stopPropagation();
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const overlay = getDropOverlay();
+    if (--dragCounter === 0 && overlay) {
+      overlay.style.opacity = '0';
+      overlay.style.transform = 'scale(1.02)';
+    }
+  };
+  const onDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     dragCounter = 0;
     const overlay = getDropOverlay();
-    if (overlay) { overlay.style.opacity = '0'; overlay.style.transform = 'scale(1.02)'; }
+    if (overlay) {
+      overlay.style.opacity = '0';
+      overlay.style.transform = 'scale(1.02)';
+    }
     if (e.dataTransfer.files?.length) await addAttachments(Array.from(e.dataTransfer.files));
   };
   document.addEventListener('dragover', onDragOver);
@@ -278,26 +324,32 @@ export function mount(outlet, { settings, navigate }) {
   document.addEventListener('dragleave', onDragLeave);
   document.addEventListener('drop', onDrop);
 
+  if (shouldStartFresh && !pendingId) {
+    startNewChat();
+  } else if (!pendingId && state.messages.length > 0) {
+    restoreChatFromState();
+  }
+
   // ── Load providers, then show initial content ─────────────────────────────
   loadProviders().then(async () => {
     syncCapabilities();
     await refreshSystemPrompt();
 
-    const pendingId = window._pendingChatId;
-    const shouldStartFresh = window._startFreshChat === true;
-    window._pendingChatId = null;
-    window._startFreshChat = false;
-
     if (pendingId) {
-      await loadChat(pendingId, { updateModelLabel, buildModelDropdown, notifyModelSelectionChanged });
-      return;
+      await loadChat(pendingId, {
+        updateModelLabel,
+        buildModelDropdown,
+        notifyModelSelectionChanged,
+      });
     }
-    if (shouldStartFresh) { startNewChat(); return; }
-    if (state.messages.length > 0) restoreChatFromState();
+
+    flushPendingPersonalMemorySyncs().catch(() => {});
   });
 
   // ── Cleanup ───────────────────────────────────────────────────────────────
   return function unmount() {
+    queueCurrentSessionMemorySync('page-leave').catch(() => {});
+
     // Disconnect the terminal MutationObserver — prevents accumulation across
     // SPA navigations (each mount registers a new one without this).
     cleanupTerminalObserver();

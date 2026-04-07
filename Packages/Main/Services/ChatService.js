@@ -79,6 +79,27 @@ function sanitizeChatData(chatData = {}) {
   };
 }
 
+function shouldTrackPersonalMemory(chatData = {}) {
+  return sanitizeMessages(chatData.messages).some(
+    (message) => message.role === 'user' && String(message.content ?? '').trim(),
+  );
+}
+
+function buildPersonalMemoryState(existingChat = null, chatData = {}) {
+  const shouldTrack = shouldTrackPersonalMemory(chatData);
+  const updatedAt = String(chatData?.updatedAt ?? '');
+  const syncedForUpdatedAt = String(existingChat?.personalMemorySyncedForUpdatedAt ?? '').trim();
+  const alreadySynced = Boolean(
+    updatedAt && syncedForUpdatedAt && syncedForUpdatedAt === updatedAt,
+  );
+
+  return {
+    personalMemoryPending: shouldTrack && !alreadySynced,
+    personalMemorySyncedAt: existingChat?.personalMemorySyncedAt ?? null,
+    personalMemorySyncedForUpdatedAt: alreadySynced ? syncedForUpdatedAt : null,
+  };
+}
+
 function readChatsFromDirectory(dirPath) {
   return scanFiles(dirPath, (entry) => entry.name.endsWith('.json'))
     .map((filePath) => {
@@ -92,10 +113,12 @@ function readChatsFromDirectory(dirPath) {
 export function save(chatData, opts = {}) {
   const projectId = resolveProjectId(chatData, opts);
   const chatId = normalizeChatId(chatData?.id);
+  const existingChat = loadJson(chatPath(chatId, projectId), null);
   const payload = {
     ...sanitizeChatData(chatData),
     id: chatId,
     projectId,
+    ...buildPersonalMemoryState(existingChat, chatData),
   };
 
   persistJson(chatPath(chatId, projectId), payload);
@@ -126,6 +149,62 @@ export function load(chatId, opts = {}) {
   }
 
   return sanitizeChatData(chat);
+}
+
+export function markPersonalMemorySynced(chatId, opts = {}) {
+  const projectId = resolveProjectId(null, opts);
+  const id = normalizeChatId(chatId);
+  const filePath = chatPath(id, projectId);
+  const chat = loadJson(filePath, null);
+
+  if (!chat) {
+    throw new Error(`Chat "${id}" does not exist.`);
+  }
+
+  const next = {
+    ...sanitizeChatData(chat),
+    personalMemoryPending: false,
+    personalMemorySyncedAt: new Date().toISOString(),
+    personalMemorySyncedForUpdatedAt: String(chat.updatedAt ?? '').trim() || null,
+  };
+
+  persistJson(filePath, next);
+  return next;
+}
+
+function readPendingChatsFromDirectory(dirPath, projectId = null) {
+  if (!directoryExists(dirPath)) return [];
+
+  return readChatsFromDirectory(dirPath)
+    .filter((chat) => chat.personalMemoryPending === true)
+    .filter(
+      (chat) =>
+        Array.isArray(chat.messages) &&
+        chat.messages.some(
+          (message) => message.role === 'user' && String(message.content ?? '').trim(),
+        ),
+    )
+    .map((chat) => ({
+      ...chat,
+      projectId,
+    }));
+}
+
+export function getPendingPersonalMemoryChats(opts = {}) {
+  const limit = Math.min(Math.max(Number(opts?.limit) || 10, 1), 50);
+  const pending = [
+    ...readPendingChatsFromDirectory(chatsDir(null, directoryExists(Paths.CHATS_DIR)), null),
+  ];
+
+  for (const project of ProjectService.list()) {
+    pending.push(
+      ...readPendingChatsFromDirectory(ProjectService.getProjectChatsDir(project.id), project.id),
+    );
+  }
+
+  return pending
+    .sort((left, right) => new Date(left.updatedAt) - new Date(right.updatedAt))
+    .slice(0, limit);
 }
 
 /** Delete a chat by ID. */

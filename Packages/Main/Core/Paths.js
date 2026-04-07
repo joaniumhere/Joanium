@@ -84,6 +84,9 @@ export const Paths = {
   get CUSTOM_INSTRUCTIONS_FILE() {
     return path.join(getStateRoot(), 'Instructions', 'CustomInstructions.md');
   },
+  get MEMORIES_DIR() {
+    return path.join(getStateRoot(), 'Memories');
+  },
   get MEMORY_FILE() {
     return path.join(getStateRoot(), 'Memories', 'Memory.md');
   },

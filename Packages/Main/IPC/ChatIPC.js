@@ -4,19 +4,45 @@ import { wrapHandler, wrapRead } from './IPCWrapper.js';
 
 export const ipcMeta = { needs: [] };
 export function register() {
-  ipcMain.handle('save-chat', wrapHandler((chatData, opts = {}) => {
-    ChatService.save(chatData, opts);
-  }));
+  ipcMain.handle(
+    'save-chat',
+    wrapHandler((chatData, opts = {}) => {
+      ChatService.save(chatData, opts);
+    }),
+  );
 
-  ipcMain.handle('get-chats', wrapRead((opts = {}) => {
-    return ChatService.getAll(opts);
-  }));
+  ipcMain.handle(
+    'get-chats',
+    wrapRead((opts = {}) => {
+      return ChatService.getAll(opts);
+    }),
+  );
 
-  ipcMain.handle('load-chat', wrapRead((chatId, opts = {}) => {
-    return ChatService.load(chatId, opts);
-  }));
+  ipcMain.handle(
+    'load-chat',
+    wrapRead((chatId, opts = {}) => {
+      return ChatService.load(chatId, opts);
+    }),
+  );
 
-  ipcMain.handle('delete-chat', wrapHandler((chatId, opts = {}) => {
-    ChatService.remove(chatId, opts);
-  }));
+  ipcMain.handle(
+    'get-pending-personal-memory-chats',
+    wrapRead((opts = {}) => {
+      return ChatService.getPendingPersonalMemoryChats(opts);
+    }),
+  );
+
+  ipcMain.handle(
+    'mark-chat-personal-memory-synced',
+    wrapHandler((chatId, opts = {}) => ({
+      chat: ChatService.markPersonalMemorySynced(chatId, opts),
+    })),
+  );
+
+  ipcMain.handle(
+    'delete-chat',
+    wrapHandler((chatId, opts = {}) => {
+      ChatService.remove(chatId, opts);
+    }),
+  );
 }

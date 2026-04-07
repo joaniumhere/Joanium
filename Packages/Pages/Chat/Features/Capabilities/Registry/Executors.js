@@ -20,6 +20,7 @@ import * as DictionaryExecutor from '../Dictionary/Executor.js';
 import * as DateTimeExecutor from '../DateTime/Executor.js';
 import * as PasswordExecutor from '../Password/Executor.js';
 import * as SubAgentsExecutor from '../SubAgents/Executor.js';
+import * as MemoryExecutor from '../Memory/Executor.js';
 
 const EXECUTORS = [
   WeatherExecutor,
@@ -42,6 +43,7 @@ const EXECUTORS = [
   DateTimeExecutor,
   PasswordExecutor,
   SubAgentsExecutor,
+  MemoryExecutor,
   MCPExecutor,
 ];
 

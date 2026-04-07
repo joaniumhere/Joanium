@@ -15,13 +15,7 @@ export function getDefaultPersona() {
   return ContentLibraryService.getDefaultPersona();
 }
 
-export async function get({
-  user,
-  customInstructions,
-  memory,
-  connectorEngine,
-  featureRegistry = null,
-}) {
+export async function get({ user, customInstructions, connectorEngine, featureRegistry = null }) {
   const now = Date.now();
   if (_cache && now - _cacheTime < TTL_MS) return _cache;
 
@@ -50,7 +44,6 @@ export async function get({
   _cache = await buildSystemPrompt({
     userName: user.name,
     customInstructions,
-    memory,
     gmailEmail: googleCreds?.email ?? null,
     activePersona,
     connectedServices: featurePromptContext.connectedServices ?? [],

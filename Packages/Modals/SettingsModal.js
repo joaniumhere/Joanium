@@ -45,7 +45,7 @@ function buildHTML() {
               <section class="settings-panel active" data-settings-panel="user">
                 <div class="settings-panel-header">
                   <h3>User</h3>
-                  <p>Update your display name, memory, and custom instructions. These are injected into every AI conversation automatically.</p>
+                  <p>Update your display name, pinned memory note, and custom instructions. Custom instructions stay in every conversation, while personal memory is stored separately and read only when relevant.</p>
                 </div>
                 <div class="settings-form">
                   <label class="settings-field">
@@ -53,8 +53,8 @@ function buildHTML() {
                     <input id="settings-user-name" type="text" maxlength="80" placeholder="Your name" autocomplete="name"/>
                   </label>
                   <label class="settings-field">
-                    <span class="settings-field-label">Memory</span>
-                    <textarea id="settings-memory" placeholder="Facts about you, ongoing projects, and preferences the AI should always remember."></textarea>
+                    <span class="settings-field-label">Pinned Memory</span>
+                    <textarea id="settings-memory" placeholder="Durable personal notes the AI can read when your conversation needs them."></textarea>
                   </label>
                   <label class="settings-field">
                     <span class="settings-field-label">Custom Instructions</span>

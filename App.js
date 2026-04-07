@@ -7,6 +7,7 @@ import Paths from '#main/Core/Paths.js';
 import { create as createWindow } from '#main/Core/Window.js';
 import { BUILTIN_BROWSER_USER_AGENT } from '#main/Services/BrowserPreviewService.js';
 import { initializeContentLibraries } from '#main/Services/ContentLibraryService.js';
+import { initializePersonalMemoryLibrary } from '#main/Services/MemoryService.js';
 import { isFirstRun } from '#main/Services/UserService.js';
 import { setupAutoUpdates } from '#main/Services/AutoUpdateService.js';
 
@@ -20,6 +21,7 @@ const REQUIRED_RUNTIME_DIRS = Object.freeze([
   Paths.CHATS_DIR,
   Paths.PROJECTS_DIR,
   Paths.FEATURES_DATA_DIR,
+  Paths.MEMORIES_DIR,
   Paths.USER_SKILLS_DIR,
   Paths.USER_PERSONAS_DIR,
 ]);
@@ -58,6 +60,7 @@ app.whenReady().then(async () => {
 
   ensureRuntimeDirectories();
   initializeContentLibraries();
+  initializePersonalMemoryLibrary();
 
   engines = await boot();
   startEngines(engines);

@@ -20,6 +20,7 @@ import { DICTIONARY_TOOLS } from '../Dictionary/Tools.js';
 import { DATETIME_TOOLS } from '../DateTime/Tools.js';
 import { PASSWORD_TOOLS } from '../Password/Tools.js';
 import { SUBAGENT_TOOLS } from '../SubAgents/Tools.js';
+import { MEMORY_TOOLS } from '../Memory/Tools.js';
 
 export {
   WEATHER_TOOLS,
@@ -42,6 +43,7 @@ export {
   DATETIME_TOOLS,
   PASSWORD_TOOLS,
   SUBAGENT_TOOLS,
+  MEMORY_TOOLS,
 };
 
 export const STATIC_TOOLS = [
@@ -65,6 +67,7 @@ export const STATIC_TOOLS = [
   ...DATETIME_TOOLS,
   ...PASSWORD_TOOLS,
   ...SUBAGENT_TOOLS,
+  ...MEMORY_TOOLS,
 ];
 
 export const TOOLS = STATIC_TOOLS;

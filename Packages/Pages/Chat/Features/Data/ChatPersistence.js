@@ -17,29 +17,59 @@ export function currentChatScope() {
   return state.activeProject ? { projectId: state.activeProject.id } : {};
 }
 
-export async function saveCurrentChat() {
-  if (!state.currentChatId || !state.messages.length) return;
-  const sanitizedMessages = sanitizeMessagesForUI(state.messages);
+function deriveChatTitle(messages = []) {
+  const first = messages.find((message) => message.role === 'user');
+  const hasFileAttachment = first?.attachments?.some((attachment) => attachment?.type === 'file');
+  const hasImageAttachment = first?.attachments?.some((attachment) => attachment?.type === 'image');
+  return (
+    first?.content?.trim().slice(0, 70) ||
+    (hasFileAttachment ? 'File attachment' : hasImageAttachment ? 'Image attachment' : 'Untitled')
+  );
+}
+
+export function buildChatPayload({
+  chatId,
+  messages,
+  provider = null,
+  model = null,
+  activeProject = null,
+  workspacePath = null,
+  updatedAt = new Date().toISOString(),
+} = {}) {
+  if (!chatId || !messages?.length) return null;
+
+  const sanitizedMessages = sanitizeMessagesForUI(messages);
   if (!sanitizedMessages.length) return;
-  const first = sanitizedMessages.find(m => m.role === 'user');
-  const hasFileAttachment = first?.attachments?.some(a => a?.type === 'file');
-  const hasImageAttachment = first?.attachments?.some(a => a?.type === 'image');
-  const title = first?.content?.trim().slice(0, 70) ||
-    (hasFileAttachment ? 'File attachment' : hasImageAttachment ? 'Image attachment' : 'Untitled');
+  return {
+    id: chatId,
+    title: deriveChatTitle(sanitizedMessages),
+    updatedAt,
+    provider: provider?.provider ?? provider ?? null,
+    model: model ?? null,
+    projectId: activeProject?.id ?? null,
+    projectName: activeProject?.name ?? null,
+    workspacePath: workspacePath ?? null,
+    projectContext: activeProject?.context ?? '',
+    messages: sanitizedMessages,
+  };
+}
+
+export async function saveCurrentChat() {
+  const payload = buildChatPayload({
+    chatId: state.currentChatId,
+    messages: state.messages,
+    provider: state.selectedProvider,
+    model: state.selectedModel,
+    activeProject: state.activeProject,
+    workspacePath: state.workspacePath,
+  });
+  if (!payload) return null;
+
   try {
-    await window.electronAPI?.invoke?.('save-chat', {
-      id: state.currentChatId,
-      title,
-      updatedAt: new Date().toISOString(),
-      provider: state.selectedProvider?.provider ?? null,
-      model: state.selectedModel ?? null,
-      projectId: state.activeProject?.id ?? null,
-      projectName: state.activeProject?.name ?? null,
-      workspacePath: state.workspacePath ?? null,
-      projectContext: state.activeProject?.context ?? '',
-      messages: sanitizedMessages,
-    }, currentChatScope());
+    await window.electronAPI?.invoke?.('save-chat', payload, currentChatScope());
+    return payload;
   } catch (err) { console.warn('[Chat] Could not save chat:', err); }
+  return null;
 }
 
 export async function trackUsage(usage, chatId, provider = null, modelId = null) {

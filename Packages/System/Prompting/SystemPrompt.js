@@ -92,7 +92,6 @@ const getConfig = (key, fallback = null) => systemPromptConfig[key] || fallback;
 export async function buildSystemPrompt({
   userName = '',
   customInstructions = '',
-  memory = '',
   gmailEmail = null,
   activePersona = null,
   connectedServices = [],
@@ -167,12 +166,6 @@ export async function buildSystemPrompt({
   }
 
   pushExtraSections(lines, extraContextSections);
-
-  if (memory?.trim()) {
-    blank();
-    push('## Memory (persistent notes about the user)');
-    push(memory.trim());
-  }
 
   if (customInstructions?.trim()) {
     blank();
