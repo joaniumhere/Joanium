@@ -2,9 +2,7 @@ import { randomUUID } from 'crypto';
 import { net } from 'electron';
 import defineEngine from '../../../System/Contracts/DefineEngine.js';
 
-/* ══════════════════════════════════════════
-   DEFAULT CHANNEL STATE
-══════════════════════════════════════════ */
+// DEFAULT CHANNEL STATE
 const DEFAULT_STATE = {
   channels: {
     telegram: {

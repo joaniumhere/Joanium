@@ -4,7 +4,6 @@ import path from 'path';
 import { getBrowserPreviewService } from '../../../Main/Services/BrowserPreviewService.js';
 
 const BROWSER_TOOLS = [
-  // ─── EXISTING TOOLS ───────────────────────────────────────────────────────
   {
     name: 'browser_navigate',
     description: 'Open a URL in the built-in browser session.',
@@ -18,7 +17,8 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_snapshot',
-    description: 'Read the current page and list visible interactive elements with stable ids like ow-1.',
+    description:
+      'Read the current page and list visible interactive elements with stable ids like ow-1.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -27,11 +27,15 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_click',
-    description: 'Click a visible element by stable id from browser_snapshot, CSS selector, or visible label text.',
+    description:
+      'Click a visible element by stable id from browser_snapshot, CSS selector, or visible label text.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
       },
       required: ['target'],
     },
@@ -42,7 +46,10 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
       },
       required: ['target'],
     },
@@ -53,20 +60,30 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, visible label text, or "focused".' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, visible label text, or "focused".',
+        },
       },
       required: ['target'],
     },
   },
   {
     name: 'browser_type',
-    description: 'Type text into an input, combobox, contenteditable region, or textarea by stable id, selector, or label.',
+    description:
+      'Type text into an input, combobox, contenteditable region, or textarea by stable id, selector, or label.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, visible label text, or "focused".' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, visible label text, or "focused".',
+        },
         text: { type: 'string', description: 'The text to type into the field.' },
-        clearFirst: { type: 'boolean', description: 'Clear the field before typing. Defaults to true.' },
+        clearFirst: {
+          type: 'boolean',
+          description: 'Clear the field before typing. Defaults to true.',
+        },
         pressEnter: { type: 'boolean', description: 'Press Enter after typing.' },
       },
       required: ['target', 'text'],
@@ -74,23 +91,34 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_clear',
-    description: 'Clear the current value of a text field by stable id, selector, label, or "focused".',
+    description:
+      'Clear the current value of a text field by stable id, selector, label, or "focused".',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, visible label text, or "focused".' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, visible label text, or "focused".',
+        },
       },
       required: ['target'],
     },
   },
   {
     name: 'browser_press_key',
-    description: 'Send a keyboard key such as Enter, Tab, ArrowDown, or Escape to the focused element or a target.',
+    description:
+      'Send a keyboard key such as Enter, Tab, ArrowDown, or Escape to the focused element or a target.',
     inputSchema: {
       type: 'object',
       properties: {
-        key: { type: 'string', description: 'Keyboard key to press, such as Enter, Tab, Escape, ArrowDown, or A.' },
-        target: { type: 'string', description: 'Optional stable id, selector, or label to focus before pressing the key.' },
+        key: {
+          type: 'string',
+          description: 'Keyboard key to press, such as Enter, Tab, Escape, ArrowDown, or A.',
+        },
+        target: {
+          type: 'string',
+          description: 'Optional stable id, selector, or label to focus before pressing the key.',
+        },
       },
       required: ['key'],
     },
@@ -101,7 +129,10 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the select element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the select element.',
+        },
         value: { type: 'string', description: 'Option value or visible option text to select.' },
       },
       required: ['target', 'value'],
@@ -113,16 +144,26 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        direction: { type: 'string', description: 'up, down, left, right, top, or bottom. Defaults to down.' },
-        amount: { type: 'number', description: 'Pixels to scroll when using up, down, left, or right. Defaults to 600.' },
-        target: { type: 'string', description: 'Optional stable id, selector, or label for a scrollable element.' },
+        direction: {
+          type: 'string',
+          description: 'up, down, left, right, top, or bottom. Defaults to down.',
+        },
+        amount: {
+          type: 'number',
+          description: 'Pixels to scroll when using up, down, left, or right. Defaults to 600.',
+        },
+        target: {
+          type: 'string',
+          description: 'Optional stable id, selector, or label for a scrollable element.',
+        },
       },
       required: [],
     },
   },
   {
     name: 'browser_wait',
-    description: 'Wait for a fixed amount of time to allow dynamic page updates or animations to finish.',
+    description:
+      'Wait for a fixed amount of time to allow dynamic page updates or animations to finish.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -137,7 +178,10 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the control.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the control.',
+        },
         checked: { type: 'boolean', description: 'Whether the control should be checked.' },
       },
       required: ['target', 'checked'],
@@ -149,7 +193,10 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the control.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the control.',
+        },
       },
       required: ['target'],
     },
@@ -165,11 +212,15 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_find_elements',
-    description: 'Find visible interactive elements whose label, text, role, id, or selector matches a query.',
+    description:
+      'Find visible interactive elements whose label, text, role, id, or selector matches a query.',
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Text, label, stable id, or CSS selector to search for.' },
+        query: {
+          type: 'string',
+          description: 'Text, label, stable id, or CSS selector to search for.',
+        },
         limit: { type: 'number', description: 'Maximum matches to return. Defaults to 10.' },
       },
       required: ['query'],
@@ -177,11 +228,15 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_list_form_fields',
-    description: 'List visible form fields, labels, current values, and states on the page or within a target area.',
+    description:
+      'List visible form fields, labels, current values, and states on the page or within a target area.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Optional stable id, selector, or label for a form or section to inspect.' },
+        target: {
+          type: 'string',
+          description: 'Optional stable id, selector, or label for a form or section to inspect.',
+        },
       },
       required: [],
     },
@@ -192,41 +247,60 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
       },
       required: ['target'],
     },
   },
   {
     name: 'browser_submit_form',
-    description: 'Submit a form from a target field or button, or from the currently focused element.',
+    description:
+      'Submit a form from a target field or button, or from the currently focused element.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Optional stable id, CSS selector, or visible label text for the form field or submit button.' },
+        target: {
+          type: 'string',
+          description:
+            'Optional stable id, CSS selector, or visible label text for the form field or submit button.',
+        },
       },
       required: [],
     },
   },
   {
     name: 'browser_wait_for_element',
-    description: 'Wait until an element is visible on the page by stable id, selector, or label text.',
+    description:
+      'Wait until an element is visible on the page by stable id, selector, or label text.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
-        timeoutMs: { type: 'number', description: 'How long to wait before failing. Defaults to 15000.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
+        timeoutMs: {
+          type: 'number',
+          description: 'How long to wait before failing. Defaults to 15000.',
+        },
       },
       required: ['target'],
     },
   },
   {
     name: 'browser_read_element',
-    description: 'Read the label, text, value, and state of a visible element by stable id, selector, or label text.',
+    description:
+      'Read the label, text, value, and state of a visible element by stable id, selector, or label text.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
       },
       required: ['target'],
     },
@@ -238,7 +312,10 @@ const BROWSER_TOOLS = [
       type: 'object',
       properties: {
         text: { type: 'string', description: 'Text to wait for on the page.' },
-        timeoutMs: { type: 'number', description: 'How long to wait before failing. Defaults to 15000.' },
+        timeoutMs: {
+          type: 'number',
+          description: 'How long to wait before failing. Defaults to 15000.',
+        },
       },
       required: ['text'],
     },
@@ -249,7 +326,10 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        timeoutMs: { type: 'number', description: 'How long to wait before failing. Defaults to 15000.' },
+        timeoutMs: {
+          type: 'number',
+          description: 'How long to wait before failing. Defaults to 15000.',
+        },
       },
       required: [],
     },
@@ -301,26 +381,32 @@ const BROWSER_TOOLS = [
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: MOUSE ACTIONS ─────────────────────────────────────────────
   {
     name: 'browser_double_click',
-    description: 'Double-click a visible element by stable id, CSS selector, or visible label text.',
+    description:
+      'Double-click a visible element by stable id, CSS selector, or visible label text.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
       },
       required: ['target'],
     },
   },
   {
     name: 'browser_right_click',
-    description: 'Right-click (context-menu click) a visible element by stable id, CSS selector, or visible label text.',
+    description:
+      'Right-click (context-menu click) a visible element by stable id, CSS selector, or visible label text.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
       },
       required: ['target'],
     },
@@ -331,8 +417,14 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        source: { type: 'string', description: 'Stable id, CSS selector, or label of the element to drag.' },
-        target: { type: 'string', description: 'Stable id, CSS selector, or label of the drop destination element.' },
+        source: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or label of the element to drag.',
+        },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or label of the drop destination element.',
+        },
       },
       required: ['source', 'target'],
     },
@@ -343,21 +435,28 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        x: { type: 'number', description: 'Horizontal pixel position from the left edge of the viewport.' },
-        y: { type: 'number', description: 'Vertical pixel position from the top edge of the viewport.' },
+        x: {
+          type: 'number',
+          description: 'Horizontal pixel position from the left edge of the viewport.',
+        },
+        y: {
+          type: 'number',
+          description: 'Vertical pixel position from the top edge of the viewport.',
+        },
       },
       required: ['x', 'y'],
     },
   },
-
-  // ─── NEW TOOLS: CONTENT READING ───────────────────────────────────────────
   {
     name: 'browser_get_text',
     description: 'Get the visible text content of an element or the entire page body.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Optional stable id, CSS selector, or label. Omit to get all page text.' },
+        target: {
+          type: 'string',
+          description: 'Optional stable id, CSS selector, or label. Omit to get all page text.',
+        },
       },
       required: [],
     },
@@ -368,8 +467,15 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Optional stable id, CSS selector, or label. Omit to get full page HTML.' },
-        outer: { type: 'boolean', description: 'If true, return outerHTML (includes the element tag itself). Defaults to false (innerHTML).' },
+        target: {
+          type: 'string',
+          description: 'Optional stable id, CSS selector, or label. Omit to get full page HTML.',
+        },
+        outer: {
+          type: 'boolean',
+          description:
+            'If true, return outerHTML (includes the element tag itself). Defaults to false (innerHTML).',
+        },
       },
       required: [],
     },
@@ -380,8 +486,14 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
-        attribute: { type: 'string', description: 'The attribute name to read, e.g. "href", "src", "data-id".' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
+        attribute: {
+          type: 'string',
+          description: 'The attribute name to read, e.g. "href", "src", "data-id".',
+        },
       },
       required: ['target', 'attribute'],
     },
@@ -392,7 +504,10 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
         attribute: { type: 'string', description: 'The attribute name to set.' },
         value: { type: 'string', description: 'The value to assign to the attribute.' },
       },
@@ -405,7 +520,10 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
         attribute: { type: 'string', description: 'The attribute name to remove.' },
       },
       required: ['target', 'attribute'],
@@ -417,19 +535,29 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
-        property: { type: 'string', description: 'CSS property name, e.g. "color", "font-size", "display".' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
+        property: {
+          type: 'string',
+          description: 'CSS property name, e.g. "color", "font-size", "display".',
+        },
       },
       required: ['target', 'property'],
     },
   },
   {
     name: 'browser_get_element_bounds',
-    description: 'Get the bounding rectangle (x, y, width, height, top, right, bottom, left) of an element.',
+    description:
+      'Get the bounding rectangle (x, y, width, height, top, right, bottom, left) of an element.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or visible label text for the element.',
+        },
       },
       required: ['target'],
     },
@@ -441,18 +569,26 @@ const BROWSER_TOOLS = [
       type: 'object',
       properties: {
         selector: { type: 'string', description: 'CSS selector to match and count.' },
-        visibleOnly: { type: 'boolean', description: 'If true, only count visible elements. Defaults to false.' },
+        visibleOnly: {
+          type: 'boolean',
+          description: 'If true, only count visible elements. Defaults to false.',
+        },
       },
       required: ['selector'],
     },
   },
   {
     name: 'browser_extract_table',
-    description: 'Extract all rows and columns from an HTML table and return them as a JSON array of objects.',
+    description:
+      'Extract all rows and columns from an HTML table and return them as a JSON array of objects.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Optional CSS selector or label for a specific table. Defaults to the first table on the page.' },
+        target: {
+          type: 'string',
+          description:
+            'Optional CSS selector or label for a specific table. Defaults to the first table on the page.',
+        },
       },
       required: [],
     },
@@ -463,24 +599,31 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        visibleOnly: { type: 'boolean', description: 'If true, only return images that are currently visible in the viewport. Defaults to false.' },
+        visibleOnly: {
+          type: 'boolean',
+          description:
+            'If true, only return images that are currently visible in the viewport. Defaults to false.',
+        },
       },
       required: [],
     },
   },
   {
     name: 'browser_get_all_links',
-    description: 'Get every hyperlink on the page including href, visible text, and whether it opens in a new tab.',
+    description:
+      'Get every hyperlink on the page including href, visible text, and whether it opens in a new tab.',
     inputSchema: {
       type: 'object',
       properties: {
-        filter: { type: 'string', description: 'Optional substring filter — only return links whose href or text contains this string.' },
+        filter: {
+          type: 'string',
+          description:
+            'Optional substring filter — only return links whose href or text contains this string.',
+        },
       },
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: PAGE INFO ─────────────────────────────────────────────────
   {
     name: 'browser_get_page_source',
     description: 'Get the full raw HTML source of the current page as a string.',
@@ -517,53 +660,76 @@ const BROWSER_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        factor: { type: 'number', description: 'Zoom factor. 1.0 = normal, 1.5 = zoomed in, 0.5 = zoomed out.' },
+        factor: {
+          type: 'number',
+          description: 'Zoom factor. 1.0 = normal, 1.5 = zoomed in, 0.5 = zoomed out.',
+        },
       },
       required: ['factor'],
     },
   },
   {
     name: 'browser_get_meta_tags',
-    description: 'Get all meta tags from the page head including name, property, content, and charset attributes.',
+    description:
+      'Get all meta tags from the page head including name, property, content, and charset attributes.',
     inputSchema: {
       type: 'object',
       properties: {},
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: SCRIPTING & STYLING ───────────────────────────────────────
   {
     name: 'browser_execute_script',
-    description: 'Execute arbitrary JavaScript in the page context and return the result. Use for custom automation logic.',
+    description:
+      'Execute arbitrary JavaScript in the page context and return the result. Use for custom automation logic.',
     inputSchema: {
       type: 'object',
       properties: {
-        script: { type: 'string', description: 'JavaScript code to execute. Can return a value via a return statement or an IIFE.' },
+        script: {
+          type: 'string',
+          description:
+            'JavaScript code to execute. Can return a value via a return statement or an IIFE.',
+        },
       },
       required: ['script'],
     },
   },
   {
     name: 'browser_inject_css',
-    description: 'Inject a CSS stylesheet string into the current page. Returns an injection key that can be used to remove it.',
+    description:
+      'Inject a CSS stylesheet string into the current page. Returns an injection key that can be used to remove it.',
     inputSchema: {
       type: 'object',
       properties: {
-        css: { type: 'string', description: 'CSS rules to inject into the page, e.g. "body { background: red; }".' },
+        css: {
+          type: 'string',
+          description: 'CSS rules to inject into the page, e.g. "body { background: red; }".',
+        },
       },
       required: ['css'],
     },
   },
   {
     name: 'browser_highlight_element',
-    description: 'Visually highlight an element with a colored outline to identify it on the page. Useful for debugging.',
+    description:
+      'Visually highlight an element with a colored outline to identify it on the page. Useful for debugging.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or visible label text for the element to highlight.' },
-        color: { type: 'string', description: 'Outline color. Defaults to "red". Accepts any CSS color value.' },
-        durationMs: { type: 'number', description: 'How long to show the highlight in ms. Defaults to 3000. Use 0 to keep indefinitely.' },
+        target: {
+          type: 'string',
+          description:
+            'Stable id, CSS selector, or visible label text for the element to highlight.',
+        },
+        color: {
+          type: 'string',
+          description: 'Outline color. Defaults to "red". Accepts any CSS color value.',
+        },
+        durationMs: {
+          type: 'number',
+          description:
+            'How long to show the highlight in ms. Defaults to 3000. Use 0 to keep indefinitely.',
+        },
       },
       required: ['target'],
     },
@@ -577,8 +743,6 @@ const BROWSER_TOOLS = [
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: COOKIES ───────────────────────────────────────────────────
   {
     name: 'browser_get_cookies',
     description: 'List all cookies for the current page URL, or optionally filter by name.',
@@ -598,11 +762,23 @@ const BROWSER_TOOLS = [
       properties: {
         name: { type: 'string', description: 'Cookie name.' },
         value: { type: 'string', description: 'Cookie value.' },
-        domain: { type: 'string', description: 'Optional domain. Defaults to the current page domain.' },
+        domain: {
+          type: 'string',
+          description: 'Optional domain. Defaults to the current page domain.',
+        },
         path: { type: 'string', description: 'Optional path. Defaults to "/".' },
-        secure: { type: 'boolean', description: 'Whether the cookie is secure. Defaults to false.' },
-        httpOnly: { type: 'boolean', description: 'Whether the cookie is HTTP-only. Defaults to false.' },
-        expirationDate: { type: 'number', description: 'Optional Unix timestamp for cookie expiry.' },
+        secure: {
+          type: 'boolean',
+          description: 'Whether the cookie is secure. Defaults to false.',
+        },
+        httpOnly: {
+          type: 'boolean',
+          description: 'Whether the cookie is HTTP-only. Defaults to false.',
+        },
+        expirationDate: {
+          type: 'number',
+          description: 'Optional Unix timestamp for cookie expiry.',
+        },
       },
       required: ['name', 'value'],
     },
@@ -614,7 +790,10 @@ const BROWSER_TOOLS = [
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Name of the cookie to delete.' },
-        url: { type: 'string', description: 'Optional URL the cookie belongs to. Defaults to the current page URL.' },
+        url: {
+          type: 'string',
+          description: 'Optional URL the cookie belongs to. Defaults to the current page URL.',
+        },
       },
       required: ['name'],
     },
@@ -628,15 +807,16 @@ const BROWSER_TOOLS = [
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: LOCAL STORAGE ─────────────────────────────────────────────
   {
     name: 'browser_get_local_storage',
     description: 'Get one or all localStorage items for the current page origin.',
     inputSchema: {
       type: 'object',
       properties: {
-        key: { type: 'string', description: 'Specific key to retrieve. Omit to get all key-value pairs.' },
+        key: {
+          type: 'string',
+          description: 'Specific key to retrieve. Omit to get all key-value pairs.',
+        },
       },
       required: [],
     },
@@ -673,15 +853,16 @@ const BROWSER_TOOLS = [
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: SESSION STORAGE ───────────────────────────────────────────
   {
     name: 'browser_get_session_storage',
     description: 'Get one or all sessionStorage items for the current page origin.',
     inputSchema: {
       type: 'object',
       properties: {
-        key: { type: 'string', description: 'Specific key to retrieve. Omit to get all key-value pairs.' },
+        key: {
+          type: 'string',
+          description: 'Specific key to retrieve. Omit to get all key-value pairs.',
+        },
       },
       required: [],
     },
@@ -707,11 +888,10 @@ const BROWSER_TOOLS = [
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: ASSERTIONS & CHECKS ──────────────────────────────────────
   {
     name: 'browser_check_element_exists',
-    description: 'Check whether an element exists in the DOM (visible or not). Returns true or false.',
+    description:
+      'Check whether an element exists in the DOM (visible or not). Returns true or false.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -722,7 +902,8 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_check_element_visible',
-    description: 'Check whether an element exists AND is visible in the page. Returns true or false.',
+    description:
+      'Check whether an element exists AND is visible in the page. Returns true or false.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -733,7 +914,8 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_check_text_present',
-    description: 'Check whether specific text appears anywhere on the current page. Returns true or false.',
+    description:
+      'Check whether specific text appears anywhere on the current page. Returns true or false.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -744,31 +926,38 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_assert_url_contains',
-    description: 'Assert the current URL contains a given substring. Throws an error if it does not match.',
+    description:
+      'Assert the current URL contains a given substring. Throws an error if it does not match.',
     inputSchema: {
       type: 'object',
       properties: {
-        substring: { type: 'string', description: 'Expected substring that the current URL must contain.' },
+        substring: {
+          type: 'string',
+          description: 'Expected substring that the current URL must contain.',
+        },
       },
       required: ['substring'],
     },
   },
   {
     name: 'browser_assert_title_contains',
-    description: 'Assert the current page title contains a given substring. Throws an error if it does not match.',
+    description:
+      'Assert the current page title contains a given substring. Throws an error if it does not match.',
     inputSchema: {
       type: 'object',
       properties: {
-        substring: { type: 'string', description: 'Expected substring that the page title must contain.' },
+        substring: {
+          type: 'string',
+          description: 'Expected substring that the page title must contain.',
+        },
       },
       required: ['substring'],
     },
   },
-
-  // ─── NEW TOOLS: DIALOGS ───────────────────────────────────────────────────
   {
     name: 'browser_override_dialogs',
-    description: 'Inject a script that intercepts window.alert, window.confirm, and window.prompt so they do not block the page. Must be called after navigation or page load to take effect.',
+    description:
+      'Inject a script that intercepts window.alert, window.confirm, and window.prompt so they do not block the page. Must be called after navigation or page load to take effect.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -777,30 +966,37 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_set_dialog_response',
-    description: 'Configure how the next intercepted dialog (alert/confirm/prompt) will be handled. Call browser_override_dialogs first.',
+    description:
+      'Configure how the next intercepted dialog (alert/confirm/prompt) will be handled. Call browser_override_dialogs first.',
     inputSchema: {
       type: 'object',
       properties: {
-        action: { type: 'string', description: '"accept" to confirm/OK the dialog, or "dismiss" to cancel it.' },
-        promptText: { type: 'string', description: 'For prompt dialogs, the text to return as the user input.' },
+        action: {
+          type: 'string',
+          description: '"accept" to confirm/OK the dialog, or "dismiss" to cancel it.',
+        },
+        promptText: {
+          type: 'string',
+          description: 'For prompt dialogs, the text to return as the user input.',
+        },
       },
       required: ['action'],
     },
   },
   {
     name: 'browser_get_last_dialog',
-    description: 'Get information about the most recently intercepted dialog (type, message, result). Requires browser_override_dialogs to have been called.',
+    description:
+      'Get information about the most recently intercepted dialog (type, message, result). Requires browser_override_dialogs to have been called.',
     inputSchema: {
       type: 'object',
       properties: {},
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: PERFORMANCE & MONITORING ─────────────────────────────────
   {
     name: 'browser_get_performance_metrics',
-    description: 'Get page load timing metrics including DNS lookup, TCP connection, TTFB, DOM load, and total load time.',
+    description:
+      'Get page load timing metrics including DNS lookup, TCP connection, TTFB, DOM load, and total load time.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -809,12 +1005,20 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_get_console_logs',
-    description: 'Get console messages (log, warn, error, info) that have been captured since the browser session started or since the last clear.',
+    description:
+      'Get console messages (log, warn, error, info) that have been captured since the browser session started or since the last clear.',
     inputSchema: {
       type: 'object',
       properties: {
-        level: { type: 'string', description: 'Optional filter: "log", "warn", "error", or "info". Omit to get all levels.' },
-        limit: { type: 'number', description: 'Maximum number of recent log entries to return. Defaults to 50.' },
+        level: {
+          type: 'string',
+          description:
+            'Optional filter: "log", "warn", "error", or "info". Omit to get all levels.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of recent log entries to return. Defaults to 50.',
+        },
       },
       required: [],
     },
@@ -828,15 +1032,18 @@ const BROWSER_TOOLS = [
       required: [],
     },
   },
-
-  // ─── NEW TOOLS: FORM UTILITIES ────────────────────────────────────────────
   {
     name: 'browser_get_form_data',
-    description: 'Extract all form field names and their current values from the page or a specific form as a JSON object.',
+    description:
+      'Extract all form field names and their current values from the page or a specific form as a JSON object.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Optional CSS selector or label to identify a specific form. Defaults to the first form found.' },
+        target: {
+          type: 'string',
+          description:
+            'Optional CSS selector or label to identify a specific form. Defaults to the first form found.',
+        },
       },
       required: [],
     },
@@ -849,23 +1056,29 @@ const BROWSER_TOOLS = [
       properties: {
         fields: {
           type: 'object',
-          description: 'A JSON object where each key is a field label, name, or stable id and each value is the text to type.',
+          description:
+            'A JSON object where each key is a field label, name, or stable id and each value is the text to type.',
           additionalProperties: { type: 'string' },
         },
-        submit: { type: 'boolean', description: 'If true, submit the form after filling all fields. Defaults to false.' },
+        submit: {
+          type: 'boolean',
+          description: 'If true, submit the form after filling all fields. Defaults to false.',
+        },
       },
       required: ['fields'],
     },
   },
-
-  // ─── NEW TOOLS: MISC ──────────────────────────────────────────────────────
   {
     name: 'browser_upload_file',
-    description: 'Set a file on a file input element using a local file path. Uses the Chrome DevTools Protocol for reliable file injection.',
+    description:
+      'Set a file on a file input element using a local file path. Uses the Chrome DevTools Protocol for reliable file injection.',
     inputSchema: {
       type: 'object',
       properties: {
-        target: { type: 'string', description: 'Stable id, CSS selector, or label of the file input element.' },
+        target: {
+          type: 'string',
+          description: 'Stable id, CSS selector, or label of the file input element.',
+        },
         filePath: { type: 'string', description: 'Absolute path to the local file to upload.' },
       },
       required: ['target', 'filePath'],
@@ -1113,7 +1326,7 @@ function formatElementLine(element) {
 }
 
 function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function normalizeTimeout(timeoutMs, fallback = 15000) {
@@ -1122,14 +1335,17 @@ function normalizeTimeout(timeoutMs, fallback = 15000) {
 }
 
 function looksLikeSearchEngineBlocker(text = '') {
-  return /google\.com\/sorry|sorry\/index|\bunusual traffic\b|\brecaptcha\b|\bi am not a robot\b|\bi'm not a robot\b/i
-    .test(String(text ?? ''));
+  return /google\.com\/sorry|sorry\/index|\bunusual traffic\b|\brecaptcha\b|\bi am not a robot\b|\bi'm not a robot\b/i.test(
+    String(text ?? ''),
+  );
 }
 
 function isRecoverableNavigationSettleError(error) {
   const message = String(error?.message ?? '');
-  return /Timed out waiting for navigation after \d+ms\./i.test(message)
-    || /Timed out waiting for the page to load after \d+ms\./i.test(message);
+  return (
+    /Timed out waiting for navigation after \d+ms\./i.test(message) ||
+    /Timed out waiting for the page to load after \d+ms\./i.test(message)
+  );
 }
 
 export class BrowserMCPServer {
@@ -1141,7 +1357,7 @@ export class BrowserMCPServer {
     this._injectedCssKeys = new Map(); // css string → Electron CSS key
   }
 
-  // ── Console log capture setup ──────────────────────────────────────────────
+  // Console log capture setup
   async _ensureConsoleCapture() {
     if (this._consoleListenerAttached) return;
     try {
@@ -1170,10 +1386,9 @@ export class BrowserMCPServer {
 
   async callTool(name, args = {}) {
     // Ensure console capture is set up on every tool call (idempotent)
-    this._ensureConsoleCapture().catch(() => { });
+    this._ensureConsoleCapture().catch(() => {});
 
     switch (name) {
-      // ── Existing tools ────────────────────────────────────────────────────
       case 'browser_navigate':
         return this._navigate(args.url);
       case 'browser_snapshot':
@@ -1229,7 +1444,7 @@ export class BrowserMCPServer {
       case 'browser_refresh':
         return this._refresh();
 
-      // ── New: Mouse actions ────────────────────────────────────────────────
+      // Mouse actions
       case 'browser_double_click':
         return this._doubleClick(args.target);
       case 'browser_right_click':
@@ -1239,7 +1454,7 @@ export class BrowserMCPServer {
       case 'browser_click_at':
         return this._clickAt(args.x, args.y);
 
-      // ── New: Content reading ──────────────────────────────────────────────
+      // Content reading
       case 'browser_get_text':
         return this._getText(args.target);
       case 'browser_get_html':
@@ -1263,7 +1478,7 @@ export class BrowserMCPServer {
       case 'browser_get_all_links':
         return this._getAllLinks(args.filter);
 
-      // ── New: Page info ────────────────────────────────────────────────────
+      // Page info
       case 'browser_get_page_source':
         return this._getPageSource();
       case 'browser_get_viewport_size':
@@ -1275,7 +1490,7 @@ export class BrowserMCPServer {
       case 'browser_get_meta_tags':
         return this._getMetaTags();
 
-      // ── New: Scripting & styling ──────────────────────────────────────────
+      // Scripting & styling
       case 'browser_execute_script':
         return this._executeScript(args.script);
       case 'browser_inject_css':
@@ -1285,7 +1500,7 @@ export class BrowserMCPServer {
       case 'browser_remove_highlights':
         return this._removeHighlights();
 
-      // ── New: Cookies ──────────────────────────────────────────────────────
+      // Cookies
       case 'browser_get_cookies':
         return this._getCookies(args.name);
       case 'browser_set_cookie':
@@ -1295,7 +1510,7 @@ export class BrowserMCPServer {
       case 'browser_clear_cookies':
         return this._clearCookies();
 
-      // ── New: Local storage ────────────────────────────────────────────────
+      // Local storage
       case 'browser_get_local_storage':
         return this._getLocalStorage(args.key);
       case 'browser_set_local_storage':
@@ -1305,7 +1520,7 @@ export class BrowserMCPServer {
       case 'browser_clear_local_storage':
         return this._clearLocalStorage();
 
-      // ── New: Session storage ──────────────────────────────────────────────
+      // Session storage
       case 'browser_get_session_storage':
         return this._getSessionStorage(args.key);
       case 'browser_set_session_storage':
@@ -1313,7 +1528,7 @@ export class BrowserMCPServer {
       case 'browser_clear_session_storage':
         return this._clearSessionStorage();
 
-      // ── New: Assertions & checks ──────────────────────────────────────────
+      // Assertions & checks
       case 'browser_check_element_exists':
         return this._checkElementExists(args.target);
       case 'browser_check_element_visible':
@@ -1325,7 +1540,7 @@ export class BrowserMCPServer {
       case 'browser_assert_title_contains':
         return this._assertTitleContains(args.substring);
 
-      // ── New: Dialogs ──────────────────────────────────────────────────────
+      // Dialogs
       case 'browser_override_dialogs':
         return this._overrideDialogs();
       case 'browser_set_dialog_response':
@@ -1333,7 +1548,7 @@ export class BrowserMCPServer {
       case 'browser_get_last_dialog':
         return this._getLastDialog();
 
-      // ── New: Performance & monitoring ─────────────────────────────────────
+      // Performance & monitoring
       case 'browser_get_performance_metrics':
         return this._getPerformanceMetrics();
       case 'browser_get_console_logs':
@@ -1341,13 +1556,13 @@ export class BrowserMCPServer {
       case 'browser_clear_console_logs':
         return this._clearConsoleLogs();
 
-      // ── New: Form utilities ───────────────────────────────────────────────
+      // Form utilities
       case 'browser_get_form_data':
         return this._getFormData(args.target);
       case 'browser_fill_form':
         return this._fillForm(args.fields, args.submit);
 
-      // ── New: Misc ─────────────────────────────────────────────────────────
+      // Misc
       case 'browser_upload_file':
         return this._uploadFile(args.target, args.filePath);
       case 'browser_get_selection':
@@ -1372,16 +1587,22 @@ export class BrowserMCPServer {
   }
 
   async _getTextExcerpt(limit = 1200) {
-    return this._execute(`
+    return this._execute(
+      `
       (() => {
         const text = String(document.body?.innerText || '').replace(/\\s+/g, ' ').trim();
         return text.slice(0, ${Number(limit)});
       })()
-    `, false);
+    `,
+      false,
+    );
   }
 
-  async _getCurrentPageSummary(webContents = null, { includeExcerpt = false, excerptLimit = 240 } = {}) {
-    const activeWebContents = webContents ?? await this._getWebContents();
+  async _getCurrentPageSummary(
+    webContents = null,
+    { includeExcerpt = false, excerptLimit = 240 } = {},
+  ) {
+    const activeWebContents = webContents ?? (await this._getWebContents());
     const url = activeWebContents.getURL() || '(no page loaded)';
     const title = activeWebContents.getTitle() || '(untitled page)';
     const excerpt = await this._getTextExcerpt(includeExcerpt ? excerptLimit : 220).catch(() => '');
@@ -1394,7 +1615,9 @@ export class BrowserMCPServer {
 
     if (isGoogleBlockPage) {
       lines.push('Blocked: Google CAPTCHA / unusual-traffic page detected.');
-      lines.push('Suggested recovery: navigate directly to the destination site or use the destination site search instead of Google.');
+      lines.push(
+        'Suggested recovery: navigate directly to the destination site or use the destination site search instead of Google.',
+      );
     }
 
     if (includeExcerpt) {
@@ -1432,7 +1655,10 @@ export class BrowserMCPServer {
         webContents.removeListener('destroyed', handleDestroyed);
       };
 
-      const handleStop = () => { cleanup(); resolve(); };
+      const handleStop = () => {
+        cleanup();
+        resolve();
+      };
       const handleFail = (_event, errorCode, errorDescription) => {
         cleanup();
         reject(new Error(`Page load failed (${errorCode}): ${errorDescription}`));
@@ -1472,9 +1698,19 @@ export class BrowserMCPServer {
         webContents.removeListener('did-fail-load', handleFail);
       };
 
-      const handleStart = () => { started = true; };
-      const handleInPage = () => { started = true; cleanup(); resolve(); };
-      const handleStop = () => { if (!started) return; cleanup(); resolve(); };
+      const handleStart = () => {
+        started = true;
+      };
+      const handleInPage = () => {
+        started = true;
+        cleanup();
+        resolve();
+      };
+      const handleStop = () => {
+        if (!started) return;
+        cleanup();
+        resolve();
+      };
       const handleFail = (_event, errorCode, errorDescription) => {
         cleanup();
         reject(new Error(`Navigation failed (${errorCode}): ${errorDescription}`));
@@ -1489,10 +1725,6 @@ export class BrowserMCPServer {
     return 'Navigation finished.';
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // EXISTING METHOD IMPLEMENTATIONS
-  // ═══════════════════════════════════════════════════════════════════════════
-
   async _navigate(url) {
     const target = normalizeUrl(url);
     this._preview.setStatus(`Navigating to ${target}`);
@@ -1505,7 +1737,8 @@ export class BrowserMCPServer {
 
   async _snapshot() {
     this._preview.setStatus('Scanning the current page');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const elements = assignStableIds().map(describeElement);
@@ -1519,7 +1752,9 @@ export class BrowserMCPServer {
           focused,
         };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     const lines = [
       `Title: ${result.title}`,
@@ -1760,7 +1995,8 @@ export class BrowserMCPServer {
     const pixels = Number.isFinite(Number(amount)) ? Number(amount) : 600;
     this._preview.setStatus(`Scrolling ${normalizedDirection}`);
 
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const scroller = ${target ? `resolveTarget(${JSON.stringify(target)}) || document.scrollingElement || document.documentElement` : 'document.scrollingElement || document.documentElement'};
@@ -1785,7 +2021,9 @@ export class BrowserMCPServer {
           left: isWindowScroll ? (window.scrollX || document.documentElement.scrollLeft || 0) : scroller.scrollLeft,
         };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not scroll the page.');
     this._preview.clearStatus();
@@ -1841,7 +2079,8 @@ export class BrowserMCPServer {
     if (!target) throw new Error('Target is required.');
 
     this._preview.setStatus(`Listing options for ${target}`);
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const el = resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true });
@@ -1872,21 +2111,28 @@ export class BrowserMCPServer {
         if (!options.length) return { ok: false, error: 'No visible options were found for that control.' };
         return { ok: true, info: describeElement(el), options };
       })()
-    `, false);
+    `,
+      false,
+    );
 
-    if (!result?.ok) throw new Error(result?.error ?? 'Could not list options for the requested control.');
+    if (!result?.ok)
+      throw new Error(result?.error ?? 'Could not list options for the requested control.');
     this._preview.clearStatus();
     return [
       `Options for ${formatElementLine(result.info)}:`,
       ...(result.options.length
-        ? result.options.map(option => `${option.selected ? '*' : '-'} [${option.index}] ${option.label}${option.value ? ` (value: ${option.value})` : ''}`)
+        ? result.options.map(
+            (option) =>
+              `${option.selected ? '*' : '-'} [${option.index}] ${option.label}${option.value ? ` (value: ${option.value})` : ''}`,
+          )
         : ['(none found)']),
     ].join('\n');
   }
 
   async _listLinks() {
     this._preview.setStatus('Listing visible actions');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const selectors = ['a[href]', 'button', '[role="link"]', '[role="button"]'];
@@ -1902,13 +2148,17 @@ export class BrowserMCPServer {
           href: el instanceof HTMLAnchorElement ? (el.href || '') : '',
         }));
       })()
-    `, false);
+    `,
+      false,
+    );
 
     this._preview.clearStatus();
     return [
       'Visible links and actions:',
       ...(result.length
-        ? result.map(entry => `${formatElementLine(entry)}${entry.href ? ` -> ${entry.href}` : ''}`)
+        ? result.map(
+            (entry) => `${formatElementLine(entry)}${entry.href ? ` -> ${entry.href}` : ''}`,
+          )
         : ['(none found)']),
     ].join('\n');
   }
@@ -1916,9 +2166,13 @@ export class BrowserMCPServer {
   async _findElements(query, limit = 10) {
     if (!query) throw new Error('Query is required.');
 
-    const maxResults = Math.max(1, Math.min(20, Number.isFinite(Number(limit)) ? Number(limit) : 10));
+    const maxResults = Math.max(
+      1,
+      Math.min(20, Number.isFinite(Number(limit)) ? Number(limit) : 10),
+    );
     this._preview.setStatus(`Finding ${query}`);
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const requested = normalizeText(${JSON.stringify(String(query))});
@@ -1963,20 +2217,26 @@ export class BrowserMCPServer {
           disabled: Boolean(node.disabled),
         }));
       })()
-    `, false);
+    `,
+      false,
+    );
 
     this._preview.clearStatus();
     return [
       `Matches for "${query}":`,
       ...(result.length
-        ? result.map(entry => `${formatElementLine(entry)}${entry.href ? ` -> ${entry.href}` : ''}${entry.disabled ? ' [disabled]' : ''}${entry.text ? ` | ${entry.text}` : ''}`)
+        ? result.map(
+            (entry) =>
+              `${formatElementLine(entry)}${entry.href ? ` -> ${entry.href}` : ''}${entry.disabled ? ' [disabled]' : ''}${entry.text ? ` | ${entry.text}` : ''}`,
+          )
         : ['(none found)']),
     ].join('\n');
   }
 
   async _listFormFields(target = null) {
     this._preview.setStatus(target ? `Listing fields in ${target}` : 'Listing visible form fields');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const root = ${target ? `resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true }) || document` : 'document'};
@@ -2001,22 +2261,26 @@ export class BrowserMCPServer {
           };
         });
       })()
-    `, false);
+    `,
+      false,
+    );
 
     this._preview.clearStatus();
     return [
       target ? `Visible form fields within "${target}":` : 'Visible form fields:',
       ...(result.length
-        ? result.map(field => {
-          const details = [
-            field.placeholder ? `placeholder: ${field.placeholder}` : '',
-            field.value ? `value: ${field.value}` : '',
-            field.checked == null ? '' : `checked: ${field.checked ? 'yes' : 'no'}`,
-            field.required ? 'required' : '',
-            field.disabled ? 'disabled' : '',
-          ].filter(Boolean).join(', ');
-          return `${formatElementLine(field)}${details ? ` | ${details}` : ''}`;
-        })
+        ? result.map((field) => {
+            const details = [
+              field.placeholder ? `placeholder: ${field.placeholder}` : '',
+              field.value ? `value: ${field.value}` : '',
+              field.checked == null ? '' : `checked: ${field.checked ? 'yes' : 'no'}`,
+              field.required ? 'required' : '',
+              field.disabled ? 'disabled' : '',
+            ]
+              .filter(Boolean)
+              .join(', ');
+            return `${formatElementLine(field)}${details ? ` | ${details}` : ''}`;
+          })
         : ['(none found)']),
     ].join('\n');
   }
@@ -2025,7 +2289,8 @@ export class BrowserMCPServer {
     if (!target) throw new Error('Target is required.');
 
     this._preview.setStatus(`Scrolling to ${target}`);
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const el = resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true });
@@ -2033,9 +2298,12 @@ export class BrowserMCPServer {
         el.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'instant' });
         return { ok: true, info: describeElement(el) };
       })()
-    `, false);
+    `,
+      false,
+    );
 
-    if (!result?.ok) throw new Error(result?.error ?? 'Could not scroll the requested element into view.');
+    if (!result?.ok)
+      throw new Error(result?.error ?? 'Could not scroll the requested element into view.');
     this._preview.clearStatus();
     return `Scrolled to ${formatElementLine(result.info)}`;
   }
@@ -2046,9 +2314,11 @@ export class BrowserMCPServer {
     const result = await this._execute(`
       (() => {
         ${PAGE_HELPERS}
-        const targetNode = ${target
-        ? `resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true })`
-        : '(document.activeElement || null)'};
+        const targetNode = ${
+          target
+            ? `resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true })`
+            : '(document.activeElement || null)'
+        };
         if (!targetNode) return { ok: false, error: 'No form target is available.' };
         const form = targetNode.form || targetNode.closest?.('form');
         const submitSelector = 'button[type="submit"], input[type="submit"], [role="button"][aria-label*="submit" i], [role="button"][aria-label*="continue" i]';
@@ -2092,14 +2362,17 @@ export class BrowserMCPServer {
     this._preview.setStatus(`Waiting for ${target}`);
 
     while (Date.now() < deadline) {
-      const result = await this._execute(`
+      const result = await this._execute(
+        `
         (() => {
           ${PAGE_HELPERS}
           const el = resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true });
           if (!el || !isVisible(el)) return { ok: false };
           return { ok: true, info: describeElement(el) };
         })()
-      `, false);
+      `,
+        false,
+      );
       if (result?.ok) {
         this._preview.clearStatus();
         return `Element is visible: ${formatElementLine(result.info)}`;
@@ -2113,7 +2386,8 @@ export class BrowserMCPServer {
     if (!target) throw new Error('Target is required.');
 
     this._preview.setStatus(`Reading ${target}`);
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const el = resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true });
@@ -2134,7 +2408,9 @@ export class BrowserMCPServer {
           selectedText,
         };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not read the requested element.');
     this._preview.clearStatus();
@@ -2145,7 +2421,9 @@ export class BrowserMCPServer {
       result.selectedText ? `Selected option: ${result.selectedText}` : '',
       result.checked == null ? '' : `Checked: ${result.checked ? 'yes' : 'no'}`,
       `Disabled: ${result.disabled ? 'yes' : 'no'}`,
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
   }
 
   async _waitForText(text, timeoutMs = 15000) {
@@ -2157,7 +2435,10 @@ export class BrowserMCPServer {
     this._preview.setStatus(`Waiting for "${text}"`);
 
     while (Date.now() < deadline) {
-      const content = await this._execute(`(() => String(document.body?.innerText || '').replace(/\\s+/g, ' ').trim())()`, false);
+      const content = await this._execute(
+        `(() => String(document.body?.innerText || '').replace(/\\s+/g, ' ').trim())()`,
+        false,
+      );
       if (String(content).toLowerCase().includes(target)) {
         this._preview.clearStatus();
         return `Text found on the page: ${text}`;
@@ -2181,8 +2462,14 @@ export class BrowserMCPServer {
     const webContents = await this._getWebContents();
     this._preview.setStatus('Capturing screenshot');
     const image = await webContents.capturePage();
-    const safeName = String(fileName ?? '').trim().replace(/[<>:"/\\|?*]+/g, '-');
-    const finalName = safeName ? (safeName.endsWith('.png') ? safeName : `${safeName}.png`) : `Joanium-browser-${Date.now()}.png`;
+    const safeName = String(fileName ?? '')
+      .trim()
+      .replace(/[<>:"/\\|?*]+/g, '-');
+    const finalName = safeName
+      ? safeName.endsWith('.png')
+        ? safeName
+        : `${safeName}.png`
+      : `Joanium-browser-${Date.now()}.png`;
     const screenshotPath = path.join(app.getPath('temp'), finalName);
     fs.writeFileSync(screenshotPath, image.toPNG());
     this._preview.clearStatus();
@@ -2230,12 +2517,7 @@ export class BrowserMCPServer {
     return `Refreshed the current page.\n${pageSummary}`;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // NEW METHOD IMPLEMENTATIONS
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  // ── Mouse actions ──────────────────────────────────────────────────────────
-
+  // Mouse actions
   async _doubleClick(target) {
     if (!target) throw new Error('Target is required.');
 
@@ -2261,7 +2543,8 @@ export class BrowserMCPServer {
       })()
     `);
 
-    if (!result?.ok) throw new Error(result?.error ?? 'Could not double-click the requested element.');
+    if (!result?.ok)
+      throw new Error(result?.error ?? 'Could not double-click the requested element.');
     await wait(200);
     const navigationNote = await this._waitForActionNavigation(webContents, 1000);
     const pageSummary = await this._getCurrentPageSummary(webContents);
@@ -2290,7 +2573,8 @@ export class BrowserMCPServer {
       })()
     `);
 
-    if (!result?.ok) throw new Error(result?.error ?? 'Could not right-click the requested element.');
+    if (!result?.ok)
+      throw new Error(result?.error ?? 'Could not right-click the requested element.');
     this._preview.clearStatus();
     return `Right-clicked ${formatElementLine(result.info)}`;
   }
@@ -2349,7 +2633,8 @@ export class BrowserMCPServer {
 
     const px = Number(x);
     const py = Number(y);
-    if (!Number.isFinite(px) || !Number.isFinite(py)) throw new Error('x and y must be finite numbers.');
+    if (!Number.isFinite(px) || !Number.isFinite(py))
+      throw new Error('x and y must be finite numbers.');
 
     const webContents = await this._getWebContents();
     this._preview.setStatus(`Clicking at (${px}, ${py})`);
@@ -2370,11 +2655,11 @@ export class BrowserMCPServer {
     return `Clicked at coordinates (${px}, ${py}).${navigationNote ? `\n${navigationNote}` : ''}\n${pageSummary}`;
   }
 
-  // ── Content reading ────────────────────────────────────────────────────────
-
+  //Content reading
   async _getText(target = null) {
     this._preview.setStatus(target ? `Getting text of ${target}` : 'Getting page text');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const el = ${target ? `resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: false })` : 'document.body'};
@@ -2382,7 +2667,9 @@ export class BrowserMCPServer {
         const text = String(el.innerText ?? el.textContent ?? '').replace(/\\s+/g, ' ').trim();
         return { ok: true, text };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not get text.');
     this._preview.clearStatus();
@@ -2391,7 +2678,8 @@ export class BrowserMCPServer {
 
   async _getHtml(target = null, outer = false) {
     this._preview.setStatus(target ? `Getting HTML of ${target}` : 'Getting page HTML');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const el = ${target ? `resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: false })` : 'document.documentElement'};
@@ -2399,7 +2687,9 @@ export class BrowserMCPServer {
         const html = ${outer ? 'el.outerHTML' : 'el.innerHTML'} || '';
         return { ok: true, html: html.slice(0, 50000) };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not get HTML.');
     this._preview.clearStatus();
@@ -2411,7 +2701,8 @@ export class BrowserMCPServer {
     if (!attribute) throw new Error('Attribute name is required.');
 
     this._preview.setStatus(`Getting "${attribute}" from ${target}`);
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const el = resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: false })
@@ -2420,7 +2711,9 @@ export class BrowserMCPServer {
         const value = el.getAttribute(${JSON.stringify(attribute)});
         return { ok: true, value };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not get attribute.');
     this._preview.clearStatus();
@@ -2477,7 +2770,8 @@ export class BrowserMCPServer {
     if (!property) throw new Error('CSS property is required.');
 
     this._preview.setStatus(`Getting computed style "${property}" for ${target}`);
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const el = resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: false })
@@ -2486,7 +2780,9 @@ export class BrowserMCPServer {
         const value = window.getComputedStyle(el).getPropertyValue(${JSON.stringify(property)});
         return { ok: true, value: String(value ?? '').trim() };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not get computed style.');
     this._preview.clearStatus();
@@ -2497,7 +2793,8 @@ export class BrowserMCPServer {
     if (!target) throw new Error('Target is required.');
 
     this._preview.setStatus(`Getting bounds of ${target}`);
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         const el = resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: false })
@@ -2506,7 +2803,9 @@ export class BrowserMCPServer {
         const r = el.getBoundingClientRect();
         return { ok: true, x: r.x, y: r.y, width: r.width, height: r.height, top: r.top, right: r.right, bottom: r.bottom, left: r.left };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not get element bounds.');
     this._preview.clearStatus();
@@ -2518,9 +2817,12 @@ export class BrowserMCPServer {
     if (!selector) throw new Error('Selector is required.');
 
     this._preview.setStatus(`Counting elements matching "${selector}"`);
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
-        ${visibleOnly ? `
+        ${
+          visibleOnly
+            ? `
           const isVisible = el => {
             if (!el) return false;
             const style = window.getComputedStyle(el);
@@ -2528,7 +2830,9 @@ export class BrowserMCPServer {
             const rect = el.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0;
           };
-        ` : ''}
+        `
+            : ''
+        }
         let elements;
         try {
           elements = [...document.querySelectorAll(${JSON.stringify(selector)})];
@@ -2538,7 +2842,9 @@ export class BrowserMCPServer {
         const count = ${visibleOnly ? 'elements.filter(isVisible).length' : 'elements.length'};
         return { ok: true, count };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not count elements.');
     this._preview.clearStatus();
@@ -2547,7 +2853,8 @@ export class BrowserMCPServer {
 
   async _extractTable(target = null) {
     this._preview.setStatus(target ? `Extracting table "${target}"` : 'Extracting first table');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         let table;
         if (${target ? 'true' : 'false'}) {
@@ -2601,7 +2908,9 @@ export class BrowserMCPServer {
 
         return { ok: true, headers, rowCount: rows.length, data: data.slice(0, 200) };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not extract table.');
     this._preview.clearStatus();
@@ -2615,15 +2924,20 @@ export class BrowserMCPServer {
 
   async _getImages(visibleOnly = false) {
     this._preview.setStatus('Listing images');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         const images = [...document.querySelectorAll('img')];
-        const check = ${visibleOnly ? `el => {
+        const check = ${
+          visibleOnly
+            ? `el => {
           const style = window.getComputedStyle(el);
           if (style.display === 'none' || style.visibility === 'hidden') return false;
           const rect = el.getBoundingClientRect();
           return rect.width > 0 && rect.height > 0;
-        }` : '() => true'};
+        }`
+            : '() => true'
+        };
 
         return images
           .filter(check)
@@ -2636,7 +2950,9 @@ export class BrowserMCPServer {
             loading: img.loading || '',
           }));
       })()
-    `, false);
+    `,
+      false,
+    );
 
     this._preview.clearStatus();
     if (!result.length) return 'No images found on the page.';
@@ -2651,7 +2967,8 @@ export class BrowserMCPServer {
 
   async _getAllLinks(filter = null) {
     this._preview.setStatus('Getting all links');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         return [...document.querySelectorAll('a[href]')]
           .slice(0, 300)
@@ -2663,37 +2980,53 @@ export class BrowserMCPServer {
           }))
           .filter(link => link.href && link.href !== 'javascript:void(0)');
       })()
-    `, false);
+    `,
+      false,
+    );
 
     this._preview.clearStatus();
     const filtered = filter
-      ? result.filter(l => l.href.includes(filter) || l.text.toLowerCase().includes(String(filter).toLowerCase()))
+      ? result.filter(
+          (l) =>
+            l.href.includes(filter) || l.text.toLowerCase().includes(String(filter).toLowerCase()),
+        )
       : result;
 
-    if (!filtered.length) return filter ? `No links found matching "${filter}".` : 'No links found on the page.';
-    const lines = [`Found ${filtered.length} link${filtered.length === 1 ? '' : 's'}${filter ? ` matching "${filter}"` : ''}:`, ''];
+    if (!filtered.length)
+      return filter ? `No links found matching "${filter}".` : 'No links found on the page.';
+    const lines = [
+      `Found ${filtered.length} link${filtered.length === 1 ? '' : 's'}${filter ? ` matching "${filter}"` : ''}:`,
+      '',
+    ];
     filtered.forEach((link, i) => {
-      lines.push(`[${i + 1}] ${link.text || '(no text)'} → ${link.href}${link.newTab ? ' [new tab]' : ''}`);
+      lines.push(
+        `[${i + 1}] ${link.text || '(no text)'} → ${link.href}${link.newTab ? ' [new tab]' : ''}`,
+      );
     });
     return lines.join('\n');
   }
 
-  // ── Page info ──────────────────────────────────────────────────────────────
-
+  //Page info
   async _getPageSource() {
     this._preview.setStatus('Getting page source');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => document.documentElement.outerHTML)()
-    `, false);
+    `,
+      false,
+    );
     this._preview.clearStatus();
     return String(result ?? '(empty)');
   }
 
   async _getViewportSize() {
     const webContents = await this._getWebContents();
-    const size = await this._execute(`
+    const size = await this._execute(
+      `
       (() => ({ width: window.innerWidth, height: window.innerHeight }))()
-    `, false);
+    `,
+      false,
+    );
     this._preview.clearStatus();
     return `Viewport size: ${size.width}×${size.height} px`;
   }
@@ -2734,7 +3067,8 @@ export class BrowserMCPServer {
 
   async _getMetaTags() {
     this._preview.setStatus('Getting meta tags');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         return [...document.querySelectorAll('meta')].map(meta => ({
           name: meta.getAttribute('name') || '',
@@ -2744,12 +3078,14 @@ export class BrowserMCPServer {
           httpEquiv: meta.getAttribute('http-equiv') || '',
         })).filter(m => m.name || m.property || m.content || m.charset || m.httpEquiv);
       })()
-    `, false);
+    `,
+      false,
+    );
 
     this._preview.clearStatus();
     if (!result.length) return 'No meta tags found.';
     const lines = [`Found ${result.length} meta tag${result.length === 1 ? '' : 's'}:`, ''];
-    result.forEach(meta => {
+    result.forEach((meta) => {
       const parts = [];
       if (meta.charset) parts.push(`charset="${meta.charset}"`);
       if (meta.httpEquiv) parts.push(`http-equiv="${meta.httpEquiv}"`);
@@ -2761,7 +3097,7 @@ export class BrowserMCPServer {
     return lines.join('\n');
   }
 
-  // ── Scripting & styling ────────────────────────────────────────────────────
+  //Scripting & styling
 
   async _executeScript(script) {
     if (!script) throw new Error('Script is required.');
@@ -2851,7 +3187,7 @@ export class BrowserMCPServer {
     return 'All element highlights removed.';
   }
 
-  // ── Cookies ────────────────────────────────────────────────────────────────
+  // Cookies
 
   async _getCookies(name = null) {
     const webContents = await this._getWebContents();
@@ -2869,19 +3205,28 @@ export class BrowserMCPServer {
     }
 
     const lines = [`${cookies.length} cookie${cookies.length === 1 ? '' : 's'}:`, ''];
-    cookies.forEach(c => {
+    cookies.forEach((c) => {
       const parts = [`name="${c.name}"`, `value="${c.value}"`];
       if (c.domain) parts.push(`domain="${c.domain}"`);
       if (c.path) parts.push(`path="${c.path}"`);
       if (c.secure) parts.push('secure');
       if (c.httpOnly) parts.push('httpOnly');
-      if (c.expirationDate) parts.push(`expires=${new Date(c.expirationDate * 1000).toISOString()}`);
+      if (c.expirationDate)
+        parts.push(`expires=${new Date(c.expirationDate * 1000).toISOString()}`);
       lines.push(`  ${parts.join(', ')}`);
     });
     return lines.join('\n');
   }
 
-  async _setCookie({ name, value, domain, path: cookiePath, secure, httpOnly, expirationDate } = {}) {
+  async _setCookie({
+    name,
+    value,
+    domain,
+    path: cookiePath,
+    secure,
+    httpOnly,
+    expirationDate,
+  } = {}) {
     if (!name) throw new Error('Cookie name is required.');
     if (value == null) throw new Error('Cookie value is required.');
 
@@ -2919,16 +3264,17 @@ export class BrowserMCPServer {
     this._preview.setStatus('Clearing cookies');
 
     const cookies = await webContents.session.cookies.get({ url });
-    await Promise.all(cookies.map(c => webContents.session.cookies.remove(url, c.name)));
+    await Promise.all(cookies.map((c) => webContents.session.cookies.remove(url, c.name)));
     this._preview.clearStatus();
     return `Cleared ${cookies.length} cookie${cookies.length === 1 ? '' : 's'}.`;
   }
 
-  // ── Local storage ──────────────────────────────────────────────────────────
+  // Local storage
 
   async _getLocalStorage(key = null) {
     this._preview.setStatus(key ? `Getting localStorage["${key}"]` : 'Getting all localStorage');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         try {
           if (${key ? 'true' : 'false'}) {
@@ -2945,13 +3291,17 @@ export class BrowserMCPServer {
           return { ok: false, error: e.message };
         }
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not access localStorage.');
     this._preview.clearStatus();
 
     if (result.single) {
-      return result.value == null ? `localStorage["${key}"] is not set.` : `localStorage["${key}"] = ${result.value}`;
+      return result.value == null
+        ? `localStorage["${key}"] is not set.`
+        : `localStorage["${key}"] = ${result.value}`;
     }
 
     const entries = Object.entries(result.items);
@@ -3021,11 +3371,14 @@ export class BrowserMCPServer {
     return `localStorage cleared (${result.count} item${result.count === 1 ? '' : 's'} removed).`;
   }
 
-  // ── Session storage ────────────────────────────────────────────────────────
+  // Session storage
 
   async _getSessionStorage(key = null) {
-    this._preview.setStatus(key ? `Getting sessionStorage["${key}"]` : 'Getting all sessionStorage');
-    const result = await this._execute(`
+    this._preview.setStatus(
+      key ? `Getting sessionStorage["${key}"]` : 'Getting all sessionStorage',
+    );
+    const result = await this._execute(
+      `
       (() => {
         try {
           if (${key ? 'true' : 'false'}) {
@@ -3042,18 +3395,25 @@ export class BrowserMCPServer {
           return { ok: false, error: e.message };
         }
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not access sessionStorage.');
     this._preview.clearStatus();
 
     if (result.single) {
-      return result.value == null ? `sessionStorage["${key}"] is not set.` : `sessionStorage["${key}"] = ${result.value}`;
+      return result.value == null
+        ? `sessionStorage["${key}"] is not set.`
+        : `sessionStorage["${key}"] = ${result.value}`;
     }
 
     const entries = Object.entries(result.items);
     if (!entries.length) return 'sessionStorage is empty.';
-    const lines = [`sessionStorage (${entries.length} item${entries.length === 1 ? '' : 's'}):`, ''];
+    const lines = [
+      `sessionStorage (${entries.length} item${entries.length === 1 ? '' : 's'}):`,
+      '',
+    ];
     entries.forEach(([k, v]) => lines.push(`  "${k}": ${v}`));
     return lines.join('\n');
   }
@@ -3098,26 +3458,32 @@ export class BrowserMCPServer {
     return `sessionStorage cleared (${result.count} item${result.count === 1 ? '' : 's'} removed).`;
   }
 
-  // ── Assertions & checks ────────────────────────────────────────────────────
+  // Assertions & checks
 
   async _checkElementExists(target) {
     if (!target) throw new Error('Target is required.');
 
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         let el = null;
         try { el = document.querySelector(${JSON.stringify(target)}); } catch { /* invalid selector */ }
         return { exists: Boolean(el) };
       })()
-    `, false);
+    `,
+      false,
+    );
 
-    return result.exists ? `true — element "${target}" exists in the DOM.` : `false — element "${target}" was not found.`;
+    return result.exists
+      ? `true — element "${target}" exists in the DOM.`
+      : `false — element "${target}" was not found.`;
   }
 
   async _checkElementVisible(target) {
     if (!target) throw new Error('Target is required.');
 
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         let el = null;
@@ -3128,20 +3494,29 @@ export class BrowserMCPServer {
         if (!el) return { visible: false };
         return { visible: isVisible(el) };
       })()
-    `, false);
+    `,
+      false,
+    );
 
-    return result.visible ? `true — element "${target}" is visible.` : `false — element "${target}" is not visible or not found.`;
+    return result.visible
+      ? `true — element "${target}" is visible.`
+      : `false — element "${target}" is not visible or not found.`;
   }
 
   async _checkTextPresent(text) {
     if (!text) throw new Error('Text is required.');
 
-    const bodyText = await this._execute(`
+    const bodyText = await this._execute(
+      `
       (() => String(document.body?.innerText || '').toLowerCase())()
-    `, false);
+    `,
+      false,
+    );
 
     const found = String(bodyText).includes(String(text).toLowerCase());
-    return found ? `true — "${text}" is present on the page.` : `false — "${text}" was not found on the page.`;
+    return found
+      ? `true — "${text}" is present on the page.`
+      : `false — "${text}" was not found on the page.`;
   }
 
   async _assertUrlContains(substring) {
@@ -3150,7 +3525,9 @@ export class BrowserMCPServer {
     const webContents = await this._getWebContents();
     const url = webContents.getURL();
     if (!url.includes(String(substring))) {
-      throw new Error(`URL assertion failed.\nExpected URL to contain: "${substring}"\nActual URL: ${url}`);
+      throw new Error(
+        `URL assertion failed.\nExpected URL to contain: "${substring}"\nActual URL: ${url}`,
+      );
     }
     return `URL assertion passed — current URL contains "${substring}".\nURL: ${url}`;
   }
@@ -3161,12 +3538,14 @@ export class BrowserMCPServer {
     const webContents = await this._getWebContents();
     const title = webContents.getTitle();
     if (!title.includes(String(substring))) {
-      throw new Error(`Title assertion failed.\nExpected title to contain: "${substring}"\nActual title: ${title}`);
+      throw new Error(
+        `Title assertion failed.\nExpected title to contain: "${substring}"\nActual title: ${title}`,
+      );
     }
     return `Title assertion passed — page title contains "${substring}".\nTitle: ${title}`;
   }
 
-  // ── Dialogs ────────────────────────────────────────────────────────────────
+  // Dialogs
 
   async _overrideDialogs() {
     this._preview.setStatus('Installing dialog overrides');
@@ -3229,12 +3608,15 @@ export class BrowserMCPServer {
 
   async _getLastDialog() {
     this._preview.setStatus('Getting last dialog');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         if (!window.__owDialogsOverridden) return { ok: false, error: 'Dialog overrides not installed. Call browser_override_dialogs first.' };
         return { ok: true, dialog: window.__owLastDialog };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not get last dialog.');
     this._preview.clearStatus();
@@ -3251,11 +3633,12 @@ export class BrowserMCPServer {
     ].join('\n');
   }
 
-  // ── Performance & monitoring ───────────────────────────────────────────────
+  // Performance & monitoring
 
   async _getPerformanceMetrics() {
     this._preview.setStatus('Getting performance metrics');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         const timing = performance?.timing;
         const nav = performance?.getEntriesByType?.('navigation')?.[0];
@@ -3289,7 +3672,9 @@ export class BrowserMCPServer {
           loadComplete: timing.loadEventEnd - timing.navigationStart,
         };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not get performance metrics.');
     this._preview.clearStatus();
@@ -3299,30 +3684,43 @@ export class BrowserMCPServer {
     if (result.tcpConnect != null) lines.push(`  TCP connect:         ${result.tcpConnect}ms`);
     if (result.ttfb != null) lines.push(`  Time to first byte:  ${result.ttfb}ms`);
     if (result.responseTime != null) lines.push(`  Response time:       ${result.responseTime}ms`);
-    if (result.domInteractive != null) lines.push(`  DOM interactive:     ${result.domInteractive}ms`);
-    if (result.domContentLoaded != null) lines.push(`  DOMContentLoaded:    ${result.domContentLoaded}ms`);
+    if (result.domInteractive != null)
+      lines.push(`  DOM interactive:     ${result.domInteractive}ms`);
+    if (result.domContentLoaded != null)
+      lines.push(`  DOMContentLoaded:    ${result.domContentLoaded}ms`);
     if (result.loadComplete != null) lines.push(`  Load complete:       ${result.loadComplete}ms`);
-    if (result.transferSize != null) lines.push(`  Transfer size:       ${(result.transferSize / 1024).toFixed(1)}KB`);
+    if (result.transferSize != null)
+      lines.push(`  Transfer size:       ${(result.transferSize / 1024).toFixed(1)}KB`);
     return lines.join('\n');
   }
 
   async _getConsoleLogs(level = null, limit = 50) {
-    const maxEntries = Math.max(1, Math.min(500, Number.isFinite(Number(limit)) ? Number(limit) : 50));
+    const maxEntries = Math.max(
+      1,
+      Math.min(500, Number.isFinite(Number(limit)) ? Number(limit) : 50),
+    );
     const levelFilter = level ? String(level).toLowerCase() : null;
 
     let logs = this._consoleLogs;
     if (levelFilter) {
       // Map Electron level names: 0=verbose, 1=info, 2=warning, 3=error
-      const levelMap = { log: 'verbose', warn: 'warning', warning: 'warning', error: 'error', info: 'info' };
+      const levelMap = {
+        log: 'verbose',
+        warn: 'warning',
+        warning: 'warning',
+        error: 'error',
+        info: 'info',
+      };
       const mappedLevel = levelMap[levelFilter] || levelFilter;
-      logs = logs.filter(e => e.level === mappedLevel || e.level === levelFilter);
+      logs = logs.filter((e) => e.level === mappedLevel || e.level === levelFilter);
     }
 
     const recent = logs.slice(-maxEntries);
-    if (!recent.length) return level ? `No ${level} logs captured.` : 'No console logs captured yet.';
+    if (!recent.length)
+      return level ? `No ${level} logs captured.` : 'No console logs captured yet.';
 
     const lines = [`Console logs (${recent.length} of ${logs.length} total):`, ''];
-    recent.forEach(entry => {
+    recent.forEach((entry) => {
       const time = new Date(entry.timestamp).toISOString().split('T')[1].replace('Z', '');
       lines.push(`[${time}] [${entry.level.toUpperCase()}] ${entry.message}`);
     });
@@ -3335,11 +3733,12 @@ export class BrowserMCPServer {
     return `Console log buffer cleared (${count} entr${count === 1 ? 'y' : 'ies'} removed).`;
   }
 
-  // ── Form utilities ─────────────────────────────────────────────────────────
+  // Form utilities
 
   async _getFormData(target = null) {
     this._preview.setStatus(target ? `Getting form data from ${target}` : 'Getting form data');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         ${PAGE_HELPERS}
         let form;
@@ -3381,7 +3780,9 @@ export class BrowserMCPServer {
 
         return { ok: true, data, action: form.action || '', method: (form.method || 'get').toUpperCase() };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     if (!result?.ok) throw new Error(result?.error ?? 'Could not get form data.');
     this._preview.clearStatus();
@@ -3399,7 +3800,9 @@ export class BrowserMCPServer {
     const entries = Object.entries(fields);
     if (!entries.length) throw new Error('Fields object is empty.');
 
-    this._preview.setStatus(`Filling ${entries.length} form field${entries.length === 1 ? '' : 's'}`);
+    this._preview.setStatus(
+      `Filling ${entries.length} form field${entries.length === 1 ? '' : 's'}`,
+    );
     const results = [];
 
     for (const [fieldTarget, value] of entries) {
@@ -3433,7 +3836,9 @@ export class BrowserMCPServer {
             return { ok: true, target: ${JSON.stringify(String(fieldTarget))} };
           })()
         `);
-        results.push(result?.ok ? `✓ "${fieldTarget}" = "${value}"` : `✗ "${fieldTarget}": ${result?.error}`);
+        results.push(
+          result?.ok ? `✓ "${fieldTarget}" = "${value}"` : `✗ "${fieldTarget}": ${result?.error}`,
+        );
       } catch (err) {
         results.push(`✗ "${fieldTarget}": ${err.message}`);
       }
@@ -3452,7 +3857,7 @@ export class BrowserMCPServer {
     return [`Form fill results (${entries.length} fields):`, '', ...results].join('\n');
   }
 
-  // ── Misc ───────────────────────────────────────────────────────────────────
+  // Misc
 
   async _uploadFile(target, filePath) {
     if (!target) throw new Error('Target is required.');
@@ -3523,7 +3928,11 @@ export class BrowserMCPServer {
       `);
     } finally {
       if (attached) {
-        try { dbg.detach(); } catch { /* ignore */ }
+        try {
+          dbg.detach();
+        } catch {
+          /* ignore */
+        }
       }
     }
 
@@ -3533,13 +3942,16 @@ export class BrowserMCPServer {
 
   async _getSelection() {
     this._preview.setStatus('Getting selected text');
-    const result = await this._execute(`
+    const result = await this._execute(
+      `
       (() => {
         const sel = window.getSelection();
         const text = sel ? sel.toString() : '';
         return { text, rangeCount: sel?.rangeCount ?? 0 };
       })()
-    `, false);
+    `,
+      false,
+    );
 
     this._preview.clearStatus();
     if (!result.text) return 'No text is currently selected.';

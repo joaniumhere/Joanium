@@ -6,9 +6,7 @@ import { getBuiltinBrowserServer } from '../Builtin/BrowserMCPServer.js';
 const PROTOCOL_VERSION = '2024-11-05';
 const CLIENT_INFO = { name: 'Joanium', version: '0.1.0' };
 
-/* ══════════════════════════════════════════
-   BASE MCP SESSION
-══════════════════════════════════════════ */
+// BASE MCP SESSION
 class MCPSession extends EventEmitter {
   constructor() {
     super();

@@ -130,7 +130,7 @@ function formatDocumentExtraction(result, filePath) {
   ].join('\n');
 }
 
-// ─── SHARED HELPERS FOR NEW TOOLS ─────────────────────────────────────────────
+// SHARED HELPERS FOR TOOLS
 
 /**
  * Read a file's full content as a string via existing IPC.
@@ -2455,9 +2455,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 2. PROFILE FILE COMPLEXITY
-    // Gives the AI a complexity fingerprint of a file: function lengths, nesting
-    // depth, largest functions, TODO density — in one call.
     profile_file_complexity: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -2569,9 +2566,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 3. MAP IMPORTS
-    // Gives the AI a full picture of what a file depends on and where each
-    // dependency comes from — internal vs external, grouped cleanly.
     map_imports: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -2689,9 +2683,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 4. FIND DEAD EXPORTS
-    // Finds symbols that are exported from a file but never imported anywhere
-    // else in the workspace. Instantly spots dead code.
     find_dead_exports: async (params, onStage) => {
       const { path: filePath, workspace_path } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -2772,9 +2763,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 5. COMPARE JSON FILES
-    // Deep semantic diff of two JSON files. Shows added, removed, changed keys
-    // with full dot-notation paths. Far smarter than a line diff for configs.
     compare_json_files: async (params, onStage) => {
       const { path_a, path_b } = params;
       if (!path_a?.trim()) throw new Error('Missing required param: path_a');
@@ -2870,10 +2858,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 6. EXTRACT ENV VARS
-    // Scans a whole workspace for every environment variable reference
-    // (process.env.X, os.getenv, import.meta.env, etc.) and lists them all.
-    // Lets the AI instantly know what env vars a project needs.
     extract_env_vars: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -2939,9 +2923,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 7. GET CALL GRAPH
-    // For a single file, maps which functions call which other functions.
-    // Gives the AI a mental model of internal execution flow instantly.
     get_call_graph: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3014,9 +2995,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 8. AUDIT DEPENDENCIES
-    // Cross-references the package.json/requirements.txt against actual imports
-    // in the source. Finds unused declared deps and undeclared used packages.
     audit_dependencies: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -3107,9 +3085,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 9. SMART GREP
-    // Multi-pattern grep with AND/OR/NOT logic across a workspace or file.
-    // e.g. "lines that contain X AND Y but NOT Z"
     smart_grep: async (params, onStage) => {
       const { path: filePath, workspace_path, must_contain, must_not_contain, any_of } = params;
       if (!must_contain && !any_of) throw new Error('Provide at least must_contain or any_of.');
@@ -3197,10 +3172,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 10. SNAPSHOT WORKSPACE
-    // The ultimate "orient me fast" tool. Gives the AI a single dense summary
-    // of the entire codebase: file count, language breakdown, largest files,
-    // entry points, test coverage presence, recent git activity — all in one call.
     snapshot_workspace: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -3272,9 +3243,7 @@ export const { handles, execute } = createExecutor({
       const changedFiles = gitLines.filter((l) => /^[MADRC?]/.test(l.trim())).length;
 
       const lines = [
-        `╔══════════════════════════════════════════════╗`,
         `  WORKSPACE SNAPSHOT: ${rootPath.split('/').pop()}`,
-        `╚══════════════════════════════════════════════╝`,
         '',
         `📁 Structure: ${fileEntries.length} files in ${dirEntries.length} directories`,
         `🌿 Git: branch "${branch}" | ${changedFiles} changed file${changedFiles !== 1 ? 's' : ''}`,
@@ -3358,8 +3327,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Kept ${kept.length} matching lines, removed ${removed} non-matching lines in ${filePath} (${totalLines} → ${kept.length} lines)`;
     },
 
-    // ── 2. FILTER OUT LINES ──────────────────────────────────────────────────
-    // Delete every line that matches a pattern; keep all that don't.
     filter_out_lines: async (params, onStage) => {
       const { path: filePath, pattern } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3390,8 +3357,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Removed ${removed} line${removed !== 1 ? 's' : ''} matching "${pattern}" from ${filePath} (${totalLines} → ${kept.length} lines)`;
     },
 
-    // ── 3. INSERT LINE AT PATTERN ────────────────────────────────────────────
-    // Insert a new line before or after every line that matches a pattern.
     insert_line_at_pattern: async (params, onStage) => {
       const { path: filePath, pattern, content: insertContent } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3433,8 +3398,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Inserted ${insertLines.length} line${insertLines.length !== 1 ? 's' : ''} ${position} each of ${insertCount} matching line${insertCount !== 1 ? 's' : ''} in ${filePath}`;
     },
 
-    // ── 4. REPLACE SINGLE LINE ───────────────────────────────────────────────
-    // Replace exactly one line by its 1-based line number.
     replace_single_line: async (params, onStage) => {
       const { path: filePath, line_number, replacement } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3462,8 +3425,6 @@ export const { handles, execute } = createExecutor({
       ].join('\n');
     },
 
-    // ── 5. SWAP TWO LINES ────────────────────────────────────────────────────
-    // Exchange the content of exactly two lines by their line numbers.
     swap_two_lines: async (params, onStage) => {
       const { path: filePath, line_a, line_b } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3487,8 +3448,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Swapped line ${line_a} ↔ line ${line_b} in ${filePath}`;
     },
 
-    // ── 6. ADD FILE HEADER ───────────────────────────────────────────────────
-    // Prepend a block of text to the very top of a file.
     add_file_header: async (params, onStage) => {
       const { path: filePath, content: headerContent } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3511,8 +3470,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Added ${headerLines}-line header to top of ${filePath}`;
     },
 
-    // ── 7. ADD FILE FOOTER ───────────────────────────────────────────────────
-    // Append a block of text to the very bottom of a file.
     add_file_footer: async (params, onStage) => {
       const { path: filePath, content: footerContent } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3535,10 +3492,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Added ${footerLines}-line footer to bottom of ${filePath}`;
     },
 
-    // ── 8. STRIP COMMENTS ────────────────────────────────────────────────────
-    // Remove full-line comments from a file. Comment style is auto-detected
-    // from the file extension. Inline comments (code + comment) are left intact
-    // by default.
     strip_comments: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3596,8 +3549,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Removed ${removed} comment line${removed !== 1 ? 's' : ''} from ${filePath} (${totalLines} → ${result.length} lines)`;
     },
 
-    // ── 9. TRUNCATE FILE ─────────────────────────────────────────────────────
-    // Keep only the first (or last) N lines of a file; discard the rest.
     truncate_file: async (params, onStage) => {
       const { path: filePath, max_lines } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3621,9 +3572,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Truncated ${filePath}: kept ${kept.length} lines, removed ${removed} from the ${fromEnd ? 'beginning' : 'end'}`;
     },
 
-    // ── 10. EXTRACT UNIQUE LINES ─────────────────────────────────────────────
-    // Read a file, deduplicate its lines in order, and write the result to a
-    // new output file. The source file is not modified.
     extract_unique_lines: async (params, onStage) => {
       const { path: filePath, output_path } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3659,9 +3607,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Extracted ${unique.length} unique line${unique.length !== 1 ? 's' : ''} (removed ${removed} duplicate${removed !== 1 ? 's' : ''}) from ${filePath} → ${output_path}`;
     },
 
-    // ── 11. PAD LINES ────────────────────────────────────────────────────────
-    // Pad each line in a range to a minimum character width using a pad
-    // character. Supports left, right, and center alignment.
     pad_lines: async (params, onStage) => {
       const { path: filePath, start_line, end_line, width } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3706,10 +3651,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Padded ${changed} line${changed !== 1 ? 's' : ''} to width ${width} (${align}-aligned, pad: "${padChar}") in ${filePath}`;
     },
 
-    // ── 12. ALIGN ASSIGNMENTS ────────────────────────────────────────────────
-    // Vertically align a separator (default =) in a range of lines by padding
-    // the left-hand side of each line to the same width. Great for config
-    // blocks, destructuring, and CSS properties.
     align_assignments: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3754,9 +3695,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Aligned ${changed} line${changed !== 1 ? 's' : ''} by "${separator}" (max left width: ${maxLeft}) in ${filePath}`;
     },
 
-    // ── 13. QUOTE LINES ──────────────────────────────────────────────────────
-    // Wrap every line in a range with a configurable opening and closing quote
-    // character. Existing occurrences of the quote character can be escaped.
     quote_lines: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3790,8 +3728,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Quoted ${changed} line${changed !== 1 ? 's' : ''} with ${openQuote}…${closeQuote} in ${filePath}`;
     },
 
-    // ── 14. UPPERCASE LINES ──────────────────────────────────────────────────
-    // Convert every character in a line range to UPPERCASE.
     uppercase_lines: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3818,8 +3754,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Uppercased ${changed} line${changed !== 1 ? 's' : ''} (lines ${start_line}–${end_line}) in ${filePath}`;
     },
 
-    // ── 15. LOWERCASE LINES ──────────────────────────────────────────────────
-    // Convert every character in a line range to lowercase.
     lowercase_lines: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3846,9 +3780,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Lowercased ${changed} line${changed !== 1 ? 's' : ''} (lines ${start_line}–${end_line}) in ${filePath}`;
     },
 
-    // ── 16. COLLAPSE WHITESPACE ──────────────────────────────────────────────
-    // Reduce any run of consecutive whitespace inside each line to a single
-    // space. Leading indentation is preserved by default.
     collapse_whitespace: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3884,9 +3815,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Collapsed whitespace in ${changed} of ${totalLines} lines in ${filePath}`;
     },
 
-    // ── 17. SPLIT FILE AT PATTERN ────────────────────────────────────────────
-    // Split a file into two output files at the first line that matches a
-    // pattern. The matching line itself can go to part A, part B, or neither.
     split_file_at_pattern: async (params, onStage) => {
       const { path: filePath, pattern, output_path_a, output_path_b } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3954,9 +3882,6 @@ export const { handles, execute } = createExecutor({
       ].join('\n');
     },
 
-    // ── 18. ROTATE LINES ─────────────────────────────────────────────────────
-    // Rotate a block of lines by N positions. "down" moves the first N lines
-    // to the end; "up" moves the last N lines to the front.
     rotate_lines: async (params, onStage) => {
       const { path: filePath, start_line, end_line, count } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -3995,10 +3920,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Rotated ${block.length} lines (${start_line}–${end_line}) ${direction} by ${n} position${n !== 1 ? 's' : ''} in ${filePath}`;
     },
 
-    // ── 19. REPLACE CHAR ─────────────────────────────────────────────────────
-    // Replace every occurrence of a specific character (or short string) with
-    // another throughout a file or within a line range. Simpler and faster than
-    // find_replace_regex for single-character substitutions.
     replace_char: async (params, onStage) => {
       const { path: filePath, from_char, to_char } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -4034,10 +3955,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Replaced ${totalReplaced} occurrence${totalReplaced !== 1 ? 's' : ''} of "${from_char}" → "${to_char}" across ${linesChanged} line${linesChanged !== 1 ? 's' : ''} in ${filePath}`;
     },
 
-    // ── 20. COUNT LINES IN RANGE ─────────────────────────────────────────────
-    // Lightweight counter for a file or a specific line range, reporting total,
-    // blank, non-blank lines, word count, character count, and optionally the
-    // number of lines that match an additional filter pattern.
     count_lines_in_range: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -4094,9 +4011,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 1. FIND LARGEST FILES
-    // Lists the N largest files in a directory tree, sorted by size descending.
-    // Instantly surfaces bloated assets, accidental binary commits, or log files.
     find_largest_files: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open. Provide path.');
@@ -4145,9 +4059,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // 2. FIND FILES BY EXTENSION
-    // Lists every file with one or more given extensions in a directory tree.
-    // Fast alternative to find_file_by_name when you want all files of a type.
     find_files_by_extension: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open. Provide path.');
@@ -4195,8 +4106,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 3. FIND EMPTY FILES
-    // Locates zero-byte and optionally whitespace-only files.
     find_empty_files: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open. Provide path.');
@@ -4253,8 +4162,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 4. FIND LONG LINES
-    // Finds lines exceeding a character-width threshold in a file.
     find_long_lines: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -4289,8 +4196,6 @@ export const { handles, execute } = createExecutor({
       ].join('\n');
     },
 
-    // 5. FIND CONSOLE STATEMENTS
-    // Locates every console.log / print / debugger call left in source files.
     find_console_statements: async (params, onStage) => {
       const rootPath = params.workspace_path
         ? resolveWorkingDirectory(params.workspace_path)
@@ -4365,8 +4270,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 6. FIND HARDCODED VALUES
-    // Surfaces magic numbers, hardcoded URLs, and string literals.
     find_hardcoded_values: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -4447,8 +4350,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 7. FIND IMPORTS OF
-    // Across the whole workspace, finds every file that imports a specific module.
     find_imports_of: async (params, onStage) => {
       const { module: moduleName } = params;
       if (!moduleName?.trim()) throw new Error('Missing required param: module');
@@ -4501,8 +4402,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 8. FIND FILES WITHOUT PATTERN
-    // Returns all files that do NOT contain a given pattern.
     find_files_without_pattern: async (params, onStage) => {
       const { directory, pattern } = params;
       if (!directory?.trim()) throw new Error('Missing required param: directory');
@@ -4556,8 +4455,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 9. FIND NTH OCCURRENCE
-    // Locates the exact position of the Nth occurrence of a pattern in a file.
     find_nth_occurrence: async (params, onStage) => {
       const { path: filePath, pattern } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -4616,8 +4513,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 10. FIND ALL URLS
-    // Extracts every URL from a file or workspace, grouped by domain.
     find_all_urls: async (params, onStage) => {
       const filePath = params.path?.trim();
       const rootPath = params.workspace_path
@@ -4680,8 +4575,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 11. FIND COMMENTED CODE BLOCKS
-    // Detects runs of commented-out code lines.
     find_commented_code_blocks: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -4740,8 +4633,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 12. FIND SIMILAR LINES
-    // Detects near-duplicate lines using trigram similarity.
     find_similar_lines: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -4810,8 +4701,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 13. FIND FUNCTIONS OVER LENGTH
-    // Workspace-wide scan for functions exceeding N lines.
     find_functions_over_length: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.workspace_path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -4895,8 +4784,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 14. FIND UNCLOSED MARKERS
-    // Scans for start markers that have no matching end marker.
     find_unclosed_markers: async (params, onStage) => {
       const { path: filePath, start_marker, end_marker } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -4945,8 +4832,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 15. FIND PATTERN NEAR PATTERN
-    // Finds lines where pattern A appears within N lines of pattern B.
     find_pattern_near_pattern: async (params, onStage) => {
       const { path: filePath, pattern_a, pattern_b } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5015,8 +4900,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 16. FIND ALL STRING LITERALS
-    // Extracts every unique string literal value from a file.
     find_all_string_literals: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5074,8 +4957,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 17. FIND LINES BY LENGTH RANGE
-    // Returns lines whose character count falls within [min, max].
     find_lines_by_length_range: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5117,8 +4998,6 @@ export const { handles, execute } = createExecutor({
       ].join('\n');
     },
 
-    // 18. FIND FIRST MATCH
-    // Finds the very first occurrence of a pattern with generous surrounding context.
     find_first_match: async (params, onStage) => {
       const { path: filePath, pattern } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5168,8 +5047,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 19. FIND MULTILINE PATTERN
-    // Searches for a regex spanning multiple lines using dot-all mode.
     find_multiline_pattern: async (params, onStage) => {
       const { path: filePath, pattern } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5227,8 +5104,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // 20. FIND SYMBOL DEFINITIONS
-    // Finds only definition sites of a named symbol across the workspace.
     find_symbol_definitions: async (params, onStage) => {
       const { symbol } = params;
       if (!symbol?.trim()) throw new Error('Missing required param: symbol');
@@ -5293,17 +5168,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 20 NEW FILE-EDITING TOOL HANDLERS
-    // Add these inside the `handlers: { ... }` object in Executor.js,
-    // after the last existing handler (find_symbol_definitions).
-    // Also add each tool name to the `tools: [...]` array in createExecutor.
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // ── 1. REPLACE NTH OCCURRENCE ──────────────────────────────────────────────
-    // Replace only the Nth match of a pattern — not all, not just the first.
-    // Essential when a symbol appears many times but only one specific instance
-    // needs to change (e.g. the 3rd call to a function, the 2nd import block).
     replace_nth_occurrence: async (params, onStage) => {
       const { path: filePath, pattern, replacement } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5346,10 +5210,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Replaced occurrence #${n} of "${pattern}" → "${replacement}" in ${filePath} (${found} total occurrences found)`;
     },
 
-    // ── 2. ENCLOSE RANGE ───────────────────────────────────────────────────────
-    // Insert a custom opening line before and/or a closing line after a range.
-    // Perfect for wrapping a block in try { } catch { }, if ( ) { }, a JSDoc
-    // comment, or any other structural wrapper — without touching the content.
     enclose_range: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5386,9 +5246,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Enclosed lines ${start_line}–${end_line} in ${filePath} (+${inserted} wrapper line${inserted !== 1 ? 's' : ''})${indentBody ? `, body indented ${indentAmount} spaces` : ''}`;
     },
 
-    // ── 3. ADD IMPORT STATEMENT ────────────────────────────────────────────────
-    // Insert an import/from/require line into a file at the right position,
-    // skipping silently if an identical or equivalent statement already exists.
     add_import_statement: async (params, onStage) => {
       const { path: filePath, statement } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5434,9 +5291,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Added import at line ${insertAt + 1} in ${filePath}:\n  ${normalised}`;
     },
 
-    // ── 4. REMOVE IMPORT STATEMENT ─────────────────────────────────────────────
-    // Delete every import/require line that references a specific module name.
-    // Handles named imports, default imports, namespace imports, and require().
     remove_import_statement: async (params, onStage) => {
       const { path: filePath, module: moduleName } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5469,9 +5323,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Removed ${removed} import line${removed !== 1 ? 's' : ''} referencing "${moduleName}" from ${filePath}`;
     },
 
-    // ── 5. SORT IMPORTS ────────────────────────────────────────────────────────
-    // Alphabetically sort all import/require lines at the top of a file.
-    // Groups are preserved: external packages, then relative paths (or vice versa).
     sort_imports: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5524,10 +5375,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Sorted ${importLines.length} import${importLines.length !== 1 ? 's' : ''} ${descending ? 'descending' : 'ascending'}${groupByType ? ' (external then internal)' : ''} in ${filePath}`;
     },
 
-    // ── 6. INDENT TO LEVEL ─────────────────────────────────────────────────────
-    // Set the absolute indentation of every line in a range to exactly N spaces
-    // (or N tabs), regardless of current indentation. Unlike indent_lines, which
-    // adds/subtracts relative to existing indent, this sets an exact level.
     indent_to_level: async (params, onStage) => {
       const { path: filePath, start_line, end_line, level } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5566,10 +5413,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Set indentation to level ${level} (${useTabs ? `${level} tab${level !== 1 ? 's' : ''}` : `${level * spacesPerLevel} space${level * spacesPerLevel !== 1 ? 's' : ''}`}) on ${changed} line${changed !== 1 ? 's' : ''} in ${filePath}`;
     },
 
-    // ── 7. APPLY LINE TEMPLATE ─────────────────────────────────────────────────
-    // Transform every line in a range through a template string that uses
-    // `{line}` as a placeholder for the original line content.
-    // Examples: 'console.log({line})', '"{line}",' , `<li>{line}</li>`.
     apply_line_template: async (params, onStage) => {
       const { path: filePath, start_line, end_line, template } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5601,10 +5444,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Applied template to ${changed} line${changed !== 1 ? 's' : ''} in ${filePath}\n  Template: ${template}`;
     },
 
-    // ── 8. CONDITIONAL REPLACE ─────────────────────────────────────────────────
-    // Replace a pattern only on lines that ALSO match a guard condition.
-    // Example: replace `foo` with `bar` but only on lines that also contain
-    // `async` — avoiding accidental changes elsewhere in the file.
     conditional_replace: async (params, onStage) => {
       const { path: filePath, guard_pattern, search, replace } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5661,9 +5500,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Replaced ${totalReplacements} occurrence${totalReplacements !== 1 ? 's' : ''} of "${search}" → "${replace}" across ${changedLines} qualifying line${changedLines !== 1 ? 's' : ''} in ${filePath}\n  Guard: ${invertGuard ? 'NOT ' : ''}"${guard_pattern}"`;
     },
 
-    // ── 9. DELETE NTH OCCURRENCE ───────────────────────────────────────────────
-    // Remove only the Nth match of a pattern from the file, leaving all other
-    // occurrences intact. Useful when a specific duplicate needs removing.
     delete_nth_occurrence: async (params, onStage) => {
       const { path: filePath, pattern } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5726,10 +5562,6 @@ export const { handles, execute } = createExecutor({
       }
     },
 
-    // ── 10. SET LINE ENDINGS ───────────────────────────────────────────────────
-    // Explicitly convert all line endings in a file to LF (\n), CRLF (\r\n),
-    // or CR (\r). More targeted than normalize_file, which also trims whitespace
-    // and strips BOM.
     set_line_endings: async (params, onStage) => {
       const { path: filePath, style } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5757,10 +5589,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Converted ${lineCount} line${lineCount !== 1 ? 's' : ''} to ${normalised.toUpperCase()} endings in ${filePath}`;
     },
 
-    // ── 11. STRIP LINE PREFIX ──────────────────────────────────────────────────
-    // Remove a fixed prefix string from the start of every line in a range.
-    // Useful for un-quoting, removing numbering like "1. ", stripping log
-    // prefixes like "[INFO] ", or reversing a previous wrap_lines operation.
     strip_line_prefix: async (params, onStage) => {
       const { path: filePath, start_line, end_line, prefix } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5802,10 +5630,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Stripped prefix "${prefix}" from ${changed} line${changed !== 1 ? 's' : ''} (${skipped} line${skipped !== 1 ? 's' : ''} skipped — prefix absent) in ${filePath}`;
     },
 
-    // ── 12. NUMBER LINES IN RANGE ──────────────────────────────────────────────
-    // Prefix each line in a range with a sequential number, formatted to a
-    // consistent width. Great for generating numbered lists, debugging output,
-    // or producing enumerated reference material.
     number_lines_in_range: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5844,10 +5668,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Numbered ${numbered} line${numbered !== 1 ? 's' : ''} (${start_line}–${end_line}, starting at ${startNum}) in ${filePath}`;
     },
 
-    // ── 13. BULK LINE INSERT ───────────────────────────────────────────────────
-    // Insert the same content block at multiple specific line positions in one
-    // call. Avoids making many sequential insert_into_file calls when you need
-    // to inject a blank line, a separator, or a debug statement at known spots.
     bulk_line_insert: async (params, onStage) => {
       const { path: filePath, line_numbers: rawNums, content: insertContent } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5893,9 +5713,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Inserted ${insertLines.length} line${insertLines.length !== 1 ? 's' : ''} at ${lineNums.length} position${lineNums.length !== 1 ? 's' : ''} (${position}) in ${filePath}\n  Positions: ${lineNums.join(', ')}`;
     },
 
-    // ── 14. INVERT BOOLEAN VALUES ──────────────────────────────────────────────
-    // Toggle boolean-like literals in a range: true↔false, yes↔no, on↔off,
-    // 0↔1, True↔False, YES↔NO. Preserves original casing style.
     invert_boolean_values: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -5961,10 +5778,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Inverted ${totalFlips} boolean value${totalFlips !== 1 ? 's' : ''} across ${changedLines} line${changedLines !== 1 ? 's' : ''} in ${filePath}`;
     },
 
-    // ── 15. MOVE SECTION TO MARKER ─────────────────────────────────────────────
-    // Cut all content between two markers and paste it at a third destination
-    // marker — in a single atomic operation. Useful for reorganising config
-    // sections, reordering class methods, or shuffling documentation blocks.
     move_section_to_marker: async (params, onStage) => {
       const { path: filePath, start_marker, end_marker, destination_marker } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -6013,10 +5826,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Moved ${block.length} line${block.length !== 1 ? 's' : ''} from between "${start_marker}" / "${end_marker}" to ${destPosition} "${destination_marker}" in ${filePath}`;
     },
 
-    // ── 16. REPEAT LINES ───────────────────────────────────────────────────────
-    // Duplicate each line in a range N times, inserting copies immediately
-    // after the original. Unlike duplicate_lines (which copies the whole block
-    // once), this repeats every individual line separately.
     repeat_lines: async (params, onStage) => {
       const { path: filePath, start_line, end_line, count } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -6055,10 +5864,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Repeated ${origCount} line${origCount !== 1 ? 's' : ''} × ${count} (+${totalAdded} new lines) in ${filePath}`;
     },
 
-    // ── 17. SURROUND WITH BLOCK COMMENT ───────────────────────────────────────
-    // Wrap a line range with language-appropriate block comment delimiters.
-    // Auto-detects the correct delimiters from the file extension
-    // (/* */ for JS/CSS, <!-- --> for HTML, {# #} for templates, etc.).
     surround_with_block_comment: async (params, onStage) => {
       const { path: filePath, start_line, end_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -6118,11 +5923,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Surrounded lines ${start_line}–${end_line} with ${open}…${close} in ${filePath}`;
     },
 
-    // ── 18. COPY RANGE TO POSITION ─────────────────────────────────────────────
-    // Copy a line range and insert the copy at a different position in the same
-    // file. Unlike duplicate_lines (which inserts immediately after the block)
-    // or move_lines (which cuts), this leaves the source intact and places a
-    // copy at an arbitrary target line.
     copy_range_to_position: async (params, onStage) => {
       const { path: filePath, start_line, end_line, target_line } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -6152,10 +5952,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Copied ${block.length} line${block.length !== 1 ? 's' : ''} (${start_line}–${end_line}) to ${position} line ${target_line} in ${filePath}\n  Source range preserved.`;
     },
 
-    // ── 19. OVERWRITE MATCHING LINES ───────────────────────────────────────────
-    // Replace the ENTIRE content of every line that matches a pattern with a
-    // fixed replacement string. Different from find_replace_regex (which
-    // replaces only the matched portion) — this nukes the whole line.
     overwrite_matching_lines: async (params, onStage) => {
       const { path: filePath, pattern, replacement } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -6196,11 +5992,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Overwrote ${changed} of ${totalLines} lines matching "${pattern}" with "${replacement.slice(0, 60)}${replacement.length > 60 ? '…' : ''}" in ${filePath}`;
     },
 
-    // ── 20. REMOVE TRAILING CHARS ──────────────────────────────────────────────
-    // Strip specific trailing characters (commas, semicolons, periods, colons,
-    // brackets, etc.) from the end of every line in a range. Useful for
-    // cleaning up lists, fixing trailing commas after refactoring, or
-    // normalising line endings before a transform.
     remove_trailing_chars: async (params, onStage) => {
       const { path: filePath, start_line, end_line, chars } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -6239,17 +6030,6 @@ export const { handles, execute } = createExecutor({
       return `✅ Removed trailing "${chars}" from ${changed} line${changed !== 1 ? 's' : ''} (lines ${start_line}–${end_line}) in ${filePath}`;
     },
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 20 NEW REPO-INTELLIGENCE TOOL HANDLERS
-    // Add these inside the `handlers: { ... }` object in Executor.js,
-    // after the last existing handler (remove_trailing_chars).
-    // Also add each tool name to the `tools: [...]` array in createExecutor.
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    // ── 1. GET_GIT_LOG ─────────────────────────────────────────────────────────────
-    // Fetches recent commit history with author, date, and message. Gives the AI
-    // immediate temporal context: what changed recently, who owns what, and
-    // whether a bug was introduced in a recent commit.
     get_git_log: async (params, onStage) => {
       const workingDirectory = resolveWorkingDirectory(params.working_directory);
       if (!workingDirectory)
@@ -6296,10 +6076,6 @@ export const { handles, execute } = createExecutor({
       return lines.join('\n');
     },
 
-    // ── 2. GET_GIT_BLAME ──────────────────────────────────────────────────────────
-    // Shows who last changed each line of a file and when. Lets the AI identify
-    // the original author of a bug, understand ownership, and determine if code
-    // is ancient legacy or recently introduced.
     get_git_blame: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -6379,10 +6155,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 3. FIND_CIRCULAR_DEPENDENCIES ─────────────────────────────────────────────
-    // Detects circular import chains in a JS/TS workspace by building a directed
-    // graph of imports and running DFS cycle detection. Circular deps cause subtle
-    // runtime bugs and are hard to spot manually.
     find_circular_dependencies: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -6502,10 +6274,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 4. FIND_TEST_COVERAGE_GAPS ────────────────────────────────────────────────
-    // Finds source files that have no corresponding test file anywhere in the
-    // workspace. Lets the AI immediately know which modules lack test coverage
-    // before writing, refactoring, or debugging code.
     find_test_coverage_gaps: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -6602,10 +6370,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 5. FIND_API_ENDPOINTS ─────────────────────────────────────────────────────
-    // Detects HTTP route definitions across Express, Fastify, FastAPI, Flask,
-    // Django, Rails, and similar frameworks. Instantly gives the AI a full map
-    // of the API surface without reading every file.
     find_api_endpoints: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -6735,10 +6499,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 6. FIND_ERROR_HANDLING_GAPS ───────────────────────────────────────────────
-    // Finds async functions, Promise chains, and fetch/axios calls that are NOT
-    // wrapped in try/catch or .catch(). Missing error handling is a top source of
-    // silent failures and hard-to-debug production crashes.
     find_error_handling_gaps: async (params, onStage) => {
       const filePath = params.path?.trim();
       const rootPath = params.workspace_path
@@ -6863,11 +6623,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 7. GET_DEPENDENCY_GRAPH ───────────────────────────────────────────────────
-    // Builds a file-level import graph and computes fan-in (how many files import
-    // this file) and fan-out (how many files this file imports). High fan-in = core
-    // module that many depend on. High fan-out = god file. Essential for safe
-    // refactoring decisions.
     get_dependency_graph: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -6974,10 +6729,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 8. FIND_SECURITY_PATTERNS ─────────────────────────────────────────────────
-    // Scans for common security anti-patterns: hardcoded secrets, SQL injection
-    // vectors, eval() usage, disabled TLS verification, insecure randomness, etc.
-    // Not a full SAST tool, but surfaces the obvious red flags instantly.
     find_security_patterns: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -7063,10 +6814,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 9. GET_RECENTLY_MODIFIED_FILES ────────────────────────────────────────────
-    // Lists files modified most recently, using git log or filesystem mtime.
-    // Instantly tells the AI where recent work happened — critical for debugging,
-    // code review, and understanding what's in flux.
     get_recently_modified_files: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -7149,10 +6896,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 10. FIND_NAMING_INCONSISTENCIES ──────────────────────────────────────────
-    // Detects mixed naming conventions within a file or workspace (camelCase vs
-    // snake_case vs PascalCase vs kebab-case on variables/functions/files). Naming
-    // inconsistency is a reliable signal of multi-author code or rushed refactors.
     find_naming_inconsistencies: async (params, onStage) => {
       const filePath = params.path?.trim();
       const rootPath = params.workspace_path
@@ -7259,10 +7002,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 11. GET_CONFIG_FILES ──────────────────────────────────────────────────────
-    // Locates and summarizes every configuration file in a workspace: package.json,
-    // tsconfig, eslint, prettier, docker, CI, etc. Gives the AI a complete picture
-    // of project tooling in a single call — without reading each file individually.
     get_config_files: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -7357,10 +7096,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 12. FIND_ASYNC_PATTERNS ───────────────────────────────────────────────────
-    // Gives the AI a complete map of async usage in a file or workspace: async
-    // functions, Promise chains, callbacks, setTimeout/setInterval, EventEmitter.
-    // Understands the "async shape" before making concurrency-related changes.
     find_async_patterns: async (params, onStage) => {
       const filePath = params.path?.trim();
       const rootPath = params.workspace_path
@@ -7480,10 +7215,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 13. MAP_COMPONENT_TREE ────────────────────────────────────────────────────
-    // Builds a React/Vue component hierarchy by analysing JSX/TSX imports and
-    // render calls. Shows which components are composed inside which parents.
-    // Gives the AI a mental model of the UI tree before making component changes.
     map_component_tree: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -7582,10 +7313,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 14. COUNT_CODE_BY_AUTHOR ──────────────────────────────────────────────────
-    // Uses git blame to compute per-author line counts across the workspace.
-    // Shows who wrote what percentage of the codebase — valuable for understanding
-    // ownership, finding the right person to ask, and identifying bus-factor risks.
     count_code_by_author: async (params, onStage) => {
       const workingDirectory = resolveWorkingDirectory(params.working_directory);
       if (!workingDirectory)
@@ -7692,10 +7419,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 15. FIND_FEATURE_FLAGS ────────────────────────────────────────────────────
-    // Detects feature flag / feature toggle patterns across the codebase.
-    // Finds conditional blocks gated on flags, lists all known flag names,
-    // and surfaces flags that may be permanently on/off (stale flags).
     find_feature_flags: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -7786,10 +7509,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 16. GET_FUNCTION_CALL_FREQUENCY ──────────────────────────────────────────
-    // Counts how often each function/method is called across a workspace.
-    // High-frequency calls are hot paths — changes there have wide impact.
-    // Zero-frequency internal functions are dead code candidates.
     get_function_call_frequency: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -7866,11 +7585,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 17. SUMMARIZE_FILE_CHANGES ────────────────────────────────────────────────
-    // Runs `git show` or `git diff HEAD~N` on a specific file and distills the
-    // recent changes into a structured summary: lines added/removed, functions
-    // touched, and a plain-language description of what changed. Gives the AI
-    // immediate commit-level context without reading raw diffs.
     summarize_file_changes: async (params, onStage) => {
       const { path: filePath } = params;
       if (!filePath?.trim()) throw new Error('Missing required param: path');
@@ -7957,10 +7671,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 18. FIND_PERFORMANCE_PATTERNS ────────────────────────────────────────────
-    // Scans for common performance anti-patterns: nested loops with N+1 queries,
-    // synchronous operations in async contexts, heavy work in render cycles,
-    // missing memoization, large array operations, etc.
     find_performance_patterns: async (params, onStage) => {
       const filePath = params.path?.trim();
       const rootPath = params.workspace_path
@@ -8086,11 +7796,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 19. GET_WORKSPACE_HEALTH_SCORE ────────────────────────────────────────────
-    // Aggregates multiple code quality signals into a single health dashboard:
-    // lint errors, test presence, circular deps, long functions, missing error
-    // handling, hardcoded secrets, console statements, and stale TODOs.
-    // The single best "orient me" tool before starting any significant work.
     get_workspace_health_score: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -8248,10 +7953,8 @@ export const { handles, execute } = createExecutor({
       const gradeEmoji = { A: '🟢', B: '🟡', C: '🟠', D: '🔴', F: '🔴' };
 
       const output = [
-        `╔══════════════════════════════════════════╗`,
         `  WORKSPACE HEALTH SCORE`,
         `  ${rootPath.split('/').pop()}`,
-        `╚══════════════════════════════════════════╝`,
         '',
         `  ${gradeEmoji[grade]} Overall: ${totalScore}/100  (Grade ${grade})`,
         '',
@@ -8276,12 +7979,6 @@ export const { handles, execute } = createExecutor({
       return output.join('\n');
     },
 
-    // ── 20. GET_ARCHITECTURE_OVERVIEW ─────────────────────────────────────────────
-    // Produces a high-level architectural summary: layers of the codebase,
-    // separation of concerns, module boundaries, entry points, data flow direction,
-    // and a plain-language description of how the system is structured.
-    // The best tool to call when the AI needs to understand a new codebase
-    // holistically before making any architectural decisions.
     get_architecture_overview: async (params, onStage) => {
       const rootPath = resolveWorkingDirectory(params.path);
       if (!rootPath) throw new Error('No workspace is open.');
@@ -8396,10 +8093,8 @@ export const { handles, execute } = createExecutor({
       const recentCommits = gitResult?.stdout?.trim().split('\n').filter(Boolean).slice(0, 5) ?? [];
 
       const output = [
-        `╔══════════════════════════════════════════════════╗`,
         `  ARCHITECTURE OVERVIEW`,
         `  ${rootPath.split('/').pop()}`,
-        `╚══════════════════════════════════════════════════╝`,
         '',
         `### DETECTED PATTERN`,
         `  ${archPattern}`,
