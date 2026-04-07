@@ -39,12 +39,18 @@
     "vPrefixedTagName": true
   },
   "win": {
-    "icon": "Assets/Logo/Logo.ico"
+    "icon": "Assets/Logo/Logo.ico",
+    "artifactName": "Joanium.exe",
+    "target": [{ "target": "nsis", "arch": ["x64"] }]
   },
   "mac": {
-    "icon": "Assets/Logo/Logo.icns"
+    "icon": "Assets/Logo/Logo.icns",
+    "artifactName": "Joanium.dmg",
+    "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }]
   },
   "linux": {
-    "icon": "Assets/Logo/Logo.png"
+    "icon": "Assets/Logo/Logo.png",
+    "artifactName": "Joanium.AppImage",
+    "target": [{ "target": "AppImage", "arch": ["x64"] }]
   }
 }

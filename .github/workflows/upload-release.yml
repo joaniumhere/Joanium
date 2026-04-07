@@ -75,17 +75,11 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            ext: exe
-            target: '--win nsis'
-            new_name: Joanium.exe
+            target: '--win'
           - os: ubuntu-latest
-            ext: AppImage
-            target: '--linux AppImage'
-            new_name: Joanium.AppImage
+            target: '--linux'
           - os: macos-latest
-            ext: dmg
-            target: '--mac dmg'
-            new_name: Joanium.dmg
+            target: '--mac'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -100,21 +94,7 @@ jobs:
           node-version: 'latest'
       - name: Install dependencies
         run: npm install
-      - name: Build application
+      - name: Build and publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build -- ${{ matrix.target }} --publish always
-      - name: Rename and upload executable
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd dist
-          FILE="$(find . -maxdepth 2 -type f -name "*.${{ matrix.ext }}" | head -n 1)"
-          if [ -z "$FILE" ]; then
-            echo "Could not find any .${{ matrix.ext }} file in the dist folder."
-            exit 1
-          fi
-          mv "$FILE" "${{ matrix.new_name }}"
-          gh release upload "${{ needs.prepare-release.outputs.tag_name }}" "${{ matrix.new_name }}" --clobber
