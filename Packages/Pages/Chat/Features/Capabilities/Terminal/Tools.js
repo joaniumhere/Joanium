@@ -2520,9 +2520,6 @@ export const TERMINAL_TOOLS = [
       },
     },
   },
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 20 NEW FINDING TOOLS — paste these objects at the end of TERMINAL_TOOLS[]
-  // ─────────────────────────────────────────────────────────────────────────────
 
   {
     name: 'find_largest_files',
@@ -3085,6 +3082,709 @@ export const TERMINAL_TOOLS = [
         required: false,
         description:
           'Hint the language to narrow patterns: "js", "ts", "python", "java", etc. (default: auto-detect).',
+      },
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 20 NEW FILE-EDITING TOOL DEFINITIONS
+  // Paste these objects at the end of the TERMINAL_TOOLS array in Tools.js.
+  // Also add each `name` string to the `tools: [...]` array in Executor.js.
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // ── PRECISION REPLACEMENT ────────────────────────────────────────────────────
+
+  {
+    name: 'replace_nth_occurrence',
+    description:
+      'Replace only the Nth occurrence of a pattern in a file, leaving all other occurrences untouched. Essential when a symbol repeats many times but only one specific instance should change (e.g. the 3rd call to a function, the 2nd import alias).',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      pattern: { type: 'string', required: true, description: 'String or regex pattern to find.' },
+      replacement: { type: 'string', required: true, description: 'Replacement text.' },
+      n: {
+        type: 'number',
+        required: false,
+        description: 'Which occurrence to replace (1-based, default: 1).',
+      },
+      regex: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to treat pattern as a regex (default: false).',
+      },
+      case_sensitive: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true for case-sensitive matching (default: false).',
+      },
+    },
+  },
+
+  // ── STRUCTURAL BLOCK EDITING ─────────────────────────────────────────────────
+
+  {
+    name: 'enclose_range',
+    description:
+      'Wrap a line range by inserting a custom opening line before it and/or a closing line after it. Perfect for wrapping code in try { } catch { }, if ( ) { }, JSDoc blocks, XML tags, or any structural container — without modifying the enclosed content.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range to enclose.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      opening: {
+        type: 'string',
+        required: false,
+        description: 'Line to insert before the range (e.g. "try {").',
+      },
+      closing: {
+        type: 'string',
+        required: false,
+        description: 'Line to insert after the range (e.g. "} catch (e) { throw e; }").',
+      },
+      indent_body: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set true to also indent the enclosed lines by indent_amount spaces (default: false).',
+      },
+      indent_amount: {
+        type: 'number',
+        required: false,
+        description: 'Spaces to add to enclosed lines when indent_body is true (default: 2).',
+      },
+    },
+  },
+
+  // ── IMPORT MANAGEMENT ────────────────────────────────────────────────────────
+
+  {
+    name: 'add_import_statement',
+    description:
+      'Insert an import/from/require line into a file. By default places it after the last existing import statement, skips silently if an identical line already exists, and works with ES6 imports, Python from-imports, and CommonJS require().',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      statement: {
+        type: 'string',
+        required: true,
+        description: 'The complete import line to add (e.g. \'import { useState } from "react"\').',
+      },
+      position: {
+        type: 'string',
+        required: false,
+        description:
+          'Where to insert: "auto" (after last import, default), "top" (line 1), or "bottom" (end of file).',
+      },
+      skip_if_present: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set false to add even if an identical line exists (default: true — skips duplicates).',
+      },
+    },
+  },
+
+  {
+    name: 'remove_import_statement',
+    description:
+      'Delete every import/require line in a file that references a specific module name. Handles default imports, named imports, namespace imports, and CommonJS require().',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      module: {
+        type: 'string',
+        required: true,
+        description: 'Module name to remove imports of (e.g. "react", "./utils", "lodash").',
+      },
+    },
+  },
+
+  {
+    name: 'sort_imports',
+    description:
+      'Alphabetically sort all import/require statements at the top of a file. Optionally groups external package imports before relative path imports (the most common convention).',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      group_by_type: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set false to sort all imports together without external/internal grouping (default: true — external packages first, then relative imports).',
+      },
+      descending: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to sort Z→A (default: A→Z).',
+      },
+    },
+  },
+
+  // ── INDENTATION ──────────────────────────────────────────────────────────────
+
+  {
+    name: 'indent_to_level',
+    description:
+      'Set the absolute indentation of every line in a range to exactly N levels, overwriting existing indentation completely. Unlike indent_lines (which adds or removes relative to current indent), this sets a precise level regardless of what is already there.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      level: {
+        type: 'number',
+        required: true,
+        description:
+          'Absolute indentation level to set (0 = no indent, 1 = one unit, 2 = two units, …).',
+      },
+      spaces_per_level: {
+        type: 'number',
+        required: false,
+        description: 'Spaces per indentation level when not using tabs (default: 2).',
+      },
+      use_tabs: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to use tab characters instead of spaces (default: false).',
+      },
+      skip_blank_lines: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set false to also indent blank lines (default: true — blank lines are left untouched).',
+      },
+    },
+  },
+
+  // ── LINE TRANSFORMATION ──────────────────────────────────────────────────────
+
+  {
+    name: 'apply_line_template',
+    description:
+      'Transform every line in a range through a template string containing the `{line}` placeholder, which is replaced with the original line content. Enables powerful single-call transforms: wrapping lines in function calls, HTML tags, JSON strings, SQL values, log statements, and more.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      template: {
+        type: 'string',
+        required: true,
+        description:
+          "Template string with `{line}` as placeholder (e.g. 'console.log(\"{line}\")', '<li>{line}</li>', '\"{line}\",').",
+      },
+      trim_line: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set true to trim whitespace from each line before substituting into the template (default: false).',
+      },
+      skip_blank_lines: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to leave blank lines untouched (default: true).',
+      },
+    },
+  },
+
+  {
+    name: 'conditional_replace',
+    description:
+      'Replace a pattern only on lines that also satisfy a guard condition. More precise than find_replace_regex when you want to replace `foo` with `bar` exclusively on lines that contain `async`, or swap a value only inside a specific block. The guard can be inverted to target lines that do NOT match.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      guard_pattern: {
+        type: 'string',
+        required: true,
+        description: 'Pattern that a line must match for the replacement to apply.',
+      },
+      search: {
+        type: 'string',
+        required: true,
+        description: 'Pattern to find and replace (within qualifying lines only).',
+      },
+      replace: { type: 'string', required: true, description: 'Replacement string.' },
+      invert_guard: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set true to apply replacement on lines that do NOT match the guard (default: false).',
+      },
+      regex: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to treat both patterns as regexes (default: false).',
+      },
+      case_sensitive: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true for case-sensitive matching (default: false).',
+      },
+      replace_all: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set false to replace only the first occurrence per qualifying line (default: true).',
+      },
+      start_line: {
+        type: 'number',
+        required: false,
+        description: '1-based first line to consider (default: 1).',
+      },
+      end_line: {
+        type: 'number',
+        required: false,
+        description: '1-based last line to consider (default: end of file).',
+      },
+    },
+  },
+
+  // ── PRECISION DELETION ───────────────────────────────────────────────────────
+
+  {
+    name: 'delete_nth_occurrence',
+    description:
+      'Remove only the Nth occurrence of a pattern from a file, keeping all other occurrences intact. Can delete the matched text in-line (default) or delete the entire line that contains it.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      pattern: { type: 'string', required: true, description: 'String or regex pattern to find.' },
+      n: {
+        type: 'number',
+        required: false,
+        description: 'Which occurrence to delete (1-based, default: 1).',
+      },
+      delete_whole_line: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set true to delete the entire line containing the Nth match, not just the matched text (default: false).',
+      },
+      regex: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to treat pattern as a regex (default: false).',
+      },
+      case_sensitive: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true for case-sensitive matching (default: false).',
+      },
+    },
+  },
+
+  // ── FILE ENCODING & ENDINGS ──────────────────────────────────────────────────
+
+  {
+    name: 'set_line_endings',
+    description:
+      'Convert all line endings in a file to a specific style: LF (Unix/macOS), CRLF (Windows), or CR (legacy Mac). More targeted than normalize_file, which also strips BOM and trims whitespace.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      style: {
+        type: 'string',
+        required: true,
+        description: 'Line ending style: "lf" (\\n), "crlf" (\\r\\n), or "cr" (\\r).',
+      },
+    },
+  },
+
+  // ── PREFIX / NUMBERING ───────────────────────────────────────────────────────
+
+  {
+    name: 'strip_line_prefix',
+    description:
+      'Remove a fixed prefix string from the beginning of every line in a range. Useful for un-quoting lines, removing list markers like "- " or "1. ", stripping log prefixes like "[INFO] ", or reversing an earlier wrap_lines or add_file_header operation.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      prefix: {
+        type: 'string',
+        required: true,
+        description: 'Exact prefix string to remove from the start of each line.',
+      },
+      regex: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set true to treat prefix as a regex anchored to the start of each line (default: false — plain string).',
+      },
+      skip_if_absent: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set false to throw an error if any line lacks the prefix (default: true — silently skips lines without it).',
+      },
+    },
+  },
+
+  {
+    name: 'number_lines_in_range',
+    description:
+      'Prefix each line in a range with a sequential number. Configurable start number, separator, and zero-padding width. Useful for generating numbered lists, adding enumerated labels, or producing reference output before review.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range to number.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      start_number: {
+        type: 'number',
+        required: false,
+        description: 'Number to assign to the first line (default: 1).',
+      },
+      separator: {
+        type: 'string',
+        required: false,
+        description: 'String placed between the number and the line content (default: ". ").',
+      },
+      pad_width: {
+        type: 'number',
+        required: false,
+        description:
+          'Zero-pad numbers to this width (default: auto — just wide enough for the largest number).',
+      },
+      skip_blank_lines: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to skip blank lines (they still consume a number) (default: false).',
+      },
+    },
+  },
+
+  // ── MULTI-POSITION OPERATIONS ────────────────────────────────────────────────
+
+  {
+    name: 'bulk_line_insert',
+    description:
+      'Insert the same content block at multiple specific line numbers in a single call. Avoids repetitive sequential calls to insert_into_file when you need to inject a separator, a blank line, or a debug statement at many known positions.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      line_numbers: {
+        type: 'string',
+        required: true,
+        description:
+          'Comma-separated 1-based line numbers where content should be inserted (e.g. "10,25,42").',
+      },
+      content: {
+        type: 'string',
+        required: true,
+        description: 'Text to insert at each position. Include newlines as needed.',
+      },
+      position: {
+        type: 'string',
+        required: false,
+        description:
+          '"before" to insert before each target line, "after" to insert after it (default: "before").',
+      },
+      deduplicate: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set false to allow duplicate line numbers (default: true — each unique position is visited once).',
+      },
+    },
+  },
+
+  // ── VALUE INVERSION ──────────────────────────────────────────────────────────
+
+  {
+    name: 'invert_boolean_values',
+    description:
+      'Toggle boolean-like literals in a line range: true↔false, yes↔no, on↔off, enabled↔disabled (and their capitalized variants). Preserves the original casing style of each value. Useful for flipping feature flags, test expectations, or config toggles in bulk.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      pairs: {
+        type: 'string',
+        required: false,
+        description:
+          'JSON array of [from, to] pairs to override default boolean pairs, e.g. \'[["active","inactive"],["open","closed"]]\'.',
+      },
+      include_numeric: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set true to also flip 0↔1 (default: false — avoids touching port numbers and other integers).',
+      },
+    },
+  },
+
+  // ── SECTION MOVEMENT ─────────────────────────────────────────────────────────
+
+  {
+    name: 'move_section_to_marker',
+    description:
+      'Cut all content between a start marker and end marker, then paste it at a destination marker — atomically, in a single file write. Great for reorganising config sections, reordering class methods, or shuffling documentation blocks without manual cut-and-paste.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_marker: {
+        type: 'string',
+        required: true,
+        description: 'Text marking the beginning of the section to move.',
+      },
+      end_marker: {
+        type: 'string',
+        required: true,
+        description: 'Text marking the end of the section to move.',
+      },
+      destination_marker: {
+        type: 'string',
+        required: true,
+        description: 'Text of the marker where the section should be pasted.',
+      },
+      destination_position: {
+        type: 'string',
+        required: false,
+        description: '"before" or "after" the destination marker line (default: "after").',
+      },
+      preserve_markers: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set false to also move the start/end marker lines themselves (default: true — only content between markers is moved).',
+      },
+    },
+  },
+
+  // ── LINE MULTIPLICATION ──────────────────────────────────────────────────────
+
+  {
+    name: 'repeat_lines',
+    description:
+      'Duplicate each individual line in a range N times, inserting copies immediately after the original. Unlike duplicate_lines (which copies the whole block once), this repeats every line separately. Useful for generating repeated test data, expanding templates, or creating stub arrays.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      count: {
+        type: 'number',
+        required: true,
+        description: 'How many copies to insert after each line (max: 20).',
+      },
+      skip_blank_lines: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to skip blank lines — they will not be repeated (default: false).',
+      },
+    },
+  },
+
+  // ── COMMENT BLOCKS ───────────────────────────────────────────────────────────
+
+  {
+    name: 'surround_with_block_comment',
+    description:
+      'Wrap a line range with the appropriate block comment delimiters for the file type (/* */ for JS/CSS/Java, <!-- --> for HTML/XML, {# #} for Nunjucks, """ for Python, etc.). An optional label can be appended to both delimiters to create named regions.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range to comment.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      label: {
+        type: 'string',
+        required: false,
+        description:
+          'Optional label appended to both delimiters to create named regions (e.g. "SECTION: Auth").',
+      },
+      open_delimiter: {
+        type: 'string',
+        required: false,
+        description: 'Override the auto-detected opening delimiter (e.g. "/*").',
+      },
+      close_delimiter: {
+        type: 'string',
+        required: false,
+        description: 'Override the auto-detected closing delimiter (e.g. "*/")',
+      },
+    },
+  },
+
+  // ── RANGE COPY ───────────────────────────────────────────────────────────────
+
+  {
+    name: 'copy_range_to_position',
+    description:
+      'Copy a line range and insert the copy at a different position in the same file without removing the original. Unlike duplicate_lines (inserts immediately after the block) and move_lines (removes source), this places a copy at any arbitrary target line while leaving the source intact.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range to copy.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range to copy (inclusive).',
+      },
+      target_line: {
+        type: 'number',
+        required: true,
+        description: '1-based line number in the original file to insert the copy near.',
+      },
+      position: {
+        type: 'string',
+        required: false,
+        description:
+          '"before" to insert before the target line, "after" to insert after it (default: "before").',
+      },
+    },
+  },
+
+  // ── WHOLE-LINE REPLACEMENT ────────────────────────────────────────────────────
+
+  {
+    name: 'overwrite_matching_lines',
+    description:
+      'Replace the entire content of every line matching a pattern with a fixed replacement string. Unlike find_replace_regex (which swaps only the matched portion), this discards the whole line and substitutes it completely. Useful for resetting placeholder lines, blanking matched lines, or normalising repeated stubs.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      pattern: {
+        type: 'string',
+        required: true,
+        description: 'String or regex pattern. Every matching line is fully replaced.',
+      },
+      replacement: {
+        type: 'string',
+        required: true,
+        description:
+          'New content to substitute for every matching line. Use "" to blank the lines.',
+      },
+      regex: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true to treat pattern as a regex (default: false).',
+      },
+      case_sensitive: {
+        type: 'boolean',
+        required: false,
+        description: 'Set true for case-sensitive matching (default: false).',
+      },
+      start_line: {
+        type: 'number',
+        required: false,
+        description: '1-based first line to consider (default: 1).',
+      },
+      end_line: {
+        type: 'number',
+        required: false,
+        description: '1-based last line to consider (default: end of file).',
+      },
+    },
+  },
+
+  // ── TRAILING CHARACTER CLEANUP ────────────────────────────────────────────────
+
+  {
+    name: 'remove_trailing_chars',
+    description:
+      'Strip specific trailing characters or strings (commas, semicolons, colons, periods, brackets, etc.) from the end of every line in a range. Useful for fixing trailing commas after refactoring, cleaning up list literals, or normalising CSV/TSV output before further processing.',
+    category: 'terminal',
+    parameters: {
+      path: { type: 'string', required: true, description: 'Absolute path to the file.' },
+      start_line: {
+        type: 'number',
+        required: true,
+        description: '1-based first line of the range.',
+      },
+      end_line: {
+        type: 'number',
+        required: true,
+        description: '1-based last line of the range (inclusive).',
+      },
+      chars: {
+        type: 'string',
+        required: true,
+        description:
+          'The character or string to remove from the end of each line (e.g. ",", ";", ".", "],").',
+      },
+      greedy: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set true to strip ALL consecutive trailing occurrences of chars, not just one (default: false).',
+      },
+      skip_blank_lines: {
+        type: 'boolean',
+        required: false,
+        description:
+          'Set false to also process blank lines (default: true — blank lines are skipped).',
       },
     },
   },
