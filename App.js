@@ -8,7 +8,8 @@ import { create as createWindow } from '#main/Core/Window.js';
 import { BUILTIN_BROWSER_USER_AGENT } from '#main/Services/BrowserPreviewService.js';
 import { initializeContentLibraries } from '#main/Services/ContentLibraryService.js';
 import { initializePersonalMemoryLibrary } from '#main/Services/MemoryService.js';
-import { isFirstRun } from '#main/Services/UserService.js';
+import * as SystemPromptService from '#main/Services/SystemPromptService.js';
+import * as UserService from '#main/Services/UserService.js';
 import { setupAutoUpdates } from '#main/Services/AutoUpdateService.js';
 
 app.commandLine.appendSwitch('disable-http2');
@@ -34,7 +35,7 @@ function ensureRuntimeDirectories() {
 }
 
 function resolveStartPage() {
-  return isFirstRun() ? Paths.SETUP_PAGE : Paths.INDEX_PAGE;
+  return UserService.isFirstRun() ? Paths.SETUP_PAGE : Paths.INDEX_PAGE;
 }
 
 function attachWindowServices(windowRef, activeEngines) {
@@ -52,6 +53,28 @@ function createMainAppWindow(activeEngines, page = resolveStartPage()) {
   const windowRef = createWindow(page);
   attachWindowServices(windowRef, activeEngines);
   return windowRef;
+}
+
+function notifyBackendReady() {
+  for (const windowRef of BrowserWindow.getAllWindows()) {
+    if (!windowRef || windowRef.isDestroyed()) continue;
+    windowRef.webContents?.send?.('backend-ready');
+  }
+}
+
+async function warmSystemPrompt(activeEngines) {
+  if (!activeEngines?.connectorEngine || !activeEngines?.featureRegistry) return;
+
+  try {
+    await SystemPromptService.get({
+      user: UserService.readUser(),
+      customInstructions: UserService.readText(Paths.CUSTOM_INSTRUCTIONS_FILE),
+      connectorEngine: activeEngines.connectorEngine,
+      featureRegistry: activeEngines.featureRegistry,
+    });
+  } catch (error) {
+    console.warn('[App] System prompt warm-up failed:', error.message);
+  }
 }
 
 function shutdownEngines() {
@@ -74,17 +97,31 @@ app.whenReady().then(async () => {
     }
 
     ensureRuntimeDirectories();
-    initializeContentLibraries();
-    initializePersonalMemoryLibrary();
+    createMainAppWindow(null);
 
-    engines = await boot();
-    enginesStopped = false;
-    startEngines(engines);
-    createMainAppWindow(engines);
+    (async () => {
+      initializeContentLibraries();
+      initializePersonalMemoryLibrary();
 
-    MCPIPC.autoConnect().catch((err) =>
-      console.warn('[App] MCP auto-connect failed:', err.message),
-    );
+      engines = await boot();
+      enginesStopped = false;
+      startEngines(engines);
+
+      for (const windowRef of BrowserWindow.getAllWindows()) {
+        attachWindowServices(windowRef, engines);
+      }
+
+      warmSystemPrompt(engines).catch(() => {});
+      notifyBackendReady();
+
+      MCPIPC.autoConnect().catch((err) =>
+        console.warn('[App] MCP auto-connect failed:', err.message),
+      );
+    })().catch((error) => {
+      console.error('[App] Startup failed:', error);
+      shutdownEngines();
+      app.quit();
+    });
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

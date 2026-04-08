@@ -33,6 +33,7 @@ import {
   setSendBtnUpdater,
   stopGeneration,
   initChatUI,
+  prewarmAgentContext,
 } from '../../Features/index.js';
 import {
   flushPendingPersonalMemorySyncs,
@@ -271,8 +272,14 @@ export function mount(outlet, { settings, navigate }) {
   }
   const onSettingsSaved = () => refreshSystemPrompt();
   const onUserProfileUpdated = () => syncWelcomeTitle();
-  const onWorkspaceChanged = () => renderStarterPrompts();
-  const onProjectChanged = () => syncProjectUI();
+  const onWorkspaceChanged = () => {
+    renderStarterPrompts();
+    prewarmAgentContext().catch(() => {});
+  };
+  const onProjectChanged = () => {
+    syncProjectUI();
+    prewarmAgentContext().catch(() => {});
+  };
   window.addEventListener('ow:settings-saved', onSettingsSaved);
   window.addEventListener('ow:user-profile-updated', onUserProfileUpdated);
   window.addEventListener('ow:workspace-changed', onWorkspaceChanged);
@@ -330,12 +337,15 @@ export function mount(outlet, { settings, navigate }) {
     restoreChatFromState();
   }
 
-  // ── Load providers, then show initial content ─────────────────────────────
-  loadProviders().then(async () => {
+  let pendingChatRestored = false;
+  async function initializeChatBackend() {
+    await loadProviders();
     syncCapabilities();
     await refreshSystemPrompt();
+    prewarmAgentContext().catch(() => {});
 
-    if (pendingId) {
+    if (pendingId && !pendingChatRestored) {
+      pendingChatRestored = true;
       await loadChat(pendingId, {
         updateModelLabel,
         buildModelDropdown,
@@ -344,7 +354,14 @@ export function mount(outlet, { settings, navigate }) {
     }
 
     flushPendingPersonalMemorySyncs().catch(() => {});
+  }
+
+  const offBackendReady = window.electronAPI?.on?.('backend-ready', () => {
+    initializeChatBackend().catch(() => {});
   });
+
+  // ── Load providers, then show initial content ─────────────────────────────
+  initializeChatBackend().catch(() => {});
 
   // ── Cleanup ───────────────────────────────────────────────────────────────
   return function unmount() {
@@ -363,6 +380,7 @@ export function mount(outlet, { settings, navigate }) {
     window.removeEventListener('ow:user-profile-updated', onUserProfileUpdated);
     window.removeEventListener('ow:workspace-changed', onWorkspaceChanged);
     window.removeEventListener('ow:project-changed', onProjectChanged);
+    offBackendReady?.();
     welcomeChips?.removeEventListener('click', onStarterChipClick);
     enhanceFeature.cleanup();
     browserPreviewFeature.cleanup();

@@ -16,14 +16,84 @@ function normalizeMessage(msg) {
   };
 }
 
+const MAX_HISTORY_MESSAGES = 14;
+const MIN_HISTORY_MESSAGES = 8;
+const MAX_HISTORY_CHARS = 24_000;
+const MAX_FILE_ATTACHMENT_CHARS = 4_000;
+const MAX_TOTAL_FILE_ATTACHMENT_CHARS = 12_000;
+const RECENT_FILE_ATTACHMENT_WINDOW = 3;
+
+function estimateMessageSize(message) {
+  const contentSize = String(message?.content ?? '').length;
+  const attachmentSize = Array.isArray(message?.attachments)
+    ? message.attachments.reduce((total, attachment) => {
+        if (attachment?.type !== 'file') return total;
+        return (
+          total + Math.min(String(attachment?.textContent ?? '').length, MAX_FILE_ATTACHMENT_CHARS)
+        );
+      }, 0)
+    : 0;
+
+  return contentSize + attachmentSize;
+}
+
+function buildHistoryWindow(messages = []) {
+  const normalized = messages.map(normalizeMessage);
+  const selected = [];
+  let totalChars = 0;
+
+  for (let index = normalized.length - 1; index >= 0; index -= 1) {
+    const message = normalized[index];
+    const estimatedSize = estimateMessageSize(message);
+    const wouldExceedBudget = totalChars + estimatedSize > MAX_HISTORY_CHARS;
+    const wouldExceedCount = selected.length >= MAX_HISTORY_MESSAGES;
+    const mustKeep = selected.length < MIN_HISTORY_MESSAGES;
+
+    if (!mustKeep && (wouldExceedBudget || wouldExceedCount)) {
+      break;
+    }
+
+    selected.push(message);
+    totalChars += estimatedSize;
+  }
+
+  return selected.reverse();
+}
+
+function buildEmbeddedFileBlock(fileAttachment, maxChars, isRecentMessage) {
+  const filename = fileAttachment?.name || 'attachment';
+  const rawText = String(fileAttachment?.textContent ?? '');
+  if (!rawText.trim()) {
+    return `\n\nFile: ${filename}\n[file attached]`;
+  }
+
+  if (maxChars <= 0) {
+    return `\n\nFile: ${filename}\n[file attached: content omitted to keep the request fast]`;
+  }
+
+  const cappedLength = isRecentMessage ? maxChars : Math.min(maxChars, 1200);
+  const trimmed = rawText.length > cappedLength;
+  const body = trimmed ? `${rawText.slice(0, cappedLength)}\n...(truncated for speed)` : rawText;
+  return `\n\nFile: ${filename}\n\`\`\`\n${body}\n\`\`\``;
+}
+
 function embedFileAttachments(messages) {
-  return messages.map((m) => {
+  let remainingAttachmentChars = MAX_TOTAL_FILE_ATTACHMENT_CHARS;
+
+  return messages.map((m, index) => {
     const fileAttachments = m.attachments ? m.attachments.filter((a) => a.type === 'file') : [];
     const imageAttachments = m.attachments ? m.attachments.filter((a) => a.type === 'image') : [];
 
     let newContent = String(m.content || '');
+    const isRecentMessage = index >= messages.length - RECENT_FILE_ATTACHMENT_WINDOW;
     for (const f of fileAttachments) {
-      newContent += `\n\nFile: ${f.name}\n\`\`\`\n${f.textContent}\n\`\`\``;
+      const rawText = String(f?.textContent ?? '');
+      const allowedChars = Math.min(remainingAttachmentChars, MAX_FILE_ATTACHMENT_CHARS);
+      newContent += buildEmbeddedFileBlock(f, allowedChars, isRecentMessage);
+      remainingAttachmentChars = Math.max(
+        0,
+        remainingAttachmentChars - Math.min(rawText.length, allowedChars),
+      );
     }
 
     return {
@@ -322,7 +392,7 @@ export async function fetchStreamingWithTools(
   if (provider.requires_api_key !== false && !api) {
     throw new Error(`No API key for "${providerId}"`);
   }
-  const _history = messages.slice(-20).map(normalizeMessage);
+  const _history = buildHistoryWindow(messages);
   const history = embedFileAttachments(_history);
 
   /* ── Anthropic ── */
@@ -577,14 +647,21 @@ export async function fetchStreamingWithTools(
 /* ══════════════════════════════════════════
    NON-STREAMING FETCH
 ══════════════════════════════════════════ */
-export async function fetchWithTools(provider, modelId, messages, sysPrompt = '', tools = []) {
+export async function fetchWithTools(
+  provider,
+  modelId,
+  messages,
+  sysPrompt = '',
+  tools = [],
+  signal = null,
+) {
   if (!provider?.configured) throw new Error('Provider is not configured.');
   const { provider: providerId, endpoint, auth_header, auth_prefix = '' } = provider;
   const api = String(provider.api ?? '').trim();
   if (provider.requires_api_key !== false && !api) {
     throw new Error(`No API key for "${providerId}"`);
   }
-  const _history = messages.slice(-20).map(normalizeMessage);
+  const _history = buildHistoryWindow(messages);
   const history = embedFileAttachments(_history);
 
   /* ── Anthropic ── */
@@ -606,6 +683,7 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(body),
+      signal,
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
@@ -651,6 +729,7 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
+      signal,
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
@@ -696,6 +775,7 @@ export async function fetchWithTools(provider, modelId, messages, sysPrompt = ''
     method: 'POST',
     headers: buildOpenAIStyleHeaders(providerId, auth_header, auth_prefix, api),
     body: JSON.stringify(body),
+    signal,
   });
   if (!res.ok) {
     const e = await res.json().catch(() => ({}));

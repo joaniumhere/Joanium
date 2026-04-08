@@ -11,7 +11,7 @@ let _country = null;
 async function fetchCountry() {
   if (_country) return _country;
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 3000);
+  const timer = setTimeout(() => ctrl.abort(), 250);
   try {
     const res = await fetch('https://ipapi.co/country_name/', { signal: ctrl.signal });
     if (res.ok) {

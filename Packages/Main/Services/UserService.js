@@ -173,7 +173,7 @@ function normalizeDiscoveredLocalModels(models = []) {
     .filter(Boolean);
 }
 
-async function fetchJSON(url, { timeoutMs = 1500 } = {}) {
+async function fetchJSON(url, { timeoutMs = 400 } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 

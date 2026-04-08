@@ -570,45 +570,11 @@ export default defineFeature({
     async getContext(ctx) {
       const credentials = getGithubCredentials(ctx);
       if (!credentials) return null;
-
-      let user = null;
-      let repos = [];
-
-      try {
-        user = await GithubAPI.getUser(credentials);
-        repos = await GithubAPI.getRepos(credentials, 20);
-        if (user?.login) {
-          ctx.connectorEngine?.updateCredentials('github', {
-            username: user.login,
-            avatar: user.avatar_url,
-          });
-        }
-      } catch (error) {
-        console.warn('[GithubFeature] Prompt context fetch failed:', error.message);
-      }
-
-      const username =
-        user?.login ?? ctx.connectorEngine?.getCredentials('github')?.username ?? null;
-      if (!username) return null;
+      const username = credentials.username ?? null;
 
       return {
-        connectedServices: [`GitHub (@${username})`],
-        sections: repos.length
-          ? [
-              {
-                title: `GitHub Repositories (@${username})`,
-                body: [
-                  'The user has these repos (most recently updated first):',
-                  ...repos.slice(0, 20).map((repo) => {
-                    const description = repo.description ? ` - ${repo.description}` : '';
-                    const language = repo.language ? ` [${repo.language}]` : '';
-                    return `- \`${repo.full_name}\`${description}${language}`;
-                  }),
-                  'When the user asks about "my repo" or references a project by name, match it against the list above.',
-                ].join('\n'),
-              },
-            ]
-          : [],
+        connectedServices: [username ? `GitHub (@${username})` : 'GitHub'],
+        sections: [],
       };
     },
   },

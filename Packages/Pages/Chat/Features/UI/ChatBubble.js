@@ -591,6 +591,16 @@ export function createLiveRow(doSendFromStateFn) {
       smoothScrollToBottom();
     },
 
+    clearReply() {
+      _streamActive = false;
+      _accumulated = '';
+      _cursorEl?.remove();
+      _cursorEl = null;
+      replyTextEl.classList.remove('is-streaming');
+      replyTextEl.innerHTML = '';
+      actionsEl.style.display = 'none';
+    },
+
     finalize(markdown, usage, provider, modelId) {
       _accumulated = markdown;
       renderReasoning(true);

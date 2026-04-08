@@ -68,6 +68,8 @@ function createCurrentChatSnapshot(reason = 'session-end') {
     model: state.selectedModel,
     activeProject: state.activeProject,
     workspacePath: state.workspacePath,
+    conversationSummary: state.conversationSummary,
+    conversationSummaryMessageCount: state.conversationSummaryMessageCount,
   });
 
   if (!payload || !hasMeaningfulConversation(payload.messages)) return null;

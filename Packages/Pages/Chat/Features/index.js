@@ -1,7 +1,7 @@
 import { state } from '../../../System/State.js';
 import { welcome, chatView, chatMessages } from '../../../Pages/Shared/Core/DOM.js';
 import { reset as resetComposer } from './Composer/index.js';
-import { planRequest, agentLoop } from './Core/Agent.js';
+import { agentLoop, prewarmAgentContext, selectSkillsForMessages } from './Core/Agent.js';
 
 // Sub-modules
 import {
@@ -13,6 +13,11 @@ import {
 } from './UI/ChatBubble.js';
 import { updateTimeline, setupScrollFeatures, bumpScrollBadge } from './UI/ChatTimeline.js';
 import { queueCurrentSessionMemorySync } from './Core/ChatMemory.js';
+import {
+  queueConversationCompaction,
+  resetConversationSummary,
+  syncConversationSummaryWithMessages,
+} from './Core/ConversationSummary.js';
 import {
   saveCurrentChat,
   trackUsage,
@@ -45,6 +50,68 @@ let _updateSendBtn = () => {};
 export function setSendBtnUpdater(fn) {
   _updateSendBtn = fn;
 }
+const PLANNER_TIMEOUT_MS = 900;
+
+function buildPlanningText(message = {}) {
+  const text = String(message?.content ?? '').trim();
+  const attachmentNames = Array.isArray(message?.attachments)
+    ? message.attachments
+        .map((attachment) => attachment?.name ?? attachment?.type ?? '')
+        .filter(Boolean)
+        .join(' ')
+    : '';
+
+  return `${text} ${attachmentNames}`.trim().toLowerCase();
+}
+
+function shouldUsePlanner(message = {}) {
+  const planningText = buildPlanningText(message);
+  if (!planningText) return false;
+
+  if ((message.attachments?.length ?? 0) > 0) return true;
+  if (planningText.length >= 260) return true;
+
+  return /\b(file|files|folder|workspace|project|repo|repository|branch|commit|pull request|pr|code|debug|fix|refactor|implement|build|test|lint|terminal|shell|command|browser|website|page|login|navigate|click|book|checkout|calendar|gmail|github|gitlab|drive|docs|sheets|slides|memory|sub-agent|agent)\b/i.test(
+    planningText,
+  );
+}
+
+async function resolveExecutionPlan(messages = []) {
+  const lastUserMsg = [...messages].reverse().find((message) => message?.role === 'user');
+  if (!lastUserMsg) return { plannedSkills: [], plannedToolCalls: [] };
+
+  const heuristicSkills = await selectSkillsForMessages(messages).catch(() => []);
+  if (!shouldUsePlanner(lastUserMsg)) {
+    return { plannedSkills: heuristicSkills, plannedToolCalls: [] };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), PLANNER_TIMEOUT_MS);
+
+  try {
+    const plan = await planRequest(messages, { signal: controller.signal });
+    return {
+      plannedSkills: plan.skills?.length ? plan.skills : heuristicSkills,
+      plannedToolCalls: plan.toolCalls ?? [],
+    };
+  } catch {
+    return { plannedSkills: heuristicSkills, plannedToolCalls: [] };
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function showPlanningTrace(live, plannedSkills = [], plannedToolCalls = []) {
+  plannedSkills.forEach((skillName) => {
+    const handle = live.push(`[SKILL] ${skillName}`);
+    handle?.done?.(true);
+  });
+
+  if (plannedToolCalls.length > 0) {
+    const handle = live.push('Planning...');
+    handle?.done?.(true);
+  }
+}
 
 /* ══════════════════════════════════════════
    INIT CHAT UI
@@ -63,6 +130,7 @@ export function initChatUI() {
 ══════════════════════════════════════════ */
 async function doSendFromState() {
   if (!state.selectedProvider || !state.selectedModel || state.isTyping) return;
+  syncConversationSummaryWithMessages();
 
   state.isTyping = true;
   _updateSendBtn();
@@ -70,29 +138,10 @@ async function doSendFromState() {
   const live = createLiveRow(doSendFromState);
   live.push('Thinking…');
 
-  const lastUserMsg = [...state.messages].reverse().find((m) => m.role === 'user');
   let plannedSkills = [];
   let plannedToolCalls = [];
-
-  if (lastUserMsg?.content) {
-    try {
-      const plan = await planRequest(state.messages);
-      plannedSkills = plan.skills ?? [];
-      for (const skillName of plan.skills ?? []) {
-        const handle = live.push(`[SKILL] ${skillName}`);
-        await new Promise((r) => setTimeout(r, 120));
-        if (handle?.done) handle.done(true);
-      }
-      if ((plan.toolCalls?.length ?? 0) > 0) {
-        const handle = live.push('Planning…');
-        await new Promise((r) => setTimeout(r, 80));
-        if (handle?.done) handle.done(true);
-      }
-      plannedToolCalls = plan.toolCalls ?? [];
-    } catch {
-      /* non-fatal */
-    }
-  }
+  ({ plannedSkills, plannedToolCalls } = await resolveExecutionPlan(state.messages));
+  showPlanningTrace(live, plannedSkills, plannedToolCalls);
 
   try {
     _currentAbortController = new AbortController();
@@ -121,6 +170,7 @@ async function doSendFromState() {
       attachments: live.getAttachments?.() ?? [],
     });
     saveCurrentChat();
+    queueConversationCompaction().catch(() => {});
     bumpScrollBadge();
   } catch (err) {
     _currentAbortController = null;
@@ -188,6 +238,7 @@ export function restoreWelcome() {
 ══════════════════════════════════════════ */
 export async function sendMessage({ text, attachments, sendBtnEl }) {
   if ((!text && attachments.length === 0) || state.isTyping) return;
+  syncConversationSummaryWithMessages();
 
   if (!state.currentChatId) state.currentChatId = generateChatId();
 
@@ -225,27 +276,8 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
 
   let plannedSkills = [];
   let plannedToolCalls = [];
-
-  if (text) {
-    try {
-      const plan = await planRequest(state.messages);
-      plannedSkills = plan.skills ?? [];
-
-      for (const skillName of plan.skills ?? []) {
-        live.push(`[SKILL] ${skillName}`);
-        await new Promise((r) => setTimeout(r, 120));
-      }
-      if ((plan.toolCalls?.length ?? 0) > 0) {
-        const handle = live.push('Planning…');
-        await new Promise((r) => setTimeout(r, 80));
-        if (handle?.done) handle.done(true);
-      }
-
-      plannedToolCalls = plan.toolCalls ?? [];
-    } catch {
-      /* non-fatal */
-    }
-  }
+  ({ plannedSkills, plannedToolCalls } = await resolveExecutionPlan(state.messages));
+  showPlanningTrace(live, plannedSkills, plannedToolCalls);
 
   try {
     _currentAbortController = new AbortController();
@@ -274,6 +306,7 @@ export async function sendMessage({ text, attachments, sendBtnEl }) {
       attachments: live.getAttachments?.() ?? [],
     });
     saveCurrentChat();
+    queueConversationCompaction().catch(() => {});
     bumpScrollBadge();
     setTimeout(updateTimeline, 100);
   } catch (err) {
@@ -304,6 +337,7 @@ export function startNewChat(extraCleanup = () => {}) {
   state.messages = [];
   state.currentChatId = null;
   state.isTyping = false;
+  resetConversationSummary();
   if (_currentAbortController) {
     _currentAbortController.abort();
     _currentAbortController = null;
@@ -330,12 +364,19 @@ export async function loadChat(
     state.messages = [];
     state.currentChatId = chat.id;
     state.isTyping = false;
+    state.conversationSummary = String(chat.conversationSummary ?? '').trim();
+    state.conversationSummaryMessageCount = Math.max(
+      0,
+      Number(chat.conversationSummaryMessageCount) || 0,
+    );
     document.getElementById('typing-row')?.remove();
     chatMessages.innerHTML = '';
     resetComposer();
     showChatView();
     const restored = sanitizeMessagesForUI(chat.messages ?? []);
     state.messages = restored;
+    syncConversationSummaryWithMessages(restored);
+    queueConversationCompaction().catch(() => {});
     restored.forEach((m) =>
       appendMessage(m.role, m.content, false, false, m.attachments, doSendFromState),
     );
@@ -361,3 +402,4 @@ export async function loadChat(
 export { saveCurrentChat, trackUsage } from './Data/ChatPersistence.js';
 export { appendMessage, sanitizeMessagesForUI } from './UI/ChatBubble.js';
 export { updateTimeline } from './UI/ChatTimeline.js';
+export { prewarmAgentContext } from './Core/Agent.js';

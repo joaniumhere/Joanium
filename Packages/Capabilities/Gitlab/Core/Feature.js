@@ -565,45 +565,11 @@ export default defineFeature({
     async getContext(ctx) {
       const credentials = getGitlabCredentials(ctx);
       if (!credentials) return null;
-
-      let user = null;
-      let repos = [];
-
-      try {
-        user = await GitlabAPI.getUser(credentials);
-        repos = await GitlabAPI.getRepos(credentials, 20);
-        if (user?.login) {
-          ctx.connectorEngine?.updateCredentials('gitlab', {
-            username: user.login,
-            avatar: user.avatar_url,
-          });
-        }
-      } catch (error) {
-        console.warn('[GitlabFeature] Prompt context fetch failed:', error.message);
-      }
-
-      const username =
-        user?.login ?? ctx.connectorEngine?.getCredentials('gitlab')?.username ?? null;
-      if (!username) return null;
+      const username = credentials.username ?? null;
 
       return {
-        connectedServices: [`GitLab (@${username})`],
-        sections: repos.length
-          ? [
-              {
-                title: `GitLab Repositories (@${username})`,
-                body: [
-                  'The user has these repos (most recently updated first):',
-                  ...repos.slice(0, 20).map((repo) => {
-                    const description = repo.description ? ` - ${repo.description}` : '';
-                    const language = repo.language ? ` [${repo.language}]` : '';
-                    return `- \`${repo.full_name}\`${description}${language}`;
-                  }),
-                  'When the user asks about "my repo" or references a project by name, match it against the list above.',
-                ].join('\n'),
-              },
-            ]
-          : [],
+        connectedServices: [username ? `GitLab (@${username})` : 'GitLab'],
+        sections: [],
       };
     },
   },

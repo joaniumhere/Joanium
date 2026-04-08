@@ -34,6 +34,8 @@ export function buildChatPayload({
   model = null,
   activeProject = null,
   workspacePath = null,
+  conversationSummary = '',
+  conversationSummaryMessageCount = 0,
   updatedAt = new Date().toISOString(),
 } = {}) {
   if (!chatId || !messages?.length) return null;
@@ -50,6 +52,8 @@ export function buildChatPayload({
     projectName: activeProject?.name ?? null,
     workspacePath: workspacePath ?? null,
     projectContext: activeProject?.context ?? '',
+    conversationSummary: String(conversationSummary ?? '').trim(),
+    conversationSummaryMessageCount: Math.max(0, Number(conversationSummaryMessageCount) || 0),
     messages: sanitizedMessages,
   };
 }
@@ -62,6 +66,8 @@ export async function saveCurrentChat() {
     model: state.selectedModel,
     activeProject: state.activeProject,
     workspacePath: state.workspacePath,
+    conversationSummary: state.conversationSummary,
+    conversationSummaryMessageCount: state.conversationSummaryMessageCount,
   });
   if (!payload) return null;
 

@@ -63,6 +63,18 @@ const SEARCH_ENGINE_BLOCK_PATTERNS = [
   /\bi am not a robot\b/i,
   /\bi'm not a robot\b/i,
 ];
+const SKILLS_CACHE_TTL_MS = 30_000;
+const TOOLS_CACHE_TTL_MS = 10_000;
+const WORKSPACE_SUMMARY_CACHE_TTL_MS = 60_000;
+const MAX_AUTO_SELECTED_SKILLS = 3;
+
+const skillsCache = {
+  value: null,
+  expiresAt: 0,
+  promise: null,
+};
+const toolsCache = new Map();
+const workspaceSummaryCache = new Map();
 
 function isRateLimitError(err) {
   const message = String(err?.message ?? '').toLowerCase();
@@ -207,24 +219,213 @@ export function buildFailoverCandidates(
 }
 
 async function loadEnabledSkills() {
-  try {
-    const res = await window.electronAPI?.invoke?.('get-skills');
-    return (res?.skills ?? []).filter((skill) => skill.enabled === true);
-  } catch {
-    return [];
+  const now = Date.now();
+  if (skillsCache.value !== null && now < skillsCache.expiresAt) {
+    return skillsCache.value;
   }
+  if (skillsCache.promise) {
+    return skillsCache.promise;
+  }
+
+  skillsCache.promise = (async () => {
+    try {
+      const res = await window.electronAPI?.invoke?.('get-skills');
+      const value = (res?.skills ?? []).filter((skill) => skill.enabled === true);
+      skillsCache.value = value;
+      skillsCache.expiresAt = Date.now() + SKILLS_CACHE_TTL_MS;
+      return value;
+    } catch {
+      skillsCache.value = [];
+      skillsCache.expiresAt = Date.now() + SKILLS_CACHE_TTL_MS;
+      return [];
+    } finally {
+      skillsCache.promise = null;
+    }
+  })();
+
+  return skillsCache.promise;
 }
 
 async function loadWorkspaceSummary(workspacePath = state.workspacePath) {
   if (!workspacePath) return null;
-  try {
-    const res = await window.electronAPI?.invoke?.('inspect-workspace', {
-      rootPath: workspacePath,
-    });
-    return res?.ok ? res.summary : null;
-  } catch {
-    return null;
+  const key = String(workspacePath ?? '').trim();
+  const now = Date.now();
+  const cached = workspaceSummaryCache.get(key);
+  if (cached && !cached.promise && now < cached.expiresAt) {
+    return cached.value;
   }
+  if (cached?.promise) {
+    return cached.promise;
+  }
+
+  const promise = (async () => {
+    try {
+      const res = await window.electronAPI?.invoke?.('inspect-workspace', {
+        rootPath: workspacePath,
+      });
+      const value = res?.ok ? res.summary : null;
+      workspaceSummaryCache.set(key, {
+        value,
+        expiresAt: Date.now() + WORKSPACE_SUMMARY_CACHE_TTL_MS,
+        promise: null,
+      });
+      return value;
+    } catch {
+      return null;
+    } finally {
+      const latest = workspaceSummaryCache.get(key);
+      if (latest?.promise) {
+        workspaceSummaryCache.set(key, {
+          value: latest.value ?? null,
+          expiresAt: latest.expiresAt ?? 0,
+          promise: null,
+        });
+      }
+    }
+  })();
+
+  workspaceSummaryCache.set(key, {
+    value: cached?.value ?? null,
+    expiresAt: cached?.expiresAt ?? 0,
+    promise,
+  });
+
+  return promise;
+}
+
+async function loadAvailableToolsCached(options = {}) {
+  const workspacePath = Object.prototype.hasOwnProperty.call(options, 'workspacePath')
+    ? String(options.workspacePath ?? '').trim()
+    : String(state.workspacePath ?? '').trim();
+  const key = workspacePath || '__global__';
+  const now = Date.now();
+  const cached = toolsCache.get(key);
+  if (cached && !cached.promise && now < cached.expiresAt) {
+    return cached.value;
+  }
+  if (cached?.promise) {
+    return cached.promise;
+  }
+
+  const promise = (async () => {
+    try {
+      const value = await getAvailableTools({ workspacePath });
+      toolsCache.set(key, {
+        value,
+        expiresAt: Date.now() + TOOLS_CACHE_TTL_MS,
+        promise: null,
+      });
+      return value;
+    } catch {
+      return [];
+    } finally {
+      const latest = toolsCache.get(key);
+      if (latest?.promise) {
+        toolsCache.set(key, {
+          value: latest.value ?? [],
+          expiresAt: latest.expiresAt ?? 0,
+          promise: null,
+        });
+      }
+    }
+  })();
+
+  toolsCache.set(key, {
+    value: cached?.value ?? [],
+    expiresAt: cached?.expiresAt ?? 0,
+    promise,
+  });
+
+  return promise;
+}
+
+function tokenizeForSkillMatching(value = '') {
+  return (
+    String(value ?? '')
+      .toLowerCase()
+      .match(/[a-z0-9]+/g)
+      ?.filter((token) => token.length >= 4) ?? []
+  );
+}
+
+function buildSkillSearchText(skill = {}) {
+  return [skill.name, skill.trigger, skill.description].filter(Boolean).join(' ').toLowerCase();
+}
+
+function scoreSkillMatch(skill = {}, text = '', tokens = []) {
+  if (!text) return 0;
+
+  let score = 0;
+  const searchable = buildSkillSearchText(skill);
+  if (!searchable) return score;
+
+  const triggerPhrases = String(skill.trigger ?? '')
+    .split(',')
+    .map((phrase) => phrase.trim().toLowerCase())
+    .filter(Boolean);
+  for (const phrase of triggerPhrases) {
+    if (phrase.length >= 5 && text.includes(phrase)) {
+      score += 8;
+    }
+  }
+
+  const name = String(skill.name ?? '')
+    .trim()
+    .toLowerCase();
+  if (name && text.includes(name)) {
+    score += 6;
+  }
+
+  const matchedTokens = new Set();
+  for (const token of tokenizeForSkillMatching(searchable)) {
+    if (matchedTokens.has(token)) continue;
+    if (!tokens.includes(token)) continue;
+    matchedTokens.add(token);
+    score += 1;
+  }
+
+  return score;
+}
+
+export async function selectSkillsForMessages(messages = []) {
+  const lastUserMessage = [...messages]
+    .reverse()
+    .find((message) => message?.role === 'user' && String(message?.content ?? '').trim());
+  const userText = String(lastUserMessage?.content ?? '')
+    .trim()
+    .toLowerCase();
+  if (!userText) return [];
+
+  const skills = await loadEnabledSkills();
+  if (!skills.length) return [];
+
+  const tokens = tokenizeForSkillMatching(userText);
+  return skills
+    .map((skill) => ({
+      name: skill.name,
+      score: scoreSkillMatch(skill, userText, tokens),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name))
+    .slice(0, MAX_AUTO_SELECTED_SKILLS)
+    .map((entry) => entry.name);
+}
+
+export function invalidateAgentRuntimeCaches() {
+  skillsCache.value = null;
+  skillsCache.expiresAt = 0;
+  skillsCache.promise = null;
+  toolsCache.clear();
+  workspaceSummaryCache.clear();
+}
+
+export function prewarmAgentContext(options = {}) {
+  const { workspacePath } = resolveRuntimeContext(options);
+  return Promise.all([
+    loadEnabledSkills(),
+    loadAvailableToolsCached({ workspacePath }),
+    loadWorkspaceSummary(workspacePath),
+  ]);
 }
 
 function buildActiveProjectHint(activeProject = state.activeProject, mode = 'runtime') {
@@ -352,6 +553,30 @@ function buildWorkspaceFilePolicyHint(workspacePath = state.workspacePath) {
     'No workspace directory is currently open.',
     'Do not claim to create or edit files, and do not invent file operations.',
     'If the user asks for code while no workspace is open, provide the code in the reply and let the user create the files unless they open a workspace first.',
+  ].join('\n');
+}
+
+function resolveConversationSummary(options = {}) {
+  return {
+    summary: hasOwnOption(options, 'conversationSummary')
+      ? String(options.conversationSummary ?? '').trim()
+      : String(state.conversationSummary ?? '').trim(),
+    messageCount: hasOwnOption(options, 'conversationSummaryMessageCount')
+      ? Math.max(0, Number(options.conversationSummaryMessageCount) || 0)
+      : Math.max(0, Number(state.conversationSummaryMessageCount) || 0),
+  };
+}
+
+function buildConversationSummaryBlock(summary = '', messageCount = 0) {
+  const normalized = String(summary ?? '').trim();
+  if (!normalized || messageCount <= 0) return '';
+
+  return [
+    '## Conversation Summary',
+    `Older turns have been compacted for speed. This summary covers approximately ${messageCount} earlier message${messageCount === 1 ? '' : 's'}.`,
+    'Treat it as trusted context unless newer messages clearly override it.',
+    '',
+    normalized,
   ].join('\n');
 }
 
@@ -781,6 +1006,8 @@ function buildToolResultContext(
 export async function planRequest(messages, options = {}) {
   const { selectedProvider, selectedModel } = resolveModelSelection(options);
   const { workspacePath, activeProject } = resolveRuntimeContext(options);
+  const { summary: conversationSummary, messageCount: conversationSummaryMessageCount } =
+    resolveConversationSummary(options);
   if (!selectedProvider || !selectedModel || !messages?.length) {
     return { skills: [], toolCalls: [] };
   }
@@ -794,13 +1021,17 @@ export async function planRequest(messages, options = {}) {
 
   const [skills, availableTools, workspaceSummary] = await Promise.all([
     loadEnabledSkills(),
-    getAvailableTools({ workspacePath }),
+    loadAvailableToolsCached({ workspacePath }),
     loadWorkspaceSummary(workspacePath),
   ]);
   const browserTools = getBrowserAutomationTools(availableTools);
   const browserPlanningHint = buildBrowserPlanningHint(browserTools);
   const subAgentPlanningHint = buildSubAgentPlanningHint(availableTools);
   const workspaceFilePolicyHint = buildWorkspaceFilePolicyHint(workspacePath);
+  const conversationSummaryBlock = buildConversationSummaryBlock(
+    conversationSummary,
+    conversationSummaryMessageCount,
+  );
 
   const planPrompt = [
     'You are a planning assistant for an AI agent.',
@@ -814,6 +1045,7 @@ export async function planRequest(messages, options = {}) {
     '',
     'Recent conversation:',
     recentMessages,
+    conversationSummaryBlock ? `\n${conversationSummaryBlock}` : '',
     activeProject ? `\n${buildActiveProjectHint(activeProject, 'planning')}` : '',
     workspaceSummary ? `\n${buildWorkspaceHint(workspaceSummary, 'planning')}` : '',
     `\n${workspaceFilePolicyHint}`,
@@ -847,6 +1079,7 @@ export async function planRequest(messages, options = {}) {
       [{ role: 'user', content: planPrompt, attachments: [] }],
       'You are a planning assistant. Output only valid JSON.',
       [],
+      options.signal ?? null,
     );
 
     if (result.type !== 'text') return { skills: [], toolCalls: [] };
@@ -862,6 +1095,9 @@ export async function planRequest(messages, options = {}) {
       new Set(availableTools.map((tool) => tool.name)),
     );
   } catch (err) {
+    if (err?.name === 'AbortError') {
+      return { skills: [], toolCalls: [] };
+    }
     console.warn('[Agent] Planning failed:', err.message);
     return { skills: [], toolCalls: [] };
   }
@@ -879,6 +1115,8 @@ export async function agentLoop(
   const { selectedProvider, selectedModel, providers, fallbackModels, allowImplicitFailover } =
     resolveModelSelection(options);
   const { workspacePath, activeProject } = resolveRuntimeContext(options);
+  const { summary: conversationSummary, messageCount: conversationSummaryMessageCount } =
+    resolveConversationSummary(options);
   const loopMessages = [...messages];
   const MAX_TURNS = 100;
   const MAX_REWRITE_ATTEMPTS = 5;
@@ -887,7 +1125,7 @@ export async function agentLoop(
   const totalUsage = { inputTokens: 0, outputTokens: 0 };
 
   const [rawAvailableTools, allSkills, workspaceSummary] = await Promise.all([
-    getAvailableTools({ workspacePath }),
+    loadAvailableToolsCached({ workspacePath }),
     loadEnabledSkills(),
     loadWorkspaceSummary(workspacePath),
   ]);
@@ -903,6 +1141,10 @@ export async function agentLoop(
   const projectHint = buildActiveProjectHint(activeProject, 'runtime');
   const workspaceHint = buildWorkspaceHint(workspaceSummary, 'runtime');
   const workspaceFilePolicyHint = buildWorkspaceFilePolicyHint(workspacePath);
+  const conversationSummaryBlock = buildConversationSummaryBlock(
+    conversationSummary,
+    conversationSummaryMessageCount,
+  );
   const basePrompt = [
     systemPrompt,
     toolPrivacyBlock,
@@ -911,6 +1153,7 @@ export async function agentLoop(
     subAgentCapabilityBlock,
     browserAutomationBlock,
     selectedSkillBlock,
+    conversationSummaryBlock,
     projectHint,
     workspaceHint,
     workspaceFilePolicyHint,
@@ -971,8 +1214,10 @@ export async function agentLoop(
     let bufferedReply = '';
 
     const onToken = (chunk) => {
+      if (!chunk) return;
       streamingStarted = true;
       bufferedReply += chunk;
+      live.stream?.(chunk);
     };
 
     const onReasoning = (chunk) => {
@@ -1100,6 +1345,7 @@ export async function agentLoop(
     }
 
     if (result.type === 'tool_call') {
+      live.clearReply?.();
       const { name, params } = result;
       const logHandle = live.push(buildToolLogLabel(name, params));
       const toolMeta = toolMetaByName.get(name) ?? null;
