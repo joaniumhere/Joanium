@@ -1,204 +1,191 @@
-# Data and Persistence
+# 💾 Data and Persistence
 
-Joanium is strongly local-first. This document explains where state lives, how that changes between development and packaged builds, and which files matter for backup, migration, and debugging.
+Joanium is strongly local-first. This doc explains where state lives, how that changes between dev and packaged builds, and which files matter for backup, migration, and debugging.
 
-## 1. State Roots
+## 1. 🏠 State Roots
 
-`Packages/Main/Core/Paths.js` defines two important runtime roots.
+`Packages/Main/Core/Paths.js` defines two runtime roots.
 
 ### Bundled root
-
-- In development: the repo root
-- In packaged builds: `process.resourcesPath`
-
-This is where bundled assets such as model catalogs and seeded content are read from.
+Where read-only bundled assets (model catalogs, seeded content) live.
+- **In development:** the repo root
+- **In packaged builds:** `process.resourcesPath`
 
 ### State root
+Where mutable runtime state (chats, config, feature state) is stored.
+- **In development:** the repo root
+- **In packaged builds:** `app.getPath('userData')`
 
-- In development: the repo root
-- In packaged builds: `app.getPath('userData')`
+## 2. ⚠️ Why This Matters (Dev Warning)
 
-This is where mutable runtime state is stored.
+> In development mode, **the repo itself is the app's state directory.**
 
-## 2. Why This Matters
+That means:
+- Local chats, usage records, feature state, and memory files show up in `git status`
+- You can accidentally commit personal API keys or chat history
+- **Always check before pushing**
 
-In development mode, the repo itself acts as the app's state directory. That is convenient because contributors can inspect everything directly, but it has two consequences:
+In packaged builds, all mutable state moves cleanly outside the installed application into Electron's `userData` folder. Users never have to worry about this.
 
-- local chats, usage, feature state, and memory files may show up as working tree changes
-- contributors need to be careful not to commit personal or machine-specific runtime state
+## 3. 🗺️ Full Storage Map
 
-In packaged builds, that mutable state moves outside the installed application into Electron's normal `userData` area.
+| Path | What's stored |
+|---|---|
+| `Config/User.json` | User profile, provider keys, app preferences |
+| `Config/WindowState.json` | Window size and position |
+| `Config/Models/*.json` | Bundled provider and model catalogs |
+| `Data/Chats/*.json` | Global chat history (outside any project) |
+| `Data/Projects/<id>/Project.json` | Project metadata and state |
+| `Data/Projects/<id>/Chats/*.json` | Project-scoped chat history |
+| `Data/Skills.json` | Which skills are enabled/disabled |
+| `Data/ActivePersona.json` | Currently active persona |
+| `Data/Usage.json` | Token and model usage records |
+| `Data/MCPServers.json` | User-configured MCP server definitions |
+| `Data/Features/<featureKey>/<file>.json` | Engine/feature-specific state |
+| `Instructions/CustomInstructions.md` | Your custom instruction file |
+| `Memories/*.md` | Personal memory markdown files |
+| `Skills/**/*.md` | Installed skill markdown files |
+| `Personas/**/*.md` | Installed persona markdown files |
 
-## 3. Main Storage Map
+## 4. 🌱 Seeded Libraries vs User Libraries
 
-| Path                                     | Purpose                                        |
-| ---------------------------------------- | ---------------------------------------------- |
-| `Config/User.json`                       | User profile and provider setup data.          |
-| `Config/WindowState.json`                | Window dimensions and placement state.         |
-| `Config/Models/*.json`                   | Bundled provider/model catalogs.               |
-| `Data/Chats/*.json`                      | Global chat history when not inside a project. |
-| `Data/Projects/<projectId>/Project.json` | Project metadata and project-level state.      |
-| `Data/Projects/<projectId>/Chats/*.json` | Project-scoped chat history.                   |
-| `Data/Skills.json`                       | Skill enable/disable state.                    |
-| `Data/ActivePersona.json`                | Current persona selection.                     |
-| `Data/Usage.json`                        | Token and model usage records.                 |
-| `Data/MCPServers.json`                   | User-configured MCP server definitions.        |
-| `Data/Features/<featureKey>/<file>.json` | Engine/feature-specific JSON storage.          |
-| `Instructions/CustomInstructions.md`     | User custom instruction file.                  |
-| `Memories/*.md`                          | Personal memory markdown library.              |
-| `Skills/**/*.md`                         | Installed user skill markdown files.           |
-| `Personas/**/*.md`                       | Installed user persona markdown files.         |
+Joanium ships with **seed libraries** for skills and personas. On first run, `ContentLibraryService.js` copies them into the user library if it's empty.
 
-## 4. Seeded Libraries vs User Libraries
+```
+Seed source (bundled, read-only)  →  User library (editable, yours)
+     Skills/                      →       Skills/
+     Personas/                    →       Personas/
+```
 
-Joanium has two concepts for skills and personas:
+- **In development:** the repo folders ARE the active library roots (seed = user library)
+- **In packaged builds:** user copies live separately under the state root
 
-- bundled seed libraries
-- user libraries
+This lets the app ship useful defaults while giving users fully editable local copies.
 
-`Packages/Main/Services/ContentLibraryService.js` copies markdown files from the bundled seed directories into the user library on first run if the user library is empty.
+## 5. 🧠 Personal Memory Files
 
-### Seed sources
+`Packages/Main/Services/MemoryService.js` manages the `Memories/` folder.
 
-- `Skills/`
-- `Personas/`
+These are **plain markdown files** — not an opaque database. That means:
+- ✅ Easy to read and inspect
+- ✅ Easy to back up (just copy the folder)
+- ✅ Easy to edit manually
+- ✅ Easy to version in your own git repo
 
-### User libraries
+Treat them as user content, not code assets. Don't commit them.
 
-- In development: those same repo folders are also the active library roots
-- In packaged builds: user-specific copies live under the app state root
+## 6. 💬 Chat Persistence
 
-This is a smart design because it lets the packaged app ship defaults while still giving users editable local copies.
+`Packages/Main/Services/ChatService.js` handles chat storage.
 
-## 5. Personal Memory Files
+Two buckets:
 
-`Packages/Main/Services/MemoryService.js` initializes a personal memory library under `Memories/`.
+| Type | Location | When it's used |
+|---|---|---|
+| Global chats | `Data/Chats/` | Conversations outside any project |
+| Project chats | `Data/Projects/<id>/Chats/` | Conversations inside a project |
 
-These are markdown files, not opaque database rows. That makes them:
+Other things that happen during save:
+- Internal tool-only messages are stripped (clean history)
+- Chats can be flagged for personal memory synchronisation
 
-- easy to inspect
-- easy to back up
-- easy to edit manually if needed
+## 7. 📁 Project Persistence
 
-It also means contributors should treat them as user content, not as code assets.
+Each project gets its own folder:
 
-## 6. Chat Persistence
+```
+Data/Projects/<projectId>/
+  Project.json        ← project metadata and state
+  Chats/              ← project-specific chat history
+    <chatId>.json
+```
 
-`Packages/Main/Services/ChatService.js` handles chat persistence.
+Clean per-project boundaries, no database server needed.
 
-### Important behavior
+## 8. ⚙️ Feature and Engine Storage
 
-- global chats are stored in `Data/Chats`
-- project chats are stored inside the matching project folder
-- internal tool-only leakage is stripped before persistence
-- chats can be marked for personal memory synchronization
+Feature and engine state lives in `Data/Features/`.
 
-This split between global chats and project chats is important. It lets Joanium behave like a personal assistant and a project assistant at the same time without forcing everything into one flat history.
+How it works:
+1. Engines declare storage in `engineMeta.storage`
+2. Features declare storage in `feature.storage`
+3. Boot collects all descriptors and creates typed storage handles
+4. Each handle persists JSON to `Data/Features/<featureKey>/<fileName>`
 
-## 7. Project Persistence
+### Current examples
 
-`Packages/Main/Services/ProjectService.js` stores each project under:
+```
+Data/Features/agenticAgents/AgenticAgents.json
+Data/Features/Agents/Agents.json
+Data/Features/Automations/Automations.json
+Data/Features/Channels/Channels.json
+Data/Features/Connectors/Connectors.json
+```
 
-`Data/Projects/<projectId>/`
+> 💡 Feature storage keys are descriptor-driven. Don't assume every folder maps 1:1 to a package name.
 
-That project folder contains:
+## 9. 📊 Usage Data
 
-- `Project.json`
-- a local `Chats/` folder for project chat history
+All usage is written to `Data/Usage.json`.
 
-This gives Joanium a clean per-project boundary without needing a database server.
+- Chat usage → written by the chat side after each model call
+- Automation usage → written by the automation engine after each run
 
-## 8. Feature and Engine Storage
+This powers the Usage page and is a great local debugging source. Can grow large over time — trim it manually if needed.
 
-Feature and engine JSON state is created through `Packages/Features/Core/FeatureStorage.js`.
+## 10. 🔌 MCP Server Persistence
 
-### How it works
+Custom MCP server entries live in `Data/MCPServers.json`.
 
-- engines can declare storage descriptors in `engineMeta.storage`
-- features can declare storage descriptors in `feature.storage`
-- boot collects all descriptors and creates storage handles
-- each handle persists JSON under `Data/Features/<featureKey>/<fileName>`
+The builtin browser MCP server is merged in at runtime — so the user file represents your *additions*, not the full effective set.
 
-### Current examples in the repo
+## 11. 📝 Prompt and Instruction Data
 
-- `Data/Features/agenticAgents/AgenticAgents.json`
-- `Data/Features/Agents/Agents.json`
-- `Data/Features/Automations/Automations.json`
-- `Data/Features/Channels/Channels.json`
-- `Data/Features/Connectors/Connectors.json`
+Prompt assembly draws from both bundled and user-owned data:
 
-One thing to notice is that feature keys and storage keys are descriptor-driven. Contributors should not assume every folder name matches one simple package name.
+| Source | Type |
+|---|---|
+| `SystemInstructions/SystemPrompt.json` | Bundled (read-only) |
+| `Config/User.json` | User-owned |
+| `Instructions/CustomInstructions.md` | User-owned |
+| `Data/ActivePersona.json` | Runtime-owned |
+| `Memories/*.md` | User-owned |
+| `Data/Features/` | Runtime-owned (connector state) |
 
-## 9. Usage Data
+> 💡 If a prompt-related bug appears, you may need to check more than one of these files.
 
-Usage is written to `Data/Usage.json`.
+## 12. 🗃️ Packaged Resources
 
-The automation engine also records usage during automation runs, and the chat side records provider/model usage for interactive work. That file powers the usage page and acts as a useful local analytics source during debugging.
+`electron-builder.json` bundles these for packaged builds:
 
-## 10. MCP Server Persistence
+- `Config/Models/` — provider and model catalogs
+- `Config/WindowState.json` — default window dimensions
+- `Skills/*.md` — seed skill library
+- `Personas/*.md` — seed persona library
 
-Custom MCP server entries are stored in `Data/MCPServers.json`.
+Packaged builds always have everything they need to bootstrap libraries and catalogs — even on first install with no internet connection.
 
-The builtin browser MCP server is still merged in at runtime, so the user file represents configurable additions rather than the full effective set by itself.
+## 13. 🗄️ What to Back Up
 
-## 11. Prompt and Instruction Data
+If you want to preserve your full Joanium setup, copy these:
 
-Prompt composition uses both bundled and user-owned data.
+```
+Config/User.json          ← your API keys and profile
+Data/                     ← all chats, projects, usage, feature state
+Instructions/             ← your custom instructions
+Memories/                 ← your personal memory files
+Skills/                   ← your installed and custom skills
+Personas/                 ← your installed and custom personas
+```
 
-### Bundled
+> 💡 For a minimal backup (just your content and preferences), those folders are all you need.
 
-- `SystemInstructions/SystemPrompt.json`
+## 14. ✏️ Safe Manual Editing
 
-### User-owned or runtime-owned
+If you need to edit runtime state files directly:
 
-- `Config/User.json`
-- `Instructions/CustomInstructions.md`
-- `Data/ActivePersona.json`
-- `Memories/*.md`
-- connector state from `Data/Features`
-
-This is why a prompt-related bug may require checking more than one file family.
-
-## 12. Packaged Resources
-
-`electron-builder.json` bundles several resources that are important at runtime:
-
-- `Config/Models`
-- `Config/WindowState.json`
-- markdown files from `Skills`
-- markdown files from `Personas`
-
-That means packaged builds still have the data they need to bootstrap user libraries and provider catalogs.
-
-## 13. Backup Guidance
-
-If you want to preserve a Joanium setup, the most valuable things to back up are:
-
-- `Config/User.json`
-- `Data/`
-- `Instructions/`
-- `Memories/`
-- `Skills/`
-- `Personas/`
-
-If you are only trying to preserve user-authored content and preferences, those are the main areas that matter.
-
-## 14. Safe Editing Guidance
-
-If you are debugging or manually editing runtime state:
-
-- prefer editing the smallest relevant file rather than deleting whole folders
-- keep JSON valid and preserve expected top-level keys
-- be careful with `Data/Usage.json` because it can become large over time
-- be careful with `Data/Features/*` because engines may expect specific shapes
-- remember that the app may rewrite some files after the next run
-
-## 15. Contributor Warning for Dev Mode
-
-Because development mode uses the repo root as the state root:
-
-- `git status` can include chats, usage records, window state, connector state, and other local artifacts
-- docs and code changes can be mixed with runtime data unless you are intentional
-- repo hygiene matters a lot more than in apps that store everything outside the workspace
-
-That tradeoff is worth understanding before making broad filesystem changes.
+- ✅ Edit the smallest relevant file, not whole folders
+- ✅ Keep JSON valid and preserve expected top-level keys
+- ⚠️ Be careful with `Data/Usage.json` — it can get large
+- ⚠️ Be careful with `Data/Features/*` — engines expect specific shapes
+- ⚠️ The app may rewrite some files after the next run

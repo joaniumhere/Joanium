@@ -1,160 +1,160 @@
-# Development Workflow
+# 🛠️ Development Workflow
 
-This document covers the practical day-to-day workflow for working on Joanium as a contributor.
+Day-to-day contributor workflow — how to install, run, build, and stay sane while working on Joanium.
 
-## 1. Install and Run
-
-Basic setup:
+## 1. ⚡ Install and Run
 
 ```bash
+# Install dependencies
 npm install
+
+# Run normally
 npm start
-```
 
-Development mode:
-
-```bash
+# Run in development mode (--dev flag, extra logging)
 npm run dev
-```
 
-Build packaged artifacts:
-
-```bash
+# Build packaged artifacts
 npm run build
-```
 
-Lint the repo:
-
-```bash
+# Lint the repo
 npm run lint
-```
 
-Audit workspace discovery:
-
-```bash
+# Audit workspace discovery
 npm run packages:audit
-```
 
-If PowerShell blocks npm scripts, run:
-
-```powershell
+# On Windows PowerShell (if scripts are blocked)
 cmd /c npm run packages:audit
 ```
 
-## 2. What the Main Scripts Do
+## 2. 📋 What Each Script Does
 
-| Script                   | Purpose                                                         |
-| ------------------------ | --------------------------------------------------------------- |
-| `npm start`              | Launches Electron normally.                                     |
-| `npm run dev`            | Launches Electron with the `--dev` flag.                        |
-| `npm run lint`           | Runs ESLint across the repo.                                    |
-| `npm run build`          | Date-stamps the version and runs `electron-builder`.            |
-| `npm run packages:audit` | Prints discovery and workspace relationship information.        |
-| `npm run version:date`   | Updates the app version using the date-based versioning script. |
+| Script | What it does |
+|---|---|
+| `npm start` | Launches Electron normally |
+| `npm run dev` | Launches Electron with `--dev` flag (development mode) |
+| `npm run lint` | Runs ESLint across the whole repo |
+| `npm run build` | Date-stamps the version, then runs `electron-builder` |
+| `npm run packages:audit` | Prints discovery and workspace relationship info — very useful after structural changes |
+| `npm run version:date` | Updates the app version using the date-based versioning script |
 
-## 3. Recommended Contributor Flow
+## 3. 🔄 Recommended Contributor Flow
 
-1. Read the relevant docs in `Docs/` before making a broad architectural change.
-2. Run the app and reproduce the current behavior.
-3. Identify whether your change belongs in `Packages/Main`, `Packages/Features`, `Packages/Capabilities`, `Packages/Pages`, or `Packages/Renderer`.
-4. Make the smallest coherent change that matches the architecture.
-5. Run `npm run packages:audit` if you touched workspace discovery or package structure.
-6. Run `npm run lint` if you touched JavaScript files.
-7. Manually verify the affected page or flow in the Electron app.
+```
+1. Read the relevant doc in Docs/ before making a broad architectural change
+2. Run the app and reproduce the current behavior first
+3. Identify which package your change belongs in:
+     Main          → boot, services, IPC
+     Features      → engines, platform systems
+     Capabilities  → integrations
+     Pages         → UI surfaces
+     Renderer      → shell and navigation
+4. Make the smallest coherent change that fits the architecture
+5. Run `npm run packages:audit` if you touched workspace structure
+6. Run `npm run lint` if you touched JS files
+7. Manually verify the affected flow in the running Electron app
+```
 
-## 4. Workspace and Discovery Hygiene
+## 4. 🔍 Workspace and Discovery Hygiene
 
 Joanium uses npm workspaces and discovery metadata heavily. If you add a package or move files:
 
-- make sure the package is covered by the root workspace patterns
-- make sure its `package.json` has the correct `joanium.discovery` entries
-- make sure discovered files follow expected naming conventions such as `Feature.js`, `*Engine.js`, `*IPC.js`, `Page.js`, and `*Service.js`
+- ✅ Make sure the package is covered by the root workspace glob patterns
+- ✅ Make sure its `package.json` has the correct `joanium.discovery` entries
+- ✅ Make sure discovered files follow naming conventions:
+  - Features → `Feature.js`
+  - Engines → `*Engine.js`
+  - IPC modules → `*IPC.js`
+  - Pages → `Page.js`
+  - Services → `*Service.js`
 
-The audit script is especially useful after structural changes.
+The packages audit script is your friend after structural changes.
 
-## 5. Development-State Warning
+## 5. ⚠️ Development State Warning
 
-Because development mode writes app state into the repo root:
+Because dev mode writes state into the repo root, these things can appear in `git status`:
 
-- local chats and usage data can appear in the working tree
-- connector state can appear in `Data/Features`
-- window state and user config can be modified locally
+```
+Data/Chats/           ← your local chat history
+Data/Features/        ← connector state, engine state
+Data/Usage.json       ← token usage
+Config/WindowState.json ← window position
+Config/User.json      ← your API keys ⚠️
+```
 
-Before committing, it is worth checking whether a file changed because of product use or because of intentional code work.
+**Before committing:** `git diff --staged` and make sure none of that is staged.
 
-## 6. Packaging Notes
+A `.gitignore` entry for `Data/`, `Memories/`, and `Config/User.json` is strongly recommended in personal forks.
+
+## 6. 📦 Packaging Notes
 
 `electron-builder.json` controls:
+- Which files are packaged
+- Bundled extra resources (seed skills, personas, model catalogs)
+- Output directory
+- Platform targets
+- GitHub release publishing
 
-- packaged files
-- bundled extra resources
-- output directory
-- platform targets
-- GitHub release publishing settings
+### What it currently builds:
+- 🪟 Windows — NSIS installer
+- 🍎 macOS — DMG artifact
+- 🐧 Linux — AppImage artifact
 
-The current configuration builds:
+### What gets bundled:
+- Seed `Skills/*.md`
+- Seed `Personas/*.md`
+- `Config/Models/` catalogs
+- `Config/WindowState.json` defaults
 
-- Windows NSIS installers
-- macOS DMG artifacts
-- Linux AppImage artifacts
+## 7. 🔢 Versioning
 
-The build also includes seeded skills, personas, model catalogs, and window state resources.
+Joanium uses a **date-based versioning** helper via `Scripts/SetVersionByDate.mjs`.
 
-## 7. Versioning
+`npm run build` automatically updates the version as part of the build process — no manual version bumping needed.
 
-The repo uses a date-based versioning helper through `Scripts/SetVersionByDate.mjs`.
+## 8. 🐛 Useful Files for Debugging
 
-That means release builds are not just reading a manually maintained static version number. If you are doing packaging work, be aware that `npm run build` will update the version as part of the process.
+| What's broken | Where to look |
+|---|---|
+| App won't start / crashes on launch | `App.js` |
+| Feature/engine not loading | `Packages/Main/Boot.js` |
+| Renderer can't call main process | `Core/Electron/Bridge/Preload.js` |
+| Pages not mounting or sidebar broken | `Packages/Renderer/Application/Main.js` |
+| Chat behavior or tool calling | `Packages/Pages/Chat/Features/Core/Agent.js` |
+| Local file/shell tools broken | `Packages/Main/IPC/TerminalIPC.js` |
+| Feature not contributing to chat | `Packages/Capabilities/Core/FeatureRegistry.js` |
+| Feature state not persisting | `Packages/Features/Core/FeatureStorage.js` |
 
-## 8. Useful Files During Debugging
+## 9. ✅ When to Run Which Check
 
-- `App.js` for startup behavior
-- `Packages/Main/Boot.js` for assembly and discovery
-- `Core/Electron/Bridge/Preload.js` for renderer-accessible APIs
-- `Packages/Renderer/Application/Main.js` for page mounting
-- `Packages/Pages/Chat/UI/Render/index.js` for the main experience
-- `Packages/Main/IPC/TerminalIPC.js` for local file and shell tools
-- `Packages/Capabilities/Core/FeatureRegistry.js` for capability composition
-- `Packages/Features/Core/FeatureStorage.js` for persisted feature state
+| When you... | Run |
+|---|---|
+| Add or move workspace packages | `npm run packages:audit` |
+| Change discovery roots | `npm run packages:audit` |
+| Add a new engine, page, feature, or IPC | `npm run packages:audit` |
+| Change any `.js` module | `npm run lint` |
+| Change renderer behavior | Manual app verification |
+| Change provider setup | Manual app verification |
+| Change automations or agents | Manual app verification |
+| Change discovery and feature boot | Manual app verification |
+| Change persistence or prompt assembly | Manual app verification |
 
-## 9. When to Run Which Verification
+## 10. 🌟 Good Habits for This Repo
 
-Run `npm run packages:audit` when:
+- **Follow the discovery architecture** rather than adding one-off central wiring
+- **Keep integration logic** close to its capability package
+- **Keep UI concerns** in pages and renderer code, not in services
+- **Be cautious with broad changes** in chat orchestration — they ripple into chat, agents, channels, and tool execution simultaneously
+- **Treat `Data/`, `Memories/`, `Skills/`, `Personas/`** as mixed code-and-runtime territory in dev mode
 
-- adding or moving workspace packages
-- changing discovery roots
-- adding a new engine, page package, feature package, or IPC package
+## 11. 📖 Companion Docs
 
-Run `npm run lint` when:
+Use these together for a full picture:
 
-- changing JS modules
-- updating page logic
-- changing shared helpers
-
-Run the app manually when:
-
-- changing renderer behavior
-- changing provider setup
-- changing automations or agents
-- changing discovery and feature boot behavior
-- changing persistence and prompt assembly
-
-## 10. Good Habits for This Repo
-
-- Prefer following the existing discovery architecture over adding one-off central wiring.
-- Keep integration logic close to the corresponding capability package.
-- Keep UI concerns in pages and renderer code, not in random services.
-- Be careful with broad changes in the chat orchestration path because they can affect chat, agents, channels, and tool execution at once.
-- Treat `Data`, `Memories`, `Skills`, and `Personas` as mixed code-plus-runtime territory in development.
-
-## 11. Best Companion Docs
-
-Use these docs together:
-
-- [Architecture.md](Architecture.md)
-- [Features.md](Features.md)
-- [Data-And-Persistence.md](Data-And-Persistence.md)
-- [Extension-Guide.md](Extension-Guide.md)
-- [Where-To-Change-What.md](Where-To-Change-What.md)
-
-That set gives you both the conceptual map and the practical change map.
+| Doc | Use it for |
+|---|---|
+| [Architecture.md](Architecture.md) | Mental model + boot flow + runtime layers |
+| [Features.md](Features.md) | What's already built |
+| [Data-And-Persistence.md](Data-And-Persistence.md) | Storage layout + backup |
+| [Extension-Guide.md](Extension-Guide.md) | Adding new things |
+| [Where-To-Change-What.md](Where-To-Change-What.md) | Finding the right file |

@@ -1,307 +1,248 @@
-# Joanium Features
+# 🧩 Joanium Features
 
-This document describes the current product surface and the major feature families already present in the repository.
+A tour of everything already built into Joanium — the product surfaces, the background systems, the integrations, and how they all compose together.
 
-## 1. Product Surfaces
+## 1. 🖥️ Product Surfaces
 
-Joanium is already more than a single assistant page. The repo contains multiple user-facing surfaces that together form a desktop AI workspace.
+Joanium ships multiple user-facing surfaces that together form a full desktop AI workspace:
 
-| Surface     | Main area                    | What users get                                                                                     |
-| ----------- | ---------------------------- | -------------------------------------------------------------------------------------------------- |
-| Setup       | `Packages/Pages/Setup`       | First-run onboarding, profile capture, and provider configuration.                                 |
-| Chat        | `Packages/Pages/Chat`        | The primary assistant experience with tool use, attachments, project context, and model switching. |
-| Automations | `Packages/Pages/Automations` | Scheduled or repeatable jobs that gather inputs, run AI, and trigger outputs.                      |
-| Agents      | `Packages/Pages/Agents`      | Reusable autonomous prompts with schedule, model selection, and workspace/project context.         |
-| Skills      | `Packages/Pages/Skills`      | Skill library discovery, enable/disable controls, and bulk management.                             |
-| Personas    | `Packages/Pages/Personas`    | Persona activation and chat-start flows.                                                           |
-| Marketplace | `Packages/Pages/Marketplace` | Remote browsing and installation for skills and personas.                                          |
-| Events      | `Packages/Pages/Events`      | Unified background run history, including failures.                                                |
-| Usage       | `Packages/Pages/Usage`       | Local usage analytics by provider and model.                                                       |
+| Surface | Location | What users get |
+|---|---|---|
+| 💬 **Chat** | `Packages/Pages/Chat` | The primary AI workspace — tool use, attachments, project context, model switching |
+| ⚙️ **Setup** | `Packages/Pages/Setup` | First-run onboarding, profile capture, and provider configuration |
+| 🤖 **Automations** | `Packages/Pages/Automations` | Scheduled jobs that gather data, run AI, and trigger outputs |
+| 🕵️ **Agents** | `Packages/Pages/Agents` | Reusable autonomous prompts with schedules and workspace context |
+| 🧠 **Skills** | `Packages/Pages/Skills` | Skill library management — enable, disable, bulk controls |
+| 🎭 **Personas** | `Packages/Pages/Personas` | Persona activation and chat-start flows |
+| 🛍️ **Marketplace** | `Packages/Pages/Marketplace` | Browse and install remote skills and personas |
+| 📋 **Events** | `Packages/Pages/Events` | Background run history including failures |
+| 📊 **Usage** | `Packages/Pages/Usage` | Local token and model usage analytics |
 
-## 2. Chat Is the Product Center
+## 2. 💬 Chat Is the Product Center
 
-The chat page is Joanium's primary interaction surface, but it is also an orchestration layer reused by other features.
+The chat page is Joanium's primary surface — but it's also an **orchestration layer** reused by automations, agents, and channels.
 
-### Chat already supports
+### What chat already supports
 
-- model/provider selection
-- workspace-aware prompting
-- active project context
-- text and file attachments
-- document extraction for common office and code formats
-- browser preview integration
-- planner-driven tool selection
-- iterative tool calling
-- MCP tool usage
-- feature-contributed chat tools
-- sub-agent orchestration support
-- failover model selection
-- chat persistence
-- personal memory sync markers
+- ✅ Model and provider selection (switch mid-conversation)
+- ✅ Workspace-aware prompting (loads your active project automatically)
+- ✅ Active project context (files, directory tree, project metadata)
+- ✅ Text and file attachments
+- ✅ Document extraction for office and code formats
+- ✅ Browser preview integration
+- ✅ Planner-driven tool selection (pre-plans tool calls before model runs)
+- ✅ Iterative tool calling (multi-step tool loops)
+- ✅ MCP tool usage
+- ✅ Feature-contributed chat tools (e.g. GitHub tools from the GitHub capability)
+- ✅ Sub-agent orchestration support
+- ✅ Failover model selection
+- ✅ Chat persistence
+- ✅ Personal memory sync markers
 
-### Important code areas
+### Key code areas
+```
+Packages/Pages/Chat/UI/Render           ← Page mounting + top-level interactions
+Packages/Pages/Chat/Features/Core       ← Orchestration loop (Agent.js)
+Packages/Pages/Chat/Features/Composer   ← Attachment and composer logic
+Packages/Pages/Chat/Features/ModelSelector
+Packages/Pages/Chat/Features/Capabilities ← Built-in chat tools
+Packages/Features/AI                    ← Provider adapters
+```
 
-- `Packages/Pages/Chat/UI/Render`
-- `Packages/Pages/Chat/Features/Core`
-- `Packages/Pages/Chat/Features/Composer`
-- `Packages/Pages/Chat/Features/ModelSelector`
-- `Packages/Pages/Chat/Features/Capabilities`
-- `Packages/Features/AI`
-
-## 3. Background Work: Automations and Agents
+## 3. ⏰ Background Work: Automations and Agents
 
 Joanium has two distinct but related background systems.
 
-### Automations
+### 🤖 Automations
 
-Automations are job-like workflows. They can:
+Automations are **job-like workflows** — they run on a schedule, collect data, call AI, and trigger outputs.
 
-- run on a schedule
-- collect data from built-in or feature-provided data sources
-- generate output with AI
-- trigger built-in or feature-provided outputs/actions
-- record history and usage
+**Built-in data sources:**
 
-Built-in automation data sources include examples such as:
+| Source | Example use |
+|---|---|
+| RSS feed | "New article published on my favourite blog" |
+| Reddit | "Hot posts in r/programming this morning" |
+| Hacker News | "Top stories right now" |
+| Weather | "Current conditions in my city" |
+| Crypto price | "BTC price crossed $X" |
+| URL fetch | "Scrape this page for changes" |
+| File read | "Read my notes file before running" |
+| System stats | "CPU/memory usage right now" |
+| Custom context | "Use this text as input" |
 
-- RSS feed
-- Reddit
-- Hacker News
-- weather
-- crypto price
-- URL fetch
-- file read
-- custom context
-- system stats
+**Built-in outputs:**
 
-Built-in actions and outputs include examples such as:
+| Output | Example use |
+|---|---|
+| Desktop notification | "Notify me when done" |
+| File creation | "Save the AI summary to a markdown file" |
+| File move | "Move processed files to archive/" |
+| Run command/script | "Run a post-processing script" |
+| HTTP request / webhook | "POST the result to my API" |
+| Clipboard | "Copy the output to clipboard" |
+| Open app or URL | "Open the result in the browser" |
 
-- notifications
-- file creation and file movement
-- running commands or scripts
-- HTTP requests and webhooks
-- clipboard actions
-- terminal work
-- opening apps or sites
+Capability packages can contribute **additional** data sources and output handlers on top of these.
 
-### Agents
+### 🕵️ Agents
 
-Agents are scheduled prompts that run with:
+Agents are **scheduled prompts** — simpler than automations, but powerful for repeat tasks.
 
-- a name and description
-- a prompt
-- an enabled/disabled state
-- a primary model
-- a schedule
-- optional workspace/project binding
-- run history
+Each agent has:
+- A name and description
+- A prompt
+- An enabled/disabled toggle
+- A primary model
+- A schedule (cron-style)
+- Optional workspace/project context binding
+- Full run history
 
-They are ideal for repeated review, monitoring, or work-steering behaviors.
+**Good uses for agents:**
+- Daily code review of recent commits
+- Morning Slack message with open PR summary
+- Weekly changelog monitoring
+- Nightly dependency vulnerability check
 
-## 4. Connectors and Integrations
+## 4. 🔌 Connectors and Integrations
 
-Joanium separates platform behavior from integration behavior.
+Joanium cleanly separates **platform behavior** from **integration behavior**.
 
-### Platform-level integration systems
+### Platform-level systems (always running)
 
-- `Packages/Features/Connectors` manages connector state and credentials.
-- `Packages/Features/MCP` manages MCP sessions for builtin, stdio, and HTTP servers.
-- `Packages/Features/Channels` handles channel polling and replies.
-- `Packages/Features/BrowserPreview` supports in-app browser preview events and state.
+| System | Location | What it does |
+|---|---|---|
+| Connector engine | `Packages/Features/Connectors` | Manages connector state and credentials |
+| MCP engine | `Packages/Features/MCP` | Manages MCP sessions (builtin, stdio, HTTP) |
+| Channel engine | `Packages/Features/Channels` | Polls channels, routes replies |
+| Browser preview | `Packages/Features/BrowserPreview` | In-app browser events and state |
 
-### Capability packages currently present
+### Capability packages (integration contributors)
 
-- `Packages/Capabilities/FreeConnectors`
-- `Packages/Capabilities/Github`
-- `Packages/Capabilities/Gitlab`
-- `Packages/Capabilities/Google`
+| Package | What it adds |
+|---|---|
+| `Packages/Capabilities/FreeConnectors` | Lightweight data/utility integrations |
+| `Packages/Capabilities/Github` | Full GitHub integration |
+| `Packages/Capabilities/Gitlab` | Full GitLab integration |
+| `Packages/Capabilities/Google` | Google Workspace family |
 
-## 5. Current Integration Families
+## 5. 🆓 Free Connectors
 
-### Free connectors
+These need no auth and are available out of the box:
 
-The free connector capability contributes lightweight data and utility integrations, including examples such as:
+`Weather & geolocation` · `Finance & exchange rates` · `NASA` · `FRED` · `CoinGecko` · `Wikipedia` · `Countries` · `Jokes` · `Quotes` · `Fun facts` · `Hacker News` · `Unsplash`
 
-- weather and geolocation
-- finance and exchange rates
-- NASA and FRED
-- CoinGecko
-- Wikipedia
-- countries
-- jokes, quotes, and fun facts
-- Hacker News
-- image-related integrations such as Unsplash
+## 6. 🐙 GitHub & GitLab
 
-### GitHub and GitLab
+Both packages contribute:
 
-These packages contribute:
+- 🔑 Connector definition (setup + auth)
+- 🛠️ Chat tools (e.g. "list open PRs", "create an issue", "review this file")
+- 💬 Prompt context (active repos, recent activity injected into every message)
+- 📊 Automation data sources (new issues, PR events, pipeline status)
+- 📤 Automation outputs (create PRs, post comments, trigger workflows)
 
-- connector definitions
-- chat tools
-- prompt context
-- automation data sources
-- automation outputs
+GitHub also contributes code review behavior through feature outputs.
 
-GitHub also contributes review-related behavior through feature outputs.
+## 7. 🌐 Google Workspace Family
 
-### Google Workspace family
+The Google capability is a **feature family** — a shared root connector that sub-capabilities extend with service-specific behavior.
 
-The Google capability is a feature family rather than a single flat integration. The root package handles shared Google connector behavior, and sub-capabilities extend it with service-specific behavior.
+Each of these is its own sub-capability package under `Packages/Capabilities/Google/`:
 
-Current Google service folders include:
+| Service | What the assistant can do |
+|---|---|
+| 📅 Calendar | Read/create events, check availability |
+| 👤 Contacts | Look up contact details |
+| 📝 Docs | Read and edit documents |
+| 📁 Drive | Search, upload, read files |
+| 📋 Forms | Read responses |
+| 📧 Gmail | Read, send, search emails |
+| 🖼️ Photos | Browse albums |
+| 📊 Sheets | Read and update spreadsheet data |
+| 🖥️ Slides | Read presentations |
+| ✅ Tasks | Manage task lists |
+| 📺 YouTube | Search videos, read channel data |
 
-- Calendar
-- Contacts
-- Docs
-- Drive
-- Forms
-- Gmail
-- Photos
-- Sheets
-- Slides
-- Tasks
-- YouTube
+This is the feature registry pattern in action — a shared connector extended incrementally by multiple related capability modules.
 
-This structure is a good example of why Joanium's feature registry matters. A shared connector can be extended incrementally by multiple related capability modules.
+## 8. 🤖 MCP and Browser
 
-## 6. MCP and Browser Work
+MCP (Model Context Protocol) is a major differentiator. Joanium supports:
 
-MCP support is a major differentiator in the codebase.
+- **Builtin MCP sessions** — browser tooling, local workspace tools
+- **stdio MCP sessions** — local CLI-based MCP servers
+- **HTTP MCP sessions** — remote MCP servers
+- **Persisted custom server config** — add your own MCP servers in settings
+- **Builtin browser MCP server** — browser preview integration as a tool
 
-### Current MCP characteristics
+The assistant's tool surface becomes a hybrid of: local workspace tools + feature-defined tools + MCP tools + browser tools.
 
-- builtin MCP sessions
-- stdio MCP sessions
-- HTTP MCP sessions
-- persisted custom server config
-- builtin browser MCP server
+## 9. 📡 Channel Support
 
-This means Joanium can expose a hybrid tool surface:
+The channels engine polls messaging platforms and routes conversations through the same core orchestration as regular chat.
 
-- local workspace and shell tooling
-- feature-defined tools
-- MCP tools
-- browser-oriented tools
+Supported channels: **Telegram · WhatsApp · Discord · Slack**
 
-## 7. Channel Support
+Flow: message received → forwarded to renderer orchestration → AI responds → sent back through the channel. Same agent loop. Same tools available.
 
-The channels engine currently includes handling for:
-
-- Telegram
-- WhatsApp
-- Discord
-- Slack
-
-It polls incoming messages, forwards them into the renderer-side orchestration path, and sends responses back through the corresponding channel implementation.
-
-This is a useful architectural point: channel conversations are not a separate AI system. They reuse the same core orchestration philosophy as the main assistant.
-
-## 8. Skills, Personas, and Marketplace
-
-Joanium treats skills and personas as markdown-native content libraries.
+## 10. 🧠 Skills, Personas & Marketplace
 
 ### Skills
 
-Skills are markdown documents with frontmatter and instructions. Users can:
+Skills are markdown files with YAML frontmatter and instructions. They teach the assistant domain-specific behaviors — think of them as reusable prompt modules.
 
-- browse installed skills
-- enable or disable them
-- enable all or disable all
-- use them as part of assistant planning and runtime prompting
+```markdown
+---
+name: Code Reviewer
+description: Reviews code for bugs, style, and security
+triggers: [review, check, audit]
+---
+
+When reviewing code, always check for:
+1. Security vulnerabilities (SQL injection, XSS, etc.)
+2. Error handling completeness
+...
+```
+
+Users can: browse · enable · disable · enable all · disable all
 
 ### Personas
 
-Personas are markdown documents that influence the system prompt and assistant behavior. Users can:
+Personas are markdown files that reshape the assistant's personality and communication style. Drop in "senior engineer" and it gets terse and precise. Drop in "product manager" and it starts thinking in user stories.
 
-- browse personas
-- activate a persona
-- deactivate a persona
-- start a chat with a persona context
+Users can: browse · activate · deactivate · start a fresh chat in-persona
 
 ### Marketplace
 
-The marketplace page can fetch remote skills and personas from the Joanium marketplace API, inspect details, and install items into the local library.
+The marketplace fetches remote skills and personas from the Joanium marketplace API. Users can inspect details and install with one click. It's the same local markdown system under the hood — marketplace items just get copied into your local library.
 
-This makes Joanium's skill/persona system both local-first and distributable.
+## 11. 📊 Usage & Observability
 
-## 9. Usage and Observability
+Joanium tracks what's happening — locally, privately.
 
-Joanium already includes observability-oriented surfaces:
+- **Usage analytics** — token counts and costs by provider and model
+- **Events page** — unified history of all background agent and automation runs (including failures)
+- **Per-agent history** — individual run logs for every scheduled agent
+- **Per-automation history** — individual run logs for every automation
 
-- usage tracking written to a local usage file
-- events page for background activity and errors
-- per-agent history
-- per-automation history
-- update progress hooks in preload for packaged releases
+Most agent products go dark once background execution starts. Joanium keeps it visible.
 
-This is valuable because many agent products skip visibility once background execution begins.
+## 12. 🔀 How Features Compose Across Surfaces
 
-## 10. How Features Compose Across Surfaces
+One of Joanium's strongest ideas: **one package, multiple surfaces**.
 
-One of Joanium's strongest ideas is that a single feature package can contribute to multiple user experiences at once.
+A single capability package can simultaneously add:
 
-For example, one capability package can add:
+```
+My new "Linear" capability package contributes →
 
-- a connector in setup
-- prompt context in chat
-- a chat tool during conversation
-- a data source in automations
-- an output handler in automations
-- a feature page in the sidebar
+  ✅ Connector in setup UI         (users connect their Linear account)
+  ✅ Prompt context in chat        ("You have 5 open Linear issues")
+  ✅ Chat tools                    ("create issue", "list sprints")
+  ✅ Automation data source        (poll new issues as trigger)
+  ✅ Automation output handler     (create issues from automations)
+  ✅ Feature page in the sidebar   (a dedicated Linear page)
+```
 
-That makes the system much more powerful than a "plugin adds one button" architecture.
-
-## 11. Feature Inventory by Package Family
-
-### `Packages/Features`
-
-These are platform/runtime features:
-
-- Agents
-- AI
-- Automation
-- BrowserPreview
-- Channels
-- Connectors
-- Core
-- MCP
-- Skills
-- Themes
-
-### `Packages/Capabilities`
-
-These are integration or capability contributors:
-
-- FreeConnectors
-- Github
-- Gitlab
-- Google
-
-### `Packages/Pages`
-
-These are user-facing app surfaces:
-
-- Agents
-- Automations
-- Chat
-- Events
-- Marketplace
-- Personas
-- Setup
-- Skills
-- Usage
-
-## 12. Feature Maturity Notes
-
-The repo already has strong breadth:
-
-- multiple provider support
-- local persistence
-- page-based product structure
-- background execution
-- integrations
-- marketplace
-- skills/personas
-- MCP
-
-The most important thing for contributors is to recognize that Joanium is already an ecosystem-shaped app, not a single assistant screen. Changes should be made with that broader product surface in mind.
+This is much more powerful than "plugin adds one button." The feature registry makes it possible.

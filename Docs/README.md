@@ -1,45 +1,58 @@
-# Joanium Documentation
+# 📚 Joanium Docs
 
-This folder explains how the current Joanium codebase is put together, how the product behaves, where data lives, and which files you should touch when extending or changing specific parts of the app.
+Welcome to the Joanium documentation. Here's where to start depending on what you're trying to do.
 
-## Recommended Reading Order
+## 🗺️ Recommended Reading Order
 
-1. [Architecture.md](Architecture.md) for the mental model and runtime flow.
-2. [Features.md](Features.md) for the current product surface and capability map.
-3. [Data-And-Persistence.md](Data-And-Persistence.md) for storage layout and local-first behavior.
-4. [Extension-Guide.md](Extension-Guide.md) for adding features, engines, pages, IPC, and services.
-5. [Where-To-Change-What.md](Where-To-Change-What.md) for day-to-day maintenance and targeted edits.
-6. [Development-Workflow.md](Development-Workflow.md) for scripts, packaging, and contributor workflow.
+If you're new to the codebase, read in this order:
 
-## If You Want To...
+1. **[Architecture.md](Architecture.md)** — understand the mental model and how the app is assembled
+2. **[Features.md](Features.md)** — see the full product surface and what's already built
+3. **[Data-And-Persistence.md](Data-And-Persistence.md)** — understand where state lives and why
+4. **[Extension-Guide.md](Extension-Guide.md)** — learn how to add new features, engines, pages, and services
+5. **[Where-To-Change-What.md](Where-To-Change-What.md)** — day-to-day maintenance map
+6. **[Development-Workflow.md](Development-Workflow.md)** — scripts, packaging, and contributor workflow
 
-| Goal                                         | Read this first                                    |
-| -------------------------------------------- | -------------------------------------------------- |
-| Understand how the app boots                 | [Architecture.md](Architecture.md)                 |
-| Understand what the product already supports | [Features.md](Features.md)                         |
-| Find where user data is stored               | [Data-And-Persistence.md](Data-And-Persistence.md) |
-| Add a new integration or feature             | [Extension-Guide.md](Extension-Guide.md)           |
-| Change a specific page or subsystem          | [Where-To-Change-What.md](Where-To-Change-What.md) |
-| Build, audit, or package the app             | [Development-Workflow.md](Development-Workflow.md) |
+## ⚡ Quick Lookup
 
-## Core Takeaways
+| I want to... | Read this |
+|---|---|
+| Understand how the app boots | [Architecture.md](Architecture.md) |
+| See what features already exist | [Features.md](Features.md) |
+| Find where user data is stored | [Data-And-Persistence.md](Data-And-Persistence.md) |
+| Add a new integration or feature | [Extension-Guide.md](Extension-Guide.md) |
+| Change a specific page or subsystem | [Where-To-Change-What.md](Where-To-Change-What.md) |
+| Build, audit, or package the app | [Development-Workflow.md](Development-Workflow.md) |
 
-- Joanium is not organized around one monolithic app file. It is assembled through workspace discovery.
-- The main process boot layer lives in `Packages/Main`.
-- Long-lived background behavior lives in feature engines under `Packages/Features`.
-- Integration and capability definitions live in `Packages/Capabilities`.
-- User-facing pages live in `Packages/Pages`.
-- The renderer shell that mounts those pages lives in `Packages/Renderer`.
-- Shared contracts and low-level helpers live in `Packages/System`.
+## 🧠 The Mental Model in 30 Seconds
 
-## A Fast Mental Model
+Think of Joanium as **5 layers stacked on top of each other:**
 
-Think of Joanium as five layers:
-
-1. Electron boot and process plumbing.
-2. Discovery and composition.
-3. Long-lived engines and services.
-4. Renderer pages and shared UI.
-5. Local-first data, markdown libraries, and prompt context.
+```
+┌─────────────────────────────────────────────┐
+│  5. Local data, markdown libraries, prompts  │  ← Skills, Personas, Memories, Config
+├─────────────────────────────────────────────┤
+│  4. Renderer pages + shared UI               │  ← Chat, Agents, Automations, etc.
+├─────────────────────────────────────────────┤
+│  3. Long-lived engines + services            │  ← Agents engine, Automation engine, etc.
+├─────────────────────────────────────────────┤
+│  2. Discovery + composition                  │  ← Feature Registry, Boot.js
+├─────────────────────────────────────────────┤
+│  1. Electron boot + process plumbing         │  ← App.js, Main process, Preload
+└─────────────────────────────────────────────┘
+```
 
 Once that clicks, the rest of the repo becomes much easier to navigate.
+
+> 💡 **Key insight:** Joanium is not organised around one monolithic app file. It's **assembled** through workspace package discovery. Add a package → it just shows up at boot.
+
+## 📁 Where the important folders live
+
+```text
+Packages/Main/          ← Boot, discovery, services, IPC registration
+Packages/Features/      ← Long-lived background runtimes (engines)
+Packages/Capabilities/  ← Integration packages (GitHub, Google, etc.)
+Packages/Pages/         ← User-facing pages
+Packages/Renderer/      ← SPA shell that mounts pages + sidebar
+Packages/System/        ← Shared contracts and low-level helpers
+```
