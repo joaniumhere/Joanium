@@ -16,6 +16,7 @@ app.commandLine.appendSwitch('lang', 'en-US');
 app.userAgentFallback = BUILTIN_BROWSER_USER_AGENT;
 
 let engines = null;
+let enginesStopped = false;
 const REQUIRED_RUNTIME_DIRS = Object.freeze([
   Paths.DATA_DIR,
   Paths.CHATS_DIR,
@@ -53,29 +54,55 @@ function createMainAppWindow(activeEngines, page = resolveStartPage()) {
   return windowRef;
 }
 
-app.whenReady().then(async () => {
-  if (app.isPackaged && !process.argv.includes('--dev')) {
-    setupAutoUpdates();
+function shutdownEngines() {
+  if (!engines || enginesStopped) return;
+
+  try {
+    stopEngines(engines);
+  } catch (error) {
+    console.error('[App] Failed to stop engines cleanly:', error);
+  } finally {
+    engines = null;
+    enginesStopped = true;
   }
+}
 
-  ensureRuntimeDirectories();
-  initializeContentLibraries();
-  initializePersonalMemoryLibrary();
-
-  engines = await boot();
-  startEngines(engines);
-  createMainAppWindow(engines);
-
-  MCPIPC.autoConnect().catch((err) => console.warn('[App] MCP auto-connect failed:', err.message));
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createMainAppWindow(engines);
+app.whenReady().then(async () => {
+  try {
+    if (app.isPackaged && !process.argv.includes('--dev')) {
+      setupAutoUpdates();
     }
-  });
+
+    ensureRuntimeDirectories();
+    initializeContentLibraries();
+    initializePersonalMemoryLibrary();
+
+    engines = await boot();
+    enginesStopped = false;
+    startEngines(engines);
+    createMainAppWindow(engines);
+
+    MCPIPC.autoConnect().catch((err) =>
+      console.warn('[App] MCP auto-connect failed:', err.message),
+    );
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createMainAppWindow(engines);
+      }
+    });
+  } catch (error) {
+    console.error('[App] Startup failed:', error);
+    shutdownEngines();
+    app.quit();
+  }
 });
 
+app.on('before-quit', shutdownEngines);
+
 app.on('window-all-closed', () => {
-  if (engines) stopEngines(engines);
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin') {
+    shutdownEngines();
+    app.quit();
+  }
 });

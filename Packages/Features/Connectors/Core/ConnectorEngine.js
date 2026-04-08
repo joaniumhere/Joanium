@@ -1,8 +1,5 @@
 import defineEngine from '../../../System/Contracts/DefineEngine.js';
-
-function deepClone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
+import { cloneValue as deepClone } from '../../../System/Utils/CloneValue.js';
 
 function buildDefaultState(featureRegistry = null) {
   const connectors = {};

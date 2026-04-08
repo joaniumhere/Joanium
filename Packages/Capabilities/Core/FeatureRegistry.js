@@ -1,6 +1,7 @@
 ﻿import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { cloneValue as deepClone } from '../../System/Utils/CloneValue.js';
 
 function uniqueBy(items = [], keyFn = (item) => item) {
   const seen = new Set();
@@ -14,11 +15,6 @@ function uniqueBy(items = [], keyFn = (item) => item) {
   }
 
   return result;
-}
-
-function deepClone(value) {
-  if (value == null) return value;
-  return JSON.parse(JSON.stringify(value));
 }
 
 function normalizeFeatureStorage(feature = {}) {

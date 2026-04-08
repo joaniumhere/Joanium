@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { net } from 'electron';
 import defineEngine from '../../../System/Contracts/DefineEngine.js';
+import { cloneValue } from '../../../System/Utils/CloneValue.js';
 
 // DEFAULT CHANNEL STATE
 const DEFAULT_STATE = {
@@ -392,10 +393,8 @@ export class ChannelEngine {
 
   /* ── Private helpers ── */
   _load() {
-    const clone = (value) => JSON.parse(JSON.stringify(value));
-
     try {
-      const loaded = this.storage.load(() => clone(DEFAULT_STATE));
+      const loaded = this.storage.load(() => cloneValue(DEFAULT_STATE));
       const channels =
         loaded?.channels && typeof loaded.channels === 'object' && !Array.isArray(loaded.channels)
           ? loaded.channels
@@ -405,22 +404,22 @@ export class ChannelEngine {
         channels,
       };
     } catch {
-      this._data = clone(DEFAULT_STATE);
+      this._data = cloneValue(DEFAULT_STATE);
     }
 
     for (const [key, val] of Object.entries(DEFAULT_STATE.channels)) {
       const existing = this._data.channels[key];
       this._data.channels[key] =
         existing && typeof existing === 'object' && !Array.isArray(existing)
-          ? { ...clone(val), ...existing }
-          : clone(val);
+          ? { ...cloneValue(val), ...existing }
+          : cloneValue(val);
     }
 
     return this._data;
   }
 
   _persist() {
-    const toSave = JSON.parse(JSON.stringify(this._data));
+    const toSave = cloneValue(this._data);
     delete toSave.channels.whatsapp._seenSids;
     // Strip runtime-only cache fields
     delete toSave.channels.discord._botUserId;
@@ -484,7 +483,7 @@ export class ChannelEngine {
 
   removeChannel(name) {
     this._load();
-    this._data.channels[name] = JSON.parse(JSON.stringify(DEFAULT_STATE.channels[name] ?? {}));
+    this._data.channels[name] = cloneValue(DEFAULT_STATE.channels[name] ?? {});
     this._data.channels[name].enabled = false;
     this._persist();
   }

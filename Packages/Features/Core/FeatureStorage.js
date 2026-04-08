@@ -1,10 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-
-function deepClone(value) {
-  if (value == null) return value;
-  return JSON.parse(JSON.stringify(value));
-}
+import { cloneValue as deepClone } from '../../System/Utils/CloneValue.js';
 
 function ensureDir(filePath) {
   const dir = path.dirname(filePath);
@@ -20,17 +16,12 @@ function readJson(filePath) {
   }
 }
 
-export function createFeatureJsonStorage(paths, {
-  featureKey,
-  fileName,
-} = {}) {
+export function createFeatureJsonStorage(paths, { featureKey, fileName } = {}) {
   const featureDir = path.join(paths.FEATURES_DATA_DIR, featureKey);
   const filePath = path.join(featureDir, fileName);
 
   function fallbackValue(fallback) {
-    return typeof fallback === 'function'
-      ? fallback()
-      : deepClone(fallback);
+    return typeof fallback === 'function' ? fallback() : deepClone(fallback);
   }
 
   return {

@@ -9,3 +9,4 @@ export {
   version,
 } from './Config/Properties.js';
 export { buildSystemPrompt } from './Prompting/SystemPrompt.js';
+export { cloneValue } from './Utils/CloneValue.js';

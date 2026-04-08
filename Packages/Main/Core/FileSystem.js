@@ -1,15 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-
-function cloneValue(value) {
-  if (value == null) return value;
-
-  if (typeof globalThis.structuredClone === 'function') {
-    return globalThis.structuredClone(value);
-  }
-
-  return JSON.parse(JSON.stringify(value));
-}
+import { cloneValue } from '../../System/Utils/CloneValue.js';
 
 function sortDirEntries(entries = []) {
   return [...entries].sort((left, right) => left.name.localeCompare(right.name));
