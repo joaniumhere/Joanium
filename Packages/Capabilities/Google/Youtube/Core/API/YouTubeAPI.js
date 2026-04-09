@@ -3,7 +3,6 @@ async function getFreshGoogleCreds(creds) {
   return getFreshCreds(creds);
 }
 
-
 const YT_BASE = 'https://www.googleapis.com/youtube/v3';
 
 async function ytFetch(creds, url, options = {}) {
@@ -19,7 +18,9 @@ async function ytFetch(creds, url, options = {}) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(`YouTube API error (${res.status}): ${body.error?.message ?? JSON.stringify(body)}`);
+    throw new Error(
+      `YouTube API error (${res.status}): ${body.error?.message ?? JSON.stringify(body)}`,
+    );
   }
 
   if (res.status === 204) return null;
@@ -43,11 +44,18 @@ export function formatCount(n) {
 }
 
 export async function getMyChannel(creds) {
-  const data = await ytFetch(creds, `${YT_BASE}/channels?part=snippet,statistics,brandingSettings&mine=true`);
+  const data = await ytFetch(
+    creds,
+    `${YT_BASE}/channels?part=snippet,statistics,brandingSettings&mine=true`,
+  );
   return data.items?.[0] ?? null;
 }
 
-export async function searchVideos(creds, query, { maxResults = 10, order = 'relevance', type = 'video' } = {}) {
+export async function searchVideos(
+  creds,
+  query,
+  { maxResults = 10, order = 'relevance', type = 'video' } = {},
+) {
   const params = new URLSearchParams({
     part: 'snippet',
     q: query,
@@ -60,18 +68,28 @@ export async function searchVideos(creds, query, { maxResults = 10, order = 'rel
 }
 
 export async function getVideoDetails(creds, videoId) {
-  const data = await ytFetch(creds, `${YT_BASE}/videos?part=snippet,statistics,contentDetails&id=${videoId}`);
+  const data = await ytFetch(
+    creds,
+    `${YT_BASE}/videos?part=snippet,statistics,contentDetails&id=${videoId}`,
+  );
   return data.items?.[0] ?? null;
 }
 
 export async function getMultipleVideos(creds, videoIds = []) {
   if (!videoIds.length) return [];
-  const data = await ytFetch(creds, `${YT_BASE}/videos?part=snippet,statistics,contentDetails&id=${videoIds.join(',')}`);
+  const data = await ytFetch(
+    creds,
+    `${YT_BASE}/videos?part=snippet,statistics,contentDetails&id=${videoIds.join(',')}`,
+  );
   return data.items ?? [];
 }
 
 export async function listMyPlaylists(creds, maxResults = 20) {
-  const params = new URLSearchParams({ part: 'snippet,contentDetails', mine: 'true', maxResults: String(Math.min(maxResults, 50)) });
+  const params = new URLSearchParams({
+    part: 'snippet,contentDetails',
+    mine: 'true',
+    maxResults: String(Math.min(maxResults, 50)),
+  });
   const data = await ytFetch(creds, `${YT_BASE}/playlists?${params}`);
   return data.items ?? [];
 }
@@ -120,7 +138,8 @@ export async function getVideoComments(creds, videoId, maxResults = 20) {
 
 export async function rateVideo(creds, videoId, rating) {
   const validRatings = ['like', 'dislike', 'none'];
-  if (!validRatings.includes(rating)) throw new Error(`Invalid rating. Must be one of: ${validRatings.join(', ')}`);
+  if (!validRatings.includes(rating))
+    throw new Error(`Invalid rating. Must be one of: ${validRatings.join(', ')}`);
   await ytFetch(creds, `${YT_BASE}/videos/rate?id=${videoId}&rating=${rating}`, { method: 'POST' });
   return true;
 }
@@ -139,4 +158,186 @@ export async function listMyVideos(creds, maxResults = 20) {
 export async function getChannelById(creds, channelId) {
   const data = await ytFetch(creds, `${YT_BASE}/channels?part=snippet,statistics&id=${channelId}`);
   return data.items?.[0] ?? null;
+}
+
+export async function getChannelVideos(creds, channelId, maxResults = 20) {
+  const params = new URLSearchParams({
+    part: 'snippet',
+    channelId,
+    type: 'video',
+    maxResults: String(Math.min(maxResults, 50)),
+    order: 'date',
+  });
+  const data = await ytFetch(creds, `${YT_BASE}/search?${params}`);
+  return data.items ?? [];
+}
+
+export async function createPlaylist(
+  creds,
+  { title, description = '', privacyStatus = 'private' },
+) {
+  return ytFetch(creds, `${YT_BASE}/playlists?part=snippet,status`, {
+    method: 'POST',
+    body: JSON.stringify({
+      snippet: { title, description },
+      status: { privacyStatus },
+    }),
+  });
+}
+
+export async function updatePlaylist(creds, playlistId, { title, description, privacyStatus }) {
+  const body = { id: playlistId, snippet: {}, status: {} };
+  if (title !== undefined) body.snippet.title = title;
+  if (description !== undefined) body.snippet.description = description;
+  if (privacyStatus !== undefined) body.status.privacyStatus = privacyStatus;
+  return ytFetch(creds, `${YT_BASE}/playlists?part=snippet,status`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deletePlaylist(creds, playlistId) {
+  await ytFetch(creds, `${YT_BASE}/playlists?id=${encodeURIComponent(playlistId)}`, {
+    method: 'DELETE',
+  });
+  return true;
+}
+
+export async function addVideoToPlaylist(creds, playlistId, videoId) {
+  return ytFetch(creds, `${YT_BASE}/playlistItems?part=snippet`, {
+    method: 'POST',
+    body: JSON.stringify({
+      snippet: {
+        playlistId,
+        resourceId: { kind: 'youtube#video', videoId },
+      },
+    }),
+  });
+}
+
+export async function removePlaylistItem(creds, playlistItemId) {
+  await ytFetch(creds, `${YT_BASE}/playlistItems?id=${encodeURIComponent(playlistItemId)}`, {
+    method: 'DELETE',
+  });
+  return true;
+}
+
+export async function subscribeToChannel(creds, channelId) {
+  return ytFetch(creds, `${YT_BASE}/subscriptions?part=snippet`, {
+    method: 'POST',
+    body: JSON.stringify({
+      snippet: { resourceId: { kind: 'youtube#channel', channelId } },
+    }),
+  });
+}
+
+export async function unsubscribeFromChannel(creds, subscriptionId) {
+  await ytFetch(creds, `${YT_BASE}/subscriptions?id=${encodeURIComponent(subscriptionId)}`, {
+    method: 'DELETE',
+  });
+  return true;
+}
+
+export async function checkSubscription(creds, channelId) {
+  const params = new URLSearchParams({ part: 'snippet', mine: 'true', forChannelId: channelId });
+  const data = await ytFetch(creds, `${YT_BASE}/subscriptions?${params}`);
+  const item = data.items?.[0] ?? null;
+  return { subscribed: !!item, subscriptionId: item?.id ?? null };
+}
+
+export async function postComment(creds, videoId, text) {
+  return ytFetch(creds, `${YT_BASE}/commentThreads?part=snippet`, {
+    method: 'POST',
+    body: JSON.stringify({
+      snippet: {
+        videoId,
+        topLevelComment: { snippet: { textOriginal: text } },
+      },
+    }),
+  });
+}
+
+export async function replyToComment(creds, parentId, text) {
+  return ytFetch(creds, `${YT_BASE}/comments?part=snippet`, {
+    method: 'POST',
+    body: JSON.stringify({
+      snippet: { parentId, textOriginal: text },
+    }),
+  });
+}
+
+export async function deleteComment(creds, commentId) {
+  await ytFetch(creds, `${YT_BASE}/comments?id=${encodeURIComponent(commentId)}`, {
+    method: 'DELETE',
+  });
+  return true;
+}
+
+export async function getCommentReplies(creds, parentId, maxResults = 20) {
+  const params = new URLSearchParams({
+    part: 'snippet',
+    parentId,
+    maxResults: String(Math.min(maxResults, 100)),
+  });
+  const data = await ytFetch(creds, `${YT_BASE}/comments?${params}`);
+  return data.items ?? [];
+}
+
+export async function getVideoRating(creds, videoId) {
+  const data = await ytFetch(
+    creds,
+    `${YT_BASE}/videos/getRating?id=${encodeURIComponent(videoId)}`,
+  );
+  return data.items?.[0] ?? null;
+}
+
+export async function getTrendingVideos(
+  creds,
+  { regionCode = 'US', categoryId = '0', maxResults = 20 } = {},
+) {
+  const params = new URLSearchParams({
+    part: 'snippet,statistics,contentDetails',
+    chart: 'mostPopular',
+    regionCode,
+    videoCategoryId: categoryId,
+    maxResults: String(Math.min(maxResults, 50)),
+  });
+  const data = await ytFetch(creds, `${YT_BASE}/videos?${params}`);
+  return data.items ?? [];
+}
+
+export async function searchChannels(creds, query, maxResults = 10) {
+  const params = new URLSearchParams({
+    part: 'snippet',
+    q: query,
+    type: 'channel',
+    maxResults: String(Math.min(maxResults, 50)),
+  });
+  const data = await ytFetch(creds, `${YT_BASE}/search?${params}`);
+  return data.items ?? [];
+}
+
+export async function searchPlaylists(creds, query, maxResults = 10) {
+  const params = new URLSearchParams({
+    part: 'snippet',
+    q: query,
+    type: 'playlist',
+    maxResults: String(Math.min(maxResults, 50)),
+  });
+  const data = await ytFetch(creds, `${YT_BASE}/search?${params}`);
+  return data.items ?? [];
+}
+
+export async function getVideoCategories(creds, regionCode = 'US') {
+  const params = new URLSearchParams({ part: 'snippet', regionCode, hl: 'en' });
+  const data = await ytFetch(creds, `${YT_BASE}/videoCategories?${params}`);
+  return data.items ?? [];
+}
+
+export async function reportVideo(creds, videoId, reasonId, secondaryReasonId = '', comments = '') {
+  await ytFetch(creds, `${YT_BASE}/videos/reportAbuse`, {
+    method: 'POST',
+    body: JSON.stringify({ videoId, reasonId, secondaryReasonId, comments }),
+  });
+  return true;
 }
