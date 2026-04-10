@@ -1,0 +1,57 @@
+/* ─────────────────────────────────────────────
+   layout.css
+   Top-level app shell: #app and #body-wrap
+───────────────────────────────────────────── */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  background: var(--bg-secondary);
+}
+
+#body-wrap {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: transparent;
+  animation: fadeScaleIn 0.45s var(--ease-out-ui) both;
+}
+
+#page-outlet {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-primary);
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 82%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--border-subtle) 82%, transparent);
+  border-top-left-radius: calc(var(--radius-xl) - 4px);
+  box-shadow:
+    -12px 0 32px -24px color-mix(in srgb, var(--shadow-color) 85%, transparent),
+    -4px 0 16px -12px var(--shadow-color);
+}
+
+#page-outlet > #main {
+  min-width: 0;
+  min-height: 0;
+  background: transparent;
+  border-top-left-radius: inherit;
+}
+
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: transparent;
+  animation: fadeIn 0.4s var(--ease-out-ui) 0.08s both;
+}

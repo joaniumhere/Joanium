@@ -1,0 +1,10 @@
+{
+  "name": "@Joanium/themes",
+  "private": true,
+  "type": "module",
+  "description": "Theme bootstrapping helpers for Joanium.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

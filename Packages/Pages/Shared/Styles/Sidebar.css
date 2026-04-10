@@ -1,0 +1,184 @@
+/* ─────────────────────────────────────────────
+   sidebar.css
+   Sidebar: logo, nav buttons, tooltips, avatar
+───────────────────────────────────────────── */
+
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 2px;
+  z-index: 100;
+  animation: slideInLeft 0.45s var(--ease-out-ui) both;
+}
+
+/* ── Sidebar logo ── */
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.sidebar-logo svg {
+  width: 26px;
+  height: 26px;
+  animation: logoPulse 6s var(--ease-in-out) infinite;
+}
+
+.sidebar-divider {
+  width: 28px;
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+  opacity: 0.6;
+}
+
+/* ── Nav buttons ── */
+.sidebar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: fadeScaleIn 0.38s var(--ease-out-ui) both;
+  transition:
+    background var(--transition-mid),
+    color var(--transition-mid),
+    transform var(--transition-fast),
+    box-shadow var(--transition-mid);
+}
+
+/* Stagger entrance (short gaps — feels alive, not sluggish) */
+.sidebar-btn:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.sidebar-btn:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.sidebar-btn:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.sidebar-btn:nth-child(4) {
+  animation-delay: 0.13s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    transform: scale(1.06);
+  }
+}
+
+.sidebar-btn:active {
+  transform: scale(0.97);
+}
+
+.sidebar-btn.active {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.sidebar-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.6;
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+/* ── Tooltip ── */
+.sidebar-btn::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--font-ui);
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 999;
+  box-shadow: var(--shadow-sm);
+  transition:
+    opacity var(--duration-tooltip) var(--ease-out-ui),
+    transform var(--duration-tooltip) var(--ease-out-ui);
+  transform-origin: left center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-btn:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* ── Theme toggle icon swap ── */
+.sidebar-btn.theme-toggle {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-btn.theme-toggle .theme-icon {
+  position: absolute;
+  transition:
+    transform 0.3s var(--ease-spring),
+    opacity 0.2s ease;
+}
+
+/* ── Avatar ── */
+.sidebar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #333));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  margin-top: 4px;
+  font-family: var(--font-ui);
+  transition:
+    box-shadow var(--transition-mid),
+    transform var(--transition-fast);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-avatar:hover {
+    box-shadow:
+      0 0 0 2px var(--accent),
+      0 0 12px var(--accent-glow);
+    transform: scale(1.06);
+  }
+}
+
+.sidebar-avatar:active {
+  transform: scale(0.97);
+}

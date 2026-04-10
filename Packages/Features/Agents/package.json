@@ -1,0 +1,20 @@
+{
+  "name": "@Joanium/agents",
+  "private": true,
+  "type": "module",
+  "description": "Agent scheduling and execution modules for Joanium.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "joanium": {
+    "discovery": {
+      "engines": [
+        "./Core"
+      ],
+      "ipc": [
+        "./IPC"
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@Joanium/automation",
+  "private": true,
+  "type": "module",
+  "description": "Automation engine and action executors for Joanium.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "joanium": {
+    "discovery": {
+      "engines": [
+        "./Core"
+      ],
+      "ipc": [
+        "./IPC"
+      ]
+    }
+  }
+}

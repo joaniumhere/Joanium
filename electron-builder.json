@@ -1,0 +1,57 @@
+{
+  "appId": "com.Joanium.app",
+  "productName": "Joanium",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "App.js",
+    "Core/**/*",
+    "Packages/**/*",
+    "Public/**/*",
+    "Assets/**/*",
+    "SystemInstructions/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "Config/Models",
+      "to": "Config/Models"
+    },
+    {
+      "from": "Config/WindowState.json",
+      "to": "Config/WindowState.json"
+    },
+    {
+      "from": "Skills",
+      "to": "Skills",
+      "filter": ["**/*.md"]
+    },
+    {
+      "from": "Personas",
+      "to": "Personas",
+      "filter": ["**/*.md"]
+    }
+  ],
+  "publish": {
+    "provider": "github",
+    "owner": "Joanium",
+    "repo": "Joanium",
+    "vPrefixedTagName": true,
+    "releaseType": "release"
+  },
+  "win": {
+    "icon": "Assets/Logo/Logo.ico",
+    "artifactName": "Joanium.exe",
+    "target": [{ "target": "nsis", "arch": ["x64"] }]
+  },
+  "mac": {
+    "icon": "Assets/Logo/Logo.icns",
+    "artifactName": "Joanium.dmg",
+    "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }]
+  },
+  "linux": {
+    "icon": "Assets/Logo/Logo.png",
+    "artifactName": "Joanium.AppImage",
+    "target": [{ "target": "AppImage", "arch": ["x64"] }]
+  }
+}

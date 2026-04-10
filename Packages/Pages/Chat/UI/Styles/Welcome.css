@@ -1,0 +1,99 @@
+/* ─────────────────────────────────────────────
+   welcome.css
+   Welcome / home screen shown before first chat
+───────────────────────────────────────────── */
+
+#welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 24px 120px;
+  text-align: center;
+}
+
+.welcome-greeting {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  animation: greetingReveal 0.65s var(--ease-out-ui) 0.2s both;
+}
+
+.welcome-icon {
+  width: 36px;
+  height: 36px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+  animation:
+    orbitSpin 10s linear infinite,
+    glowPulse 4s ease-in-out infinite;
+}
+
+.welcome-title {
+  font-size: clamp(1.75rem, 4vw + 1rem, 2rem);
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: var(--font-tracking-display);
+}
+
+.welcome-subtitle {
+  max-width: 620px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  animation: fadeIn 0.45s var(--ease-out-ui) 0.38s both;
+}
+
+#welcome .chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 760px;
+  margin-top: 6px;
+  animation: fadeIn 0.48s var(--ease-out-ui) 0.48s both;
+}
+
+#welcome .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-theme),
+    background var(--transition-theme),
+    color var(--transition-theme),
+    box-shadow var(--transition-theme);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #welcome .chip:hover {
+    transform: translateY(-1px);
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border-subtle));
+    background: color-mix(in srgb, var(--accent-glow) 18%, var(--bg-tertiary));
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--accent-glow) 18%, transparent);
+  }
+}
+
+#welcome .chip:active {
+  transform: scale(0.97);
+}
+
+#welcome .chip:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-glow) 28%, transparent);
+}

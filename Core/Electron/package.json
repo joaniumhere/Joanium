@@ -1,0 +1,10 @@
+{
+  "name": "@Joanium/electron",
+  "private": true,
+  "type": "module",
+  "description": "Electron bridge modules for Joanium.",
+  "main": "./Bridge/Preload.js",
+  "exports": {
+    ".": "./Bridge/Preload.js"
+  }
+}
