@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'tasks',
-            icon: '✅',
+            icon: '<img src="../../../../Assets/Icons/Google.png" alt="Google" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Tasks',
             apiUrl: 'https://console.cloud.google.com/apis/library/tasks.googleapis.com',
           },
