@@ -1218,3 +1218,147 @@ export async function checkGistStarred(credentials, gistId) {
   });
   return res.status === 204;
 }
+
+// ─────────────────────────────────────────────
+// 20 New Tool Additions — append to GithubAPI.js
+// ─────────────────────────────────────────────
+
+export async function getTrafficReferrers(credentials, owner, repo) {
+  return githubFetch(`/repos/${owner}/${repo}/traffic/popular/referrers`, credentials.token);
+}
+
+export async function getTrafficPaths(credentials, owner, repo) {
+  return githubFetch(`/repos/${owner}/${repo}/traffic/popular/paths`, credentials.token);
+}
+
+export async function listGitRefs(credentials, owner, repo, namespace = '') {
+  const path = namespace
+    ? `/repos/${owner}/${repo}/git/refs/${namespace}`
+    : `/repos/${owner}/${repo}/git/refs`;
+  return githubFetch(path, credentials.token);
+}
+
+export async function getGitRef(credentials, owner, repo, ref) {
+  return githubFetch(`/repos/${owner}/${repo}/git/ref/${ref}`, credentials.token);
+}
+
+export async function listCommitPullRequests(credentials, owner, repo, commitSha, perPage = 20) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/commits/${commitSha}/pulls?per_page=${perPage}`,
+    credentials.token,
+    { headers: { Accept: 'application/vnd.github.groot-preview+json' } },
+  );
+}
+
+export async function updateMilestone(credentials, owner, repo, milestoneNumber, payload = {}) {
+  return githubFetch(`/repos/${owner}/${repo}/milestones/${milestoneNumber}`, credentials.token, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteMilestone(credentials, owner, repo, milestoneNumber) {
+  return githubFetch(`/repos/${owner}/${repo}/milestones/${milestoneNumber}`, credentials.token, {
+    method: 'DELETE',
+  });
+}
+
+export async function enableVulnerabilityAlerts(credentials, owner, repo) {
+  return githubFetch(`/repos/${owner}/${repo}/vulnerability-alerts`, credentials.token, {
+    method: 'PUT',
+    headers: { Accept: 'application/vnd.github.dorian-preview+json' },
+  });
+}
+
+export async function disableVulnerabilityAlerts(credentials, owner, repo) {
+  return githubFetch(`/repos/${owner}/${repo}/vulnerability-alerts`, credentials.token, {
+    method: 'DELETE',
+    headers: { Accept: 'application/vnd.github.dorian-preview+json' },
+  });
+}
+
+export async function checkVulnerabilityAlerts(credentials, owner, repo) {
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/vulnerability-alerts`, {
+    headers: {
+      Authorization: `Bearer ${credentials.token}`,
+      Accept: 'application/vnd.github.dorian-preview+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+  return res.status === 204;
+}
+
+export async function createRepoWebhook(
+  credentials,
+  owner,
+  repo,
+  { url, events = ['push'], contentType = 'json', secret = '', insecureSsl = false, active = true },
+) {
+  return githubFetch(`/repos/${owner}/${repo}/hooks`, credentials.token, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: 'web',
+      active,
+      events,
+      config: {
+        url,
+        content_type: contentType,
+        secret: secret || undefined,
+        insecure_ssl: insecureSsl ? '1' : '0',
+      },
+    }),
+  });
+}
+
+export async function deleteRepoWebhook(credentials, owner, repo, hookId) {
+  return githubFetch(`/repos/${owner}/${repo}/hooks/${hookId}`, credentials.token, {
+    method: 'DELETE',
+  });
+}
+
+export async function listCheckSuites(credentials, owner, repo, ref, perPage = 20) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/commits/${encodeURIComponent(ref)}/check-suites?per_page=${perPage}`,
+    credentials.token,
+  );
+}
+
+export async function rerequestCheckSuite(credentials, owner, repo, checkSuiteId) {
+  return githubFetch(
+    `/repos/${owner}/${repo}/check-suites/${checkSuiteId}/rerequest`,
+    credentials.token,
+    { method: 'POST' },
+  );
+}
+
+export async function listGistForks(credentials, gistId, perPage = 20) {
+  return githubFetch(`/gists/${gistId}/forks?per_page=${perPage}`, credentials.token);
+}
+
+export async function forkGist(credentials, gistId) {
+  return githubFetch(`/gists/${gistId}/forks`, credentials.token, { method: 'POST' });
+}
+
+export async function getWorkflowRunUsage(credentials, owner, repo, runId) {
+  return githubFetch(`/repos/${owner}/${repo}/actions/runs/${runId}/timing`, credentials.token);
+}
+
+export async function addCollaborator(credentials, owner, repo, username, permission = 'push') {
+  return githubFetch(`/repos/${owner}/${repo}/collaborators/${username}`, credentials.token, {
+    method: 'PUT',
+    body: JSON.stringify({ permission }),
+  });
+}
+
+export async function removeCollaborator(credentials, owner, repo, username) {
+  return githubFetch(`/repos/${owner}/${repo}/collaborators/${username}`, credentials.token, {
+    method: 'DELETE',
+  });
+}
+
+export async function setIssueMilestone(credentials, owner, repo, issueNumber, milestoneNumber) {
+  return githubFetch(`/repos/${owner}/${repo}/issues/${issueNumber}`, credentials.token, {
+    method: 'PATCH',
+    body: JSON.stringify({ milestone: milestoneNumber }),
+  });
+}

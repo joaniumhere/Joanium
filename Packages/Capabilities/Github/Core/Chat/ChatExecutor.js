@@ -3143,6 +3143,311 @@ export async function executeGithubChatTool(ctx, toolName, params = {}) {
       return `Gist ${gist_id} is ${starred ? '⭐ starred' : 'not starred'} by you.`;
     }
 
+    case 'github_get_traffic_referrers': {
+      const { owner, repo } = params;
+      requireRepo(owner, repo);
+      const referrers = await GithubAPI.getTrafficReferrers(credentials, owner, repo);
+      if (!referrers?.length) return `No referrer data available for ${owner}/${repo}.`;
+      return [
+        `Top referrers to ${owner}/${repo} (last 14 days):`,
+        '',
+        ...referrers.map(
+          (r, i) => `${i + 1}. ${r.referrer}  —  ${r.count} views, ${r.uniques} unique`,
+        ),
+      ].join('\n');
+    }
+
+    case 'github_get_traffic_paths': {
+      const { owner, repo } = params;
+      requireRepo(owner, repo);
+      const paths = await GithubAPI.getTrafficPaths(credentials, owner, repo);
+      if (!paths?.length) return `No popular path data available for ${owner}/${repo}.`;
+      return [
+        `Popular content paths in ${owner}/${repo} (last 14 days):`,
+        '',
+        ...paths.map(
+          (p, i) =>
+            `${i + 1}. ${p.path}\n   Title: ${p.title || 'n/a'}  —  ${p.count} views, ${p.uniques} unique`,
+        ),
+      ].join('\n');
+    }
+
+    case 'github_list_git_refs': {
+      const { owner, repo, namespace = '' } = params;
+      requireRepo(owner, repo);
+      const refs = await GithubAPI.listGitRefs(credentials, owner, repo, namespace);
+      if (!refs?.length)
+        return `No git refs found in ${owner}/${repo}${namespace ? ` (${namespace})` : ''}.`;
+      return [
+        `Git refs in ${owner}/${repo}${namespace ? ` (${namespace})` : ''} — ${refs.length} found:`,
+        '',
+        ...refs
+          .slice(0, 50)
+          .map(
+            (r, i) =>
+              `${i + 1}. ${r.ref}  —  ${r.object?.sha?.slice(0, 7) ?? '?'} [${r.object?.type ?? '?'}]`,
+          ),
+        refs.length > 50 ? `  ...and ${refs.length - 50} more` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    case 'github_get_git_ref': {
+      const { owner, repo, ref } = params;
+      if (!owner || !repo || !ref) throw new Error('Missing required params: owner, repo, ref');
+      const data = await GithubAPI.getGitRef(credentials, owner, repo, ref);
+      return [
+        `Git ref in ${owner}/${repo}:`,
+        `Ref:  ${data.ref}`,
+        `Type: ${data.object?.type ?? 'unknown'}`,
+        `SHA:  ${data.object?.sha ?? 'unknown'}`,
+        data.object?.url ? `URL:  ${data.object.url}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    case 'github_list_commit_pull_requests': {
+      const { owner, repo, sha } = params;
+      if (!owner || !repo || !sha) throw new Error('Missing required params: owner, repo, sha');
+      const prs = await GithubAPI.listCommitPullRequests(credentials, owner, repo, sha);
+      if (!prs?.length)
+        return `No pull requests found associated with commit ${sha.slice(0, 7)} in ${owner}/${repo}.`;
+      return [
+        `Pull requests containing commit ${sha.slice(0, 7)} in ${owner}/${repo}:`,
+        '',
+        ...prs.map(
+          (pr, i) =>
+            `${i + 1}. #${pr.number} ${pr.title}  [${pr.state}]  by @${pr.user?.login ?? 'unknown'}\n   ${pr.html_url}`,
+        ),
+      ].join('\n');
+    }
+
+    case 'github_update_milestone': {
+      const { owner, repo, milestone_number, title, description, state, due_on } = params;
+      if (!owner || !repo || !milestone_number)
+        throw new Error('Missing required params: owner, repo, milestone_number');
+      const payload = {};
+      if (title !== undefined) payload.title = title;
+      if (description !== undefined) payload.description = description;
+      if (state !== undefined) payload.state = state;
+      if (due_on !== undefined) payload.due_on = due_on;
+      if (!Object.keys(payload).length)
+        throw new Error('At least one field to update must be provided.');
+      const milestone = await GithubAPI.updateMilestone(
+        credentials,
+        owner,
+        repo,
+        Number(milestone_number),
+        payload,
+      );
+      return [
+        `Milestone #${milestone.number} updated in ${owner}/${repo}`,
+        `Title: ${milestone.title}`,
+        `State: ${milestone.state}`,
+        milestone.due_on ? `Due: ${formatDate(milestone.due_on)}` : '',
+        `URL: ${milestone.html_url}`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    case 'github_delete_milestone': {
+      const { owner, repo, milestone_number } = params;
+      if (!owner || !repo || !milestone_number)
+        throw new Error('Missing required params: owner, repo, milestone_number');
+      await GithubAPI.deleteMilestone(credentials, owner, repo, Number(milestone_number));
+      return `Milestone #${milestone_number} deleted from ${owner}/${repo}.`;
+    }
+
+    case 'github_enable_vulnerability_alerts': {
+      const { owner, repo } = params;
+      requireRepo(owner, repo);
+      await GithubAPI.enableVulnerabilityAlerts(credentials, owner, repo);
+      return `Dependabot vulnerability alerts enabled for ${owner}/${repo}.`;
+    }
+
+    case 'github_disable_vulnerability_alerts': {
+      const { owner, repo } = params;
+      requireRepo(owner, repo);
+      await GithubAPI.disableVulnerabilityAlerts(credentials, owner, repo);
+      return `Dependabot vulnerability alerts disabled for ${owner}/${repo}.`;
+    }
+
+    case 'github_check_vulnerability_alerts': {
+      const { owner, repo } = params;
+      requireRepo(owner, repo);
+      const enabled = await GithubAPI.checkVulnerabilityAlerts(credentials, owner, repo);
+      return `Dependabot vulnerability alerts are ${enabled ? '✓ enabled' : '✗ disabled'} for ${owner}/${repo}.`;
+    }
+
+    case 'github_create_repo_webhook': {
+      const {
+        owner,
+        repo,
+        url,
+        events,
+        content_type = 'json',
+        secret = '',
+        active = true,
+      } = params;
+      if (!owner || !repo || !url) throw new Error('Missing required params: owner, repo, url');
+      const parsedEvents = parseCommaList(events || 'push');
+      const hook = await GithubAPI.createRepoWebhook(credentials, owner, repo, {
+        url,
+        events: parsedEvents,
+        contentType: content_type,
+        secret,
+        active: Boolean(active),
+      });
+      return [
+        `Webhook created for ${owner}/${repo}`,
+        `ID: ${hook.id}`,
+        `URL: ${hook.config?.url}`,
+        `Events: ${(hook.events ?? []).join(', ')}`,
+        `Active: ${hook.active}`,
+        `Created: ${formatDate(hook.created_at)}`,
+      ].join('\n');
+    }
+
+    case 'github_delete_repo_webhook': {
+      const { owner, repo, hook_id } = params;
+      if (!owner || !repo || !hook_id)
+        throw new Error('Missing required params: owner, repo, hook_id');
+      await GithubAPI.deleteRepoWebhook(credentials, owner, repo, hook_id);
+      return `Webhook #${hook_id} deleted from ${owner}/${repo}.`;
+    }
+
+    case 'github_list_check_suites': {
+      const { owner, repo, ref } = params;
+      if (!owner || !repo || !ref) throw new Error('Missing required params: owner, repo, ref');
+      const data = await GithubAPI.listCheckSuites(credentials, owner, repo, ref);
+      const suites = data.check_suites ?? [];
+      if (!suites.length) return `No check suites found for ref "${ref}" in ${owner}/${repo}.`;
+      return [
+        `Check suites for ${ref} in ${owner}/${repo} (${data.total_count ?? suites.length} total):`,
+        '',
+        ...suites.slice(0, 20).map((s, i) => {
+          const app = s.app?.name ?? 'unknown';
+          const conclusion = s.conclusion ?? 'pending';
+          return `${i + 1}. [${s.status} / ${conclusion}]  ${app}  — ID: ${s.id}\n   Branch: ${s.head_branch ?? 'unknown'}  SHA: ${s.head_sha?.slice(0, 7) ?? '?'}`;
+        }),
+      ].join('\n');
+    }
+
+    case 'github_rerequest_check_suite': {
+      const { owner, repo, check_suite_id } = params;
+      if (!owner || !repo || !check_suite_id)
+        throw new Error('Missing required params: owner, repo, check_suite_id');
+      await GithubAPI.rerequestCheckSuite(credentials, owner, repo, check_suite_id);
+      return `Check suite #${check_suite_id} in ${owner}/${repo} has been re-requested.`;
+    }
+
+    case 'github_list_gist_forks': {
+      const { gist_id, count = 20 } = params;
+      if (!gist_id) throw new Error('Missing required param: gist_id');
+      const forks = await GithubAPI.listGistForks(
+        credentials,
+        gist_id,
+        Math.min(Number(count) || 20, 100),
+      );
+      if (!forks.length) return `Gist ${gist_id} has no forks.`;
+      return [
+        `Forks of gist ${gist_id} (${forks.length} shown):`,
+        '',
+        ...forks.map(
+          (f, i) =>
+            `${i + 1}. @${f.user?.login ?? 'unknown'}  —  forked ${formatDate(f.created_at)}\n   ${f.html_url ?? f.url ?? ''}`,
+        ),
+      ].join('\n');
+    }
+
+    case 'github_fork_gist': {
+      const { gist_id } = params;
+      if (!gist_id) throw new Error('Missing required param: gist_id');
+      const fork = await GithubAPI.forkGist(credentials, gist_id);
+      return [
+        `Gist ${gist_id} forked successfully`,
+        `New gist ID: ${fork.id}`,
+        `URL: ${fork.html_url}`,
+        `Owner: @${fork.owner?.login ?? 'unknown'}`,
+      ].join('\n');
+    }
+
+    case 'github_get_workflow_run_usage': {
+      const { owner, repo, run_id } = params;
+      if (!owner || !repo || !run_id)
+        throw new Error('Missing required params: owner, repo, run_id');
+      const usage = await GithubAPI.getWorkflowRunUsage(credentials, owner, repo, run_id);
+      const ms = usage.run_duration_ms ?? 0;
+      const minutes = Math.floor(ms / 60000);
+      const seconds = Math.floor((ms % 60000) / 1000);
+      const billable = usage.billable ?? {};
+      const billableLines = Object.entries(billable).map(([os, data]) => {
+        const osMins = Math.floor((data.total_ms ?? 0) / 60000);
+        return `  ${os}: ${osMins} min (${data.jobs ?? 0} job${data.jobs === 1 ? '' : 's'})`;
+      });
+      return [
+        `Workflow run #${run_id} usage in ${owner}/${repo}:`,
+        `Total duration: ${minutes}m ${seconds}s`,
+        billableLines.length ? '\nBillable time by OS:' : '',
+        ...billableLines,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    case 'github_add_collaborator': {
+      const { owner, repo, username, permission = 'push' } = params;
+      if (!owner || !repo || !username)
+        throw new Error('Missing required params: owner, repo, username');
+      const validPerms = ['pull', 'triage', 'push', 'maintain', 'admin'];
+      const perm = validPerms.includes(permission) ? permission : 'push';
+      const result = await GithubAPI.addCollaborator(credentials, owner, repo, username, perm);
+      // 201 = invitation sent, 204 = already a collaborator (result will be null)
+      if (!result) {
+        return `@${username} is already a collaborator on ${owner}/${repo}.`;
+      }
+      return [
+        `Collaboration invitation sent to @${username} for ${owner}/${repo}`,
+        `Permission: ${perm}`,
+        result.html_url ? `Invitation URL: ${result.html_url}` : '',
+        result.id ? `Invitation ID: ${result.id}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    case 'github_remove_collaborator': {
+      const { owner, repo, username } = params;
+      if (!owner || !repo || !username)
+        throw new Error('Missing required params: owner, repo, username');
+      await GithubAPI.removeCollaborator(credentials, owner, repo, username);
+      return `@${username} has been removed as a collaborator from ${owner}/${repo}.`;
+    }
+
+    case 'github_set_issue_milestone': {
+      const { owner, repo, issue_number, milestone_number } = params;
+      if (!owner || !repo || !issue_number)
+        throw new Error('Missing required params: owner, repo, issue_number');
+      const milestoneVal = milestone_number != null ? Number(milestone_number) : null;
+      const issue = await GithubAPI.setIssueMilestone(
+        credentials,
+        owner,
+        repo,
+        Number(issue_number),
+        milestoneVal,
+      );
+      const milestoneName = issue.milestone?.title ?? 'none';
+      return [
+        `Milestone updated on ${owner}/${repo}#${issue_number}`,
+        `Issue: ${issue.title}`,
+        `Milestone: ${milestoneName}`,
+        `URL: ${issue.html_url}`,
+      ].join('\n');
+    }
+
     default:
       throw new Error(`Unknown GitHub tool: ${toolName}`);
   }

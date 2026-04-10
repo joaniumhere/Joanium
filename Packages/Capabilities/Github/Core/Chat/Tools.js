@@ -2055,6 +2055,279 @@
       gist_id: { type: 'string', required: true, description: 'Gist ID' },
     },
   },
+  {
+    name: 'github_get_traffic_referrers',
+    description:
+      'Get the top 10 referral sources that directed traffic to a repository over the last 14 days.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+    },
+  },
+  {
+    name: 'github_get_traffic_paths',
+    description: 'Get the top 10 most visited content paths in a repository over the last 14 days.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+    },
+  },
+  {
+    name: 'github_list_git_refs',
+    description:
+      'List all git refs (branches, tags, notes) in a repository. Optionally filter by namespace such as "heads" or "tags".',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      namespace: {
+        type: 'string',
+        required: false,
+        description: 'Optional namespace filter: heads (branches), tags, or leave empty for all',
+      },
+    },
+  },
+  {
+    name: 'github_get_git_ref',
+    description: 'Get a single git ref by its full ref path (e.g. heads/main or tags/v1.0.0).',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      ref: {
+        type: 'string',
+        required: true,
+        description: 'Full ref path without refs/ prefix, e.g. heads/main or tags/v1.0.0',
+      },
+    },
+  },
+  {
+    name: 'github_list_commit_pull_requests',
+    description: 'List pull requests that contain a specific commit SHA.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      sha: { type: 'string', required: true, description: 'Commit SHA to look up' },
+    },
+  },
+  {
+    name: 'github_update_milestone',
+    description: 'Update the title, description, state, or due date of a milestone.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      milestone_number: { type: 'number', required: true, description: 'Milestone number' },
+      title: { type: 'string', required: false, description: 'New title' },
+      description: { type: 'string', required: false, description: 'New description' },
+      state: { type: 'string', required: false, description: 'open or closed' },
+      due_on: {
+        type: 'string',
+        required: false,
+        description: 'ISO 8601 due date, e.g. 2025-12-31T00:00:00Z',
+      },
+    },
+  },
+  {
+    name: 'github_delete_milestone',
+    description: 'Delete a milestone from a GitHub repository.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      milestone_number: {
+        type: 'number',
+        required: true,
+        description: 'Milestone number to delete',
+      },
+    },
+  },
+  {
+    name: 'github_enable_vulnerability_alerts',
+    description: 'Enable Dependabot vulnerability alerts for a repository.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+    },
+  },
+  {
+    name: 'github_disable_vulnerability_alerts',
+    description: 'Disable Dependabot vulnerability alerts for a repository.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+    },
+  },
+  {
+    name: 'github_check_vulnerability_alerts',
+    description:
+      'Check whether Dependabot vulnerability alerts are currently enabled for a repository.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+    },
+  },
+  {
+    name: 'github_create_repo_webhook',
+    description: 'Create a new webhook on a GitHub repository to receive event payloads at a URL.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      url: { type: 'string', required: true, description: 'Payload delivery URL' },
+      events: {
+        type: 'string',
+        required: false,
+        description: 'Comma-separated events to subscribe to (default: push)',
+      },
+      content_type: {
+        type: 'string',
+        required: false,
+        description: 'json (default) or form',
+      },
+      secret: {
+        type: 'string',
+        required: false,
+        description: 'Optional HMAC secret for payload signature',
+      },
+      active: {
+        type: 'boolean',
+        required: false,
+        description: 'Whether the webhook is active (default true)',
+      },
+    },
+  },
+  {
+    name: 'github_delete_repo_webhook',
+    description: 'Delete a webhook from a GitHub repository by its hook ID.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      hook_id: {
+        type: 'number',
+        required: true,
+        description: 'Webhook ID (from github_get_repo_webhooks)',
+      },
+    },
+  },
+  {
+    name: 'github_list_check_suites',
+    description: 'List check suites for a specific commit ref in a repository.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      ref: { type: 'string', required: true, description: 'Commit SHA, branch, or tag' },
+    },
+  },
+  {
+    name: 'github_rerequest_check_suite',
+    description: 'Re-request a check suite to trigger its checks to re-run.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      check_suite_id: {
+        type: 'number',
+        required: true,
+        description: 'Check suite ID (from github_list_check_suites)',
+      },
+    },
+  },
+  {
+    name: 'github_list_gist_forks',
+    description: 'List all forks of a GitHub Gist.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      gist_id: { type: 'string', required: true, description: 'Gist ID' },
+      count: { type: 'number', required: false, description: 'Max forks to return (default 20)' },
+    },
+  },
+  {
+    name: 'github_fork_gist',
+    description: "Fork a GitHub Gist into the authenticated user's account.",
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      gist_id: { type: 'string', required: true, description: 'Gist ID to fork' },
+    },
+  },
+  {
+    name: 'github_get_workflow_run_usage',
+    description: 'Get billable time and total duration for a GitHub Actions workflow run.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      run_id: { type: 'number', required: true, description: 'Workflow run ID' },
+    },
+  },
+  {
+    name: 'github_add_collaborator',
+    description: 'Invite a user to collaborate on a repository with a specified permission level.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      username: { type: 'string', required: true, description: 'GitHub username to invite' },
+      permission: {
+        type: 'string',
+        required: false,
+        description: 'pull, triage, push (default), maintain, or admin',
+      },
+    },
+  },
+  {
+    name: 'github_remove_collaborator',
+    description: 'Remove a collaborator from a GitHub repository.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      username: { type: 'string', required: true, description: 'GitHub username to remove' },
+    },
+  },
+  {
+    name: 'github_set_issue_milestone',
+    description: 'Assign or clear a milestone on a GitHub issue or pull request.',
+    category: 'github',
+    connectorId: 'github',
+    parameters: {
+      owner: { type: 'string', required: true, description: 'GitHub username or organization' },
+      repo: { type: 'string', required: true, description: 'Repository name' },
+      issue_number: { type: 'number', required: true, description: 'Issue or pull request number' },
+      milestone_number: {
+        type: 'number',
+        required: false,
+        description: 'Milestone number to assign (omit or set null to clear the milestone)',
+      },
+    },
+  },
 ];
 
 export default GITHUB_TOOLS;
