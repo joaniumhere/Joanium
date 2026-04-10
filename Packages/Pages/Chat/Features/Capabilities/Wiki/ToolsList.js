@@ -1,1 +1,22 @@
-export const toolsList = ['search_wikipedia'];
+export const toolsList = [
+  'search_wikipedia',
+  'get_wikipedia_sections',
+  'get_wikipedia_section_content',
+  'get_wikipedia_search_results',
+  'get_wikipedia_full_article',
+  'get_wikipedia_categories',
+  'get_wikipedia_languages',
+  'get_wikipedia_article_in_language',
+  'get_wikipedia_images',
+  'get_wikipedia_linked_articles',
+  'get_wikipedia_random_article',
+  'get_wikipedia_featured_article',
+  'get_wikipedia_on_this_day',
+  'get_wikipedia_most_read',
+  'get_wikipedia_page_views',
+  'get_wikipedia_did_you_know',
+  'get_wikipedia_nearby_articles',
+  'get_wikipedia_revision_history',
+  'get_wikipedia_disambiguation',
+  'compare_wikipedia_articles',
+];
