@@ -1,6 +1,4 @@
 export const SLIDES_TOOLS = [
-  // ─── Existing (7) ──────────────────────────────────────────────────────────
-
   {
     name: 'slides_get_info',
     description:

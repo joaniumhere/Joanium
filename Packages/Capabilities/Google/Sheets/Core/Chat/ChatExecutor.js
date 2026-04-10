@@ -1,55 +1,6 @@
 import * as SheetsAPI from '../API/SheetsAPI.js';
 import { requireGoogleCredentials } from '../../../Common.js';
-
-function parseValues(raw) {
-  if (Array.isArray(raw)) return raw;
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) throw new Error('Values must be a 2D array');
-    return parsed;
-  } catch {
-    throw new Error('values must be a valid JSON 2D array, e.g. [["Name","Age"],["Alice",30]]');
-  }
-}
-
-function parseJSON(raw, label) {
-  if (typeof raw === 'object' && raw !== null) return raw;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    throw new Error(`${label} must be valid JSON`);
-  }
-}
-
-function renderTable(values) {
-  if (!values.length) return '(empty)';
-  const rows = values.map((row) =>
-    (Array.isArray(row) ? row : []).map((cell) => String(cell ?? '')),
-  );
-  const colWidths = rows.reduce((widths, row) => {
-    row.forEach((cell, i) => {
-      widths[i] = Math.min(Math.max(widths[i] ?? 0, cell.length), 30);
-    });
-    return widths;
-  }, []);
-  return rows
-    .map((row) => row.map((cell, i) => cell.slice(0, 30).padEnd(colWidths[i] ?? 0)).join(' | '))
-    .join('\n');
-}
-
-function requireParam(params, key) {
-  if (params[key] == null || (typeof params[key] === 'string' && !params[key].trim())) {
-    throw new Error(`Missing required param: ${key}`);
-  }
-  return params[key];
-}
-
-function requireNumeric(params, key) {
-  const v = requireParam(params, key);
-  const n = Number(v);
-  if (Number.isNaN(n)) throw new Error(`Param ${key} must be a number`);
-  return n;
-}
+import { parseValues, parseJSON, renderTable, requireParam, requireNumeric } from './Utils.js';
 
 export async function executeSheetsChatTool(ctx, toolName, params = {}) {
   const credentials = requireGoogleCredentials(ctx);
