@@ -1,67 +1,11 @@
 ﻿import * as CalendarAPI from '../API/CalendarAPI.js';
 import { requireGoogleCredentials } from '../../../Common.js';
-
-function formatEventTime(eventTime) {
-  if (!eventTime) return 'N/A';
-  if (eventTime.dateTime) {
-    return new Date(eventTime.dateTime).toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  }
-  if (eventTime.date) {
-    return (
-      new Date(`${eventTime.date}T00:00:00`).toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-      }) + ' (all day)'
-    );
-  }
-  return 'N/A';
-}
-
-function formatEvent(event, index) {
-  const start = formatEventTime(event.start);
-  const end = formatEventTime(event.end);
-  const lines = [
-    `${index}. **${event.summary || '(No title)'}**`,
-    `   Time: ${start}${end && end !== start ? ` -> ${end}` : ''}`,
-  ];
-  if (event.location) lines.push(`   Location: ${event.location}`);
-  if (event.description)
-    lines.push(
-      `   Notes: ${event.description.slice(0, 100)}${event.description.length > 100 ? '...' : ''}`,
-    );
-  const attendeeCount = event.attendees?.length ?? 0;
-  if (attendeeCount > 0) {
-    const names = event.attendees
-      .slice(0, 3)
-      .map((a) => a.displayName || a.email)
-      .join(', ');
-    lines.push(`   Attendees: ${names}${attendeeCount > 3 ? ` +${attendeeCount - 3} more` : ''}`);
-  }
-  if (event.recurrence?.length) lines.push(`   Recurring: ${event.recurrence[0]}`);
-  if (event.colorId) lines.push(`   Color ID: ${event.colorId}`);
-  if (event.id) lines.push(`   ID: \`${event.id}\``);
-  return lines.join('\n');
-}
-
-function formatSlot(slot, index) {
-  const fmt = (d) => d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const mins = Math.round((slot.end - slot.start) / 60_000);
-  return `${index}. ${fmt(slot.start)} – ${fmt(slot.end)} (${mins} min)`;
-}
+import { formatEventTime, formatEvent, formatSlot } from './Utils.js';
 
 export async function executeCalendarChatTool(ctx, toolName, params = {}) {
   const credentials = requireGoogleCredentials(ctx);
 
   switch (toolName) {
-    // ─── Existing tools ────────────────────────────────────────────────────
-
     case 'calendar_get_today': {
       const events = await CalendarAPI.getTodayEvents(credentials);
       if (!events.length) return 'No events on your calendar today.';
@@ -170,37 +114,30 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Event \`${event_id}\` deleted from your Google Calendar.`;
     }
 
-    // ─── New tools ─────────────────────────────────────────────────────────
-
-    // 1. Get this week's events
     case 'calendar_get_this_week': {
       const events = await CalendarAPI.getThisWeekEvents(credentials);
       if (!events.length) return 'No events this week.';
       return `This week's events - ${events.length} event${events.length !== 1 ? 's' : ''}:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 2. Get next week's events
     case 'calendar_get_next_week': {
       const events = await CalendarAPI.getNextWeekEvents(credentials);
       if (!events.length) return 'No events next week.';
       return `Next week's events - ${events.length} event${events.length !== 1 ? 's' : ''}:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 3. Get this month's events
     case 'calendar_get_this_month': {
       const events = await CalendarAPI.getThisMonthEvents(credentials);
       if (!events.length) return 'No events this month.';
       return `This month's events - ${events.length} event${events.length !== 1 ? 's' : ''}:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 4. Get the very next upcoming event
     case 'calendar_get_next_event': {
       const event = await CalendarAPI.getNextEvent(credentials);
       if (!event) return 'No upcoming events found.';
       return `Your next event:\n\n${formatEvent(event, 1)}`;
     }
 
-    // 5. Get events on a specific date
     case 'calendar_get_events_on_date': {
       const { date } = params;
       if (!date?.trim()) throw new Error('Missing required param: date');
@@ -209,7 +146,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Events on ${date} - ${events.length} event${events.length !== 1 ? 's' : ''}:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 6. Find free time slots
     case 'calendar_get_free_slots': {
       const { date, work_start, work_end, min_minutes } = params;
       if (!date?.trim()) throw new Error('Missing required param: date');
@@ -225,7 +161,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Free slots on ${date} (${work_start ?? 9}:00–${work_end ?? 18}:00):\n\n${slots.map((s, i) => formatSlot(s, i + 1)).join('\n')}`;
     }
 
-    // 7. Get event details by ID
     case 'calendar_get_event': {
       const { event_id, calendar_id } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -237,7 +172,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Event details:\n\n${formatEvent(event, 1)}`;
     }
 
-    // 8. Update an event (patch specific fields)
     case 'calendar_update_event': {
       const {
         event_id,
@@ -270,7 +204,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Event updated:\n\n${formatEvent(updated, 1)}`;
     }
 
-    // 9. Move event to a different calendar
     case 'calendar_move_event': {
       const { event_id, source_calendar_id, destination_calendar_id } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -285,7 +218,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Event \`${event_id}\` moved to calendar \`${destination_calendar_id}\`.\n\n${formatEvent(moved, 1)}`;
     }
 
-    // 10. Duplicate an event
     case 'calendar_duplicate_event': {
       const { event_id, calendar_id, shift_days } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -306,7 +238,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
         .join('\n');
     }
 
-    // 11. Create a recurring event
     case 'calendar_create_recurring_event': {
       const {
         summary,
@@ -359,7 +290,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
         .join('\n');
     }
 
-    // 12. Add attendees to an existing event
     case 'calendar_add_attendees': {
       const { event_id, calendar_id, attendees } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -385,7 +315,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Added ${newEmails.length} attendee${newEmails.length !== 1 ? 's' : ''} (${newEmails.join(', ')}) to **${updated.summary}**.`;
     }
 
-    // 13. Remove attendees from an existing event
     case 'calendar_remove_attendees': {
       const { event_id, calendar_id, attendees } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -414,7 +343,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Removed ${removedCount} attendee${removedCount !== 1 ? 's' : ''} from **${updated.summary}**. ${filtered.length} attendee${filtered.length !== 1 ? 's' : ''} remaining.`;
     }
 
-    // 14. Count events in a period
     case 'calendar_count_events': {
       const { time_min, time_max, calendar_id } = params;
       if (!time_min?.trim()) throw new Error('Missing required param: time_min');
@@ -428,7 +356,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `You have **${count}** event${count !== 1 ? 's' : ''} between ${time_min} and ${time_max}.`;
     }
 
-    // 15. Get events within a custom date range
     case 'calendar_get_events_in_range': {
       const { start_date, end_date, calendar_id, max_results } = params;
       if (!start_date?.trim()) throw new Error('Missing required param: start_date');
@@ -444,7 +371,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Events from ${start_date} to ${end_date} - ${events.length} event${events.length !== 1 ? 's' : ''}:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 16. Find events by attendee email
     case 'calendar_get_events_by_attendee': {
       const { email, max_results } = params;
       if (!email?.trim()) throw new Error('Missing required param: email');
@@ -457,7 +383,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Events involving ${email} - ${events.length} result${events.length !== 1 ? 's' : ''}:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 17. Find events by location
     case 'calendar_get_events_by_location': {
       const { location, max_results } = params;
       if (!location?.trim()) throw new Error('Missing required param: location');
@@ -470,7 +395,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Events at "${location}" - ${events.length} result${events.length !== 1 ? 's' : ''}:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 18. Get free/busy status
     case 'calendar_get_free_busy': {
       const { time_min, time_max, calendar_ids } = params;
       if (!time_min?.trim()) throw new Error('Missing required param: time_min');
@@ -501,7 +425,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Free/busy status (${time_min} → ${time_max}):\n\n${lines.join('\n\n')}`;
     }
 
-    // 19. Clear all events on a day
     case 'calendar_clear_day': {
       const { date, calendar_id } = params;
       if (!date?.trim()) throw new Error('Missing required param: date');
@@ -514,7 +437,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Deleted ${count} event${count !== 1 ? 's' : ''} from ${date}.`;
     }
 
-    // 20. Create an out-of-office / all-day block
     case 'calendar_create_out_of_office': {
       const { start_date, end_date, reason, calendar_id } = params;
       if (!start_date?.trim()) throw new Error('Missing required param: start_date');
@@ -538,7 +460,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
         .join('\n');
     }
 
-    // 21
     case 'calendar_rename_event': {
       const { event_id, calendar_id, summary } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -552,7 +473,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Event renamed to **${updated.summary}** (ID: \`${event_id}\`).`;
     }
 
-    // 22
     case 'calendar_set_event_color': {
       const { event_id, calendar_id, color_id } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -581,14 +501,12 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Event **${updated.summary}** color set to ${name} (ID ${color_id}).`;
     }
 
-    // 23
     case 'calendar_get_this_weekend': {
       const events = await CalendarAPI.getThisWeekendEvents(credentials);
       if (!events.length) return 'No events this weekend.';
       return `This weekend's events - ${events.length} event${events.length !== 1 ? 's' : ''}:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 24
     case 'calendar_set_event_reminders': {
       const { event_id, calendar_id, minutes } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -610,7 +528,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `**${updated.summary}** — ${desc}`;
     }
 
-    // 25
     case 'calendar_bulk_create_events': {
       const { events_json, calendar_id } = params;
       if (!events_json?.trim()) throw new Error('Missing required param: events_json');
@@ -645,7 +562,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Created ${created.length} event${created.length !== 1 ? 's' : ''}:\n\n${lines}`;
     }
 
-    // 26
     case 'calendar_get_video_conference_events': {
       const days = params.days ?? 30;
       const max = params.max_results ?? 20;
@@ -664,7 +580,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Events with video conference links (next ${days} days) — ${events.length} found:\n\n${lines}`;
     }
 
-    // 27
     case 'calendar_rsvp_event': {
       const { event_id, calendar_id, email, status } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -685,7 +600,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `RSVP updated for **${updated.summary}**: ${label} (as ${email}).`;
     }
 
-    // 28
     case 'calendar_get_recently_modified': {
       const { updated_min, calendar_id, max_results } = params;
       if (!updated_min?.trim())
@@ -700,7 +614,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Events modified since ${updated_min} — ${events.length} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 29
     case 'calendar_get_recurring_instances': {
       const { event_id, calendar_id, max_results } = params;
       if (!event_id?.trim())
@@ -715,7 +628,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Instances of recurring event (${instances.length} shown):\n\n${instances.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 30
     case 'calendar_get_meeting_hours': {
       const { time_min, time_max, calendar_id } = params;
       if (!time_min?.trim()) throw new Error('Missing required param: time_min');
@@ -733,7 +645,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Meeting summary (${time_min} → ${time_max}):\n\n• **${count}** timed event${count !== 1 ? 's' : ''}\n• **${humanDuration}** total (${totalHours} hours)`;
     }
 
-    // 31
     case 'calendar_get_declined_events': {
       const days = params.days ?? 30;
       const events = await CalendarAPI.getDeclinedEvents(
@@ -745,7 +656,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Declined events (next ${days} days) — ${events.length} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 32
     case 'calendar_get_unanswered_invites': {
       const days = params.days ?? 30;
       const events = await CalendarAPI.getUnansweredInvites(
@@ -757,7 +667,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Unanswered invites (next ${days} days) — ${events.length} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 33
     case 'calendar_get_organised_events': {
       const days = params.days ?? 30;
       const events = await CalendarAPI.getOrganisedEvents(
@@ -770,7 +679,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Events you organised (next ${days} days) — ${events.length} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 34
     case 'calendar_get_all_day_events': {
       const { time_min, time_max, calendar_id, max_results } = params;
       if (!time_min?.trim()) throw new Error('Missing required param: time_min');
@@ -786,7 +694,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `All-day events (${time_min} → ${time_max}) — ${events.length} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 35
     case 'calendar_set_event_description': {
       const { event_id, calendar_id, description, append } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -803,7 +710,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Description ${mode} **${updated.summary}** successfully.`;
     }
 
-    // 36
     case 'calendar_set_event_location': {
       const { event_id, calendar_id, location } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -818,7 +724,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Location for **${updated.summary}** updated to: ${updated.location || '(cleared)'}.`;
     }
 
-    // 37
     case 'calendar_get_conflicting_events': {
       const { start_datetime, end_datetime, calendar_id } = params;
       if (!start_datetime?.trim()) throw new Error('Missing required param: start_datetime');
@@ -834,7 +739,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `${events.length} conflicting event${events.length !== 1 ? 's' : ''} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 38
     case 'calendar_snooze_event': {
       const { event_id, calendar_id, minutes } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -848,7 +752,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `**${updated.summary}** snoozed by ${mins} minutes. New start: ${formatEventTime(updated.start)}.`;
     }
 
-    // 39
     case 'calendar_get_events_by_creator': {
       const { email, days, max_results } = params;
       if (!email?.trim()) throw new Error('Missing required param: email');
@@ -862,7 +765,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Events created by ${email} — ${events.length} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 40
     case 'calendar_extend_event': {
       const { event_id, calendar_id, minutes } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -876,7 +778,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `**${updated.summary}** extended by ${mins} minutes. New end: ${formatEventTime(updated.end)}.`;
     }
 
-    // 41
     case 'calendar_shorten_event': {
       const { event_id, calendar_id, minutes } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -890,7 +791,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `**${updated.summary}** shortened by ${mins} minutes. New end: ${formatEventTime(updated.end)}.`;
     }
 
-    // 42
     case 'calendar_get_daily_breakdown': {
       const { time_min, time_max, calendar_id } = params;
       if (!time_min?.trim()) throw new Error('Missing required param: time_min');
@@ -913,7 +813,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Daily breakdown (${time_min} → ${time_max}) — ${totalEvents} events across ${entries.length} day${entries.length !== 1 ? 's' : ''}:\n\n${lines.join('\n')}`;
     }
 
-    // 43
     case 'calendar_get_longest_free_block': {
       const { date, work_start, work_end } = params;
       if (!date?.trim()) throw new Error('Missing required param: date');
@@ -932,7 +831,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Longest free block on ${date}: **${fmt(slot.start)} – ${fmt(slot.end)}** (${duration}).`;
     }
 
-    // 44
     case 'calendar_copy_day_events': {
       const { source_date, target_date, calendar_id } = params;
       if (!source_date?.trim()) throw new Error('Missing required param: source_date');
@@ -950,7 +848,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Copied ${created.length} event${created.length !== 1 ? 's' : ''} from ${source_date} to ${target_date}:\n\n${lines}`;
     }
 
-    // 45
     case 'calendar_set_event_visibility': {
       const { event_id, calendar_id, visibility } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -967,7 +864,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Visibility of **${updated.summary}** set to \`${updated.visibility}\`.`;
     }
 
-    // 46
     case 'calendar_set_event_status': {
       const { event_id, calendar_id, status } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -982,7 +878,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Status of **${updated.summary}** set to \`${updated.status}\`.`;
     }
 
-    // 47
     case 'calendar_get_solo_events': {
       const days = params.days ?? 14;
       const events = await CalendarAPI.getSoloEvents(credentials, days, params.max_results ?? 20);
@@ -990,7 +885,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Solo events (next ${days} days) — ${events.length} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 48
     case 'calendar_get_large_meetings': {
       const min = params.min_attendees ?? 5;
       const days = params.days ?? 14;
@@ -1005,7 +899,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `Large meetings (${min}+ attendees, next ${days} days) — ${events.length} found:\n\n${events.map((e, i) => formatEvent(e, i + 1)).join('\n\n')}`;
     }
 
-    // 49
     case 'calendar_reschedule_event': {
       const { event_id, calendar_id, new_start_datetime } = params;
       if (!event_id?.trim()) throw new Error('Missing required param: event_id');
@@ -1020,7 +913,6 @@ export async function executeCalendarChatTool(ctx, toolName, params = {}) {
       return `**${updated.summary}** rescheduled.\nNew time: ${formatEventTime(updated.start)} → ${formatEventTime(updated.end)}.`;
     }
 
-    // 50
     case 'calendar_get_agenda_summary': {
       const { time_min, time_max, max_results } = params;
       if (!time_min?.trim()) throw new Error('Missing required param: time_min');
