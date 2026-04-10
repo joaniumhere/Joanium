@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'photos',
-            icon: '🖼️',
+            icon: '<img src="../../../Assets/Icons/Photos.png" alt="Google Photos" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Photos',
             apiUrl: 'https://console.cloud.google.com/apis/library/photoslibrary.googleapis.com',
           },

@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'calendar',
-            icon: '📅',
+            icon: '<img src="../../../Assets/Icons/Calendar.png" alt="Google Calendar" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Calendar',
             apiUrl: 'https://console.cloud.google.com/apis/library/calendar-json.googleapis.com',
           },

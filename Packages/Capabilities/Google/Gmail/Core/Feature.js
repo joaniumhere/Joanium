@@ -72,7 +72,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'gmail',
-            icon: '📧',
+            icon: '<img src="../../../Assets/Icons/Gmail.png" alt="Google Gmail" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Gmail',
             apiUrl: 'https://console.cloud.google.com/apis/library/gmail.googleapis.com',
           },

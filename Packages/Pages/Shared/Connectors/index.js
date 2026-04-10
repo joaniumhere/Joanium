@@ -1,4 +1,4 @@
-﻿import { CONNECTORS, FREE_CONNECTORS, loadFeatureConnectorDefs } from './Catalog/ConnectorDefs.js';
+import { CONNECTORS, FREE_CONNECTORS, loadFeatureConnectorDefs } from './Catalog/ConnectorDefs.js';
 import { buildFreeCard, setStatus, setConnectBtnState } from './Catalog/ConnectorCards.js';
 
 export const cxState = {
@@ -35,7 +35,13 @@ function buildServiceBadges(def, services = {}) {
     dot.style.fontSize = '8px';
 
     const label = document.createElement('span');
-    label.textContent = `${svc.icon} ${svc.name}`;
+    const iconHtml = svc.icon
+      ? `<span style="display:inline-flex;align-items:center;width:16px;height:16px;">${svc.icon.replace(/width: 26px; height: 26px;/, 'width: 100%; height: 100%;')}</span>`
+      : '';
+    label.style.display = 'inline-flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '4px';
+    label.innerHTML = iconHtml ? `${iconHtml} <span>${svc.name}</span>` : svc.name;
 
     badge.append(dot, label);
 

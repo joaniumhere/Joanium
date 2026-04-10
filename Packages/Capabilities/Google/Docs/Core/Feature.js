@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'docs',
-            icon: '📄',
+            icon: '<img src="../../../Assets/Icons/Docs.png" alt="Google Docs" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Docs',
             apiUrl: 'https://console.cloud.google.com/apis/library/docs.googleapis.com',
           },

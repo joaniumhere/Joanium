@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'slides',
-            icon: '📊',
+            icon: '<img src="../../../Assets/Icons/Slides.png" alt="Google Slides" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Slides',
             apiUrl: 'https://console.cloud.google.com/apis/library/slides.googleapis.com',
           },

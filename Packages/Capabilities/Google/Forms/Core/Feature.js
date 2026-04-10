@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'forms',
-            icon: '📋',
+            icon: '<img src="../../../Assets/Icons/Forms.png" alt="Google Forms" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Forms',
             apiUrl: 'https://console.cloud.google.com/apis/library/forms.googleapis.com',
           },

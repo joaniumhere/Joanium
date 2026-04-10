@@ -24,7 +24,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'drive',
-            icon: 'Drive',
+            icon: '<img src="../../../Assets/Icons/Drive.png" alt="Google Drive" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Drive',
             apiUrl: 'https://console.cloud.google.com/apis/library/drive.googleapis.com',
           },

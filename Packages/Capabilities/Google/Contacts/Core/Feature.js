@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'contacts',
-            icon: '👤',
+            icon: '<img src="../../../Assets/Icons/Contacts.png" alt="Google Contacts" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Contacts',
             apiUrl: 'https://console.cloud.google.com/apis/library/people.googleapis.com',
           },

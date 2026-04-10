@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'youtube',
-            icon: '▶️',
+            icon: '<img src="../../../Assets/Icons/Youtube.png" alt="Youtube" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'YouTube',
             apiUrl: 'https://console.cloud.google.com/apis/library/youtube.googleapis.com',
           },

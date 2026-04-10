@@ -15,7 +15,7 @@ export default defineFeature({
         subServices: [
           {
             key: 'sheets',
-            icon: '📊',
+            icon: '<img src="../../../Assets/Icons/Sheets.png" alt="Google Sheets" style="width: 26px; height: 26px; object-fit: contain;" />',
             name: 'Google Sheets',
             apiUrl: 'https://console.cloud.google.com/apis/library/sheets.googleapis.com',
           },
