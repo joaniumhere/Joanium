@@ -332,9 +332,7 @@ export class BrowserPreviewService extends EventEmitter {
   }
 
   setHostBounds(bounds) {
-    console.log('[BrowserPreviewService] setHostBounds() received:', bounds);
     const normalizedBounds = normalizeHostBounds(bounds);
-    console.log('[BrowserPreviewService] normalizedBounds:', normalizedBounds);
 
     if (areBoundsEqual(this._hostBounds, normalizedBounds)) {
       if (!normalizedBounds) {
@@ -469,18 +467,15 @@ export class BrowserPreviewService extends EventEmitter {
   }
 
   _attachIfNeeded() {
-    if (!this._window || this._window.isDestroyed() || !this._view) return;
+    if (!this._window || this._window.isDestroyed() || !this._view || !this._visible) return;
 
     if (this._viewAttached) {
-      console.log('[BrowserPreviewService] _attachIfNeeded - already attached');
       this._updateBounds();
       return;
     }
 
-    console.log('[BrowserPreviewService] _attachIfNeeded - attaching view as child');
     this._window.contentView.addChildView(this._view);
     this._view.setVisible(true);
-
     this._viewAttached = true;
     this._updateBounds();
   }
@@ -494,21 +489,34 @@ export class BrowserPreviewService extends EventEmitter {
 
     this._window.contentView.removeChildView(this._view);
     this._view.setVisible(false);
-
     this._viewAttached = false;
   }
 
+  /**
+   * Approximate the viewport position from the window's content size.
+   * Used as a fallback when the renderer hasn't sent precise bounds yet.
+   */
+  _computeFallbackBounds() {
+    if (!this._window || this._window.isDestroyed()) return null;
+    const [winWidth, winHeight] = this._window.getContentSize();
+    // Grid: chat column = 2fr, preview column = 3fr → preview starts at 40%
+    const panelX = Math.round((winWidth * 2) / 5);
+    const panelWidth = winWidth - panelX;
+    // Header + status row ~ 155px
+    const topInset = 155;
+    return {
+      x: panelX,
+      y: topInset,
+      width: panelWidth,
+      height: Math.max(winHeight - topInset, 100),
+    };
+  }
+
   _updateBounds() {
-    if (!this._view || !this._viewAttached) {
-      console.log(
-        '[BrowserPreviewService] _updateBounds skipped. _viewAttached:',
-        this._viewAttached,
-      );
-      return;
-    }
-    const testBounds = { x: 200, y: 200, width: 600, height: 600 };
-    console.log('[BrowserPreviewService] _updateBounds calling FORCED setBounds:', testBounds);
-    this._view.setBounds(testBounds);
+    if (!this._view || !this._viewAttached) return;
+    const bounds = this._hostBounds || this._computeFallbackBounds();
+    if (!bounds) return;
+    this._view.setBounds(bounds);
     this._view.setVisible(true);
   }
 

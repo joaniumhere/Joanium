@@ -123,24 +123,40 @@ export function createBrowserPreviewFeature() {
   }
 
   async function syncBounds() {
-    if (disposed || !window.electronAPI?.invoke) return;
+    if (disposed || !window.electronAPI?.invoke) {
+      console.log('[BrowserPreview] syncBounds: early return (disposed or no electronAPI)');
+      return;
+    }
 
     let nextBounds = null;
 
-    if (
-      document.body.classList.contains('modal-open') ||
-      browserPreviewPanel.hidden ||
-      !currentState.visible
-    ) {
+    const isModalOpen = document.body.classList.contains('modal-open');
+    const isPanelHidden = browserPreviewPanel.hidden;
+    const isStateVisible = currentState.visible;
+
+    if (isModalOpen || isPanelHidden || !isStateVisible) {
+      console.log('[BrowserPreview] syncBounds: null bounds —', {
+        isModalOpen,
+        isPanelHidden,
+        isStateVisible,
+      });
       nextBounds = null;
     } else {
-      const rect = (browserPreviewViewport || browserPreviewMount).getBoundingClientRect();
+      const el = browserPreviewViewport || browserPreviewMount;
+      const rect = el.getBoundingClientRect();
+      console.log('[BrowserPreview] syncBounds: rect —', {
+        element: el.className,
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      });
       if (rect.width && rect.height) {
         nextBounds = {
-          x: rect.x,
-          y: rect.y,
-          width: rect.width,
-          height: rect.height,
+          x: Math.round(rect.x),
+          y: Math.round(rect.y),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
         };
       }
     }
@@ -148,6 +164,7 @@ export function createBrowserPreviewFeature() {
     const nextBoundsKey = getBoundsKey(nextBounds);
     if (nextBoundsKey === lastBoundsKey) return;
 
+    console.log('[BrowserPreview] syncBounds: sending bounds →', nextBounds);
     try {
       await window.electronAPI.invoke('browser-preview-set-bounds', nextBounds);
       lastBoundsKey = nextBoundsKey;
@@ -164,17 +181,30 @@ export function createBrowserPreviewFeature() {
     });
   }
 
-  // After a CSS show-transition (~220ms), the viewport rect may have been
-  // zero-sized during the initial rAF. This retry fires after the transition
-  // settles so we always send valid bounds to the main process.
-  let delayedBoundsSyncTimer = 0;
-  function scheduleBoundsSyncDelayed(ms = 350) {
-    clearTimeout(delayedBoundsSyncTimer);
-    delayedBoundsSyncTimer = setTimeout(() => {
-      lastBoundsKey = 'uninitialized'; // force re-send even if bounds look same
-      void syncBounds();
-    }, ms);
+  // After a CSS show-transition, the viewport rect may have been
+  // zero-sized during the initial rAF. These staggered retries ensure we
+  // eventually send valid bounds once the transition settles.
+  let delayedBoundsSyncTimers = [];
+  function scheduleBoundsSyncDelayed() {
+    delayedBoundsSyncTimers.forEach(clearTimeout);
+    delayedBoundsSyncTimers = [];
+    for (const ms of [50, 150, 350, 700]) {
+      delayedBoundsSyncTimers.push(
+        setTimeout(() => {
+          lastBoundsKey = 'uninitialized'; // force re-send
+          void syncBounds();
+        }, ms),
+      );
+    }
   }
+
+  // Also re-sync when the panel's CSS transition finishes (opacity/transform).
+  function onPanelTransitionEnd() {
+    if (disposed || !currentState.visible) return;
+    lastBoundsKey = 'uninitialized';
+    scheduleBoundsSync();
+  }
+  browserPreviewPanel.addEventListener('transitionend', onPanelTransitionEnd);
 
   function applyState(nextState) {
     const normalizedState = normalizePreviewState(nextState);
@@ -188,10 +218,10 @@ export function createBrowserPreviewFeature() {
     syncPreviewUI();
     scheduleBoundsSync();
 
-    // If the preview just became visible, schedule a delayed retry so that
+    // If the preview just became visible, schedule staggered retries so that
     // any zero-size rects measured during the CSS open-transition are corrected.
     if (!wasVisible && normalizedState.visible) {
-      scheduleBoundsSyncDelayed(350);
+      scheduleBoundsSyncDelayed();
     }
   }
 
@@ -235,9 +265,11 @@ export function createBrowserPreviewFeature() {
     cleanup() {
       disposed = true;
       cancelAnimationFrame(animationFrameId);
-      clearTimeout(delayedBoundsSyncTimer);
+      delayedBoundsSyncTimers.forEach(clearTimeout);
+      delayedBoundsSyncTimers = [];
       resizeObserver?.disconnect();
       modalObserver?.disconnect();
+      browserPreviewPanel.removeEventListener('transitionend', onPanelTransitionEnd);
       window.removeEventListener('resize', scheduleBoundsSync);
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', scheduleBoundsSync);
