@@ -60,12 +60,10 @@ export function createEnhanceFeature({ textarea: textarea, enhanceBtn: enhanceBt
         state.selectedModel,
         [{ role: 'user', content: textarea.value.trim(), attachments: [] }],
         [
-          'You are a prompt-enhancement assistant. Rewrite the user message into one clearer prompt they can send as-is.',
-          'Keep the same goal and tone. Do not change "do this for me" into "explain how I could do it" unless they asked for an explanation.',
-          'If they want something run, fixed, or opened (e.g. local dev server, URL in browser), keep it action-directed: ask the assistant to inspect the repo, pick the right commands, run them, read terminal output for the URL, and open it — not to quiz the user on stack (React vs static vs Flask) or paste multi-branch tutorials.',
-          'Do not add rhetorical questions back to the user, "which type are you?", or long option lists unless the original message explicitly asked for choices.',
-          'Stay concise: similar length or modestly longer than the original; never replace a short ask with a long lecture.',
-          'Return ONLY the enhanced prompt — no preamble, quotes, or labels.',
+          "You are a prompt-enhancement assistant. Your ONLY job is to rephrase the user's message into a clearer, better-worded prompt that another AI can understand and act on more effectively.",
+          'Do NOT answer, execute, or respond to the content of the message — treat it purely as text to improve.',
+          'Keep the same intent, goal, and tone. Just make it clearer and more precise.',
+          'Return ONLY the rewritten prompt — no preamble, labels, or explanation.',
         ].join(' '),
         [],
       );
