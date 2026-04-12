@@ -41,6 +41,26 @@ import { initTerminalObserver } from '../../Features/UI/TerminalComponent.js';
 import { getChatHTML, ensureDropOverlay, getDropOverlay } from './Templates/ChatTemplate.js';
 import { createEnhanceFeature } from './Features/ChatEnhance.js';
 import { createBrowserPreviewFeature } from './Features/BrowserPreview.js';
+
+let _memoryFlushTimer = null;
+
+function scheduleMemoryFlush(delayMs = 30000) {
+  if (_memoryFlushTimer) clearTimeout(_memoryFlushTimer);
+  _memoryFlushTimer = setTimeout(() => {
+    _memoryFlushTimer = null;
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(
+        () => {
+          flushPendingPersonalMemorySyncs().catch(() => {});
+        },
+        { timeout: 60000 },
+      );
+    } else {
+      flushPendingPersonalMemorySyncs().catch(() => {});
+    }
+  }, delayMs);
+}
+
 function syncWelcomeTitle() {
   const welcomeTitle = document.querySelector('.welcome-title');
   welcomeTitle &&
@@ -282,7 +302,7 @@ export function mount(outlet, { settings: settings, navigate: navigate }) {
           buildModelDropdown: buildModelDropdown,
           notifyModelSelectionChanged: notifyModelSelectionChanged,
         })),
-      flushPendingPersonalMemorySyncs().catch(() => {}));
+      scheduleMemoryFlush());
   }
   const offBackendReady = window.electronAPI?.on?.('backend-ready', () => {
     initializeChatBackend().catch(() => {});
@@ -290,6 +310,10 @@ export function mount(outlet, { settings: settings, navigate: navigate }) {
   return (
     initializeChatBackend().catch(() => {}),
     function () {
+      if (_memoryFlushTimer) {
+        clearTimeout(_memoryFlushTimer);
+        _memoryFlushTimer = null;
+      }
       (queueCurrentSessionMemorySync('page-leave').catch(() => {}),
         cleanupTerminalObserver(),
         document.removeEventListener('click', onDocClick),
