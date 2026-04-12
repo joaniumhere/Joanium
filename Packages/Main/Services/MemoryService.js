@@ -69,6 +69,12 @@ const MARKDOWN_FILE_REGEX = /\.md$/i,
       description: 'Astrology.',
       content: '# Astrology\n',
     },
+    {
+      filename: 'Workspace.md',
+      title: 'Workspace',
+      description: 'Workspace.',
+      content: '# Workspace\n',
+    },
   ],
   DEFAULT_FILE_ORDER = new Map(
     DEFAULT_MEMORY_FILES.map((entry, index) => [entry.filename.toLowerCase(), index]),
