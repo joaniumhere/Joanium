@@ -3,7 +3,7 @@
  *
  * Steps:
  *   1. Set version from date     (skipped with --skip-version in CI)
- *   2. Minify in place
+ *   2. Vite build                (bundles + minifies renderer & main via plugins)
  *   3. Package with electron-builder
  *
  * Usage:
@@ -29,9 +29,9 @@ function run(cmd) {
 
 const args = process.argv.slice(2);
 
-const skipVersion = args.includes('--skip-version');
-const publishIdx = args.indexOf('--publish');
-const publishMode = publishIdx !== -1 ? args[publishIdx + 1] : null;
+const skipVersion  = args.includes('--skip-version');
+const publishIdx   = args.indexOf('--publish');
+const publishMode  = publishIdx !== -1 ? args[publishIdx + 1] : null;
 const platformArgs = args.filter(a => ['--win', '--linux', '--mac'].includes(a));
 
 if (publishIdx !== -1 && !publishMode) {
@@ -62,9 +62,9 @@ if (!skipVersion) {
   console.log('[Build] Skipping version bump (--skip-version)\n');
 }
 
-// ── Step 2 — Minify ───────────────────────────────────────────────────────────
+// ── Step 2 — Vite build ───────────────────────────────────────────────────────
 
-run('node ./Scripts/Minify.mjs');
+run('npx vite build');
 
 // ── Step 3 — Electron Builder ─────────────────────────────────────────────────
 
