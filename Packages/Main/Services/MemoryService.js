@@ -118,6 +118,55 @@ const MARKDOWN_FILE_REGEX = /\.md$/i,
       content: '# Habits\n',
     },
     {
+      filename: 'Wishlist.md',
+      title: 'Wishlist',
+      description:
+        "Things the user wants to buy, experience, or receive — products, experiences, gifts, or upgrades they've mentioned wanting at some point.",
+      content: '# Wishlist\n',
+    },
+    {
+      filename: 'Routines.md',
+      title: 'Daily Routines',
+      description:
+        "A breakdown of the user's typical day — wake time, morning and night routines, meal times, workout schedule, and how structured or flexible their day tends to be.",
+      content: '# Daily Routines\n',
+    },
+    {
+      filename: 'Fashion.md',
+      title: 'Fashion & Style',
+      description:
+        "The user's personal style, clothing preferences, brands they like, how much they care about appearance, and any aesthetic they gravitate toward.",
+      content: '# Fashion & Style\n',
+    },
+    {
+      filename: 'Learning.md',
+      title: 'Learning & Development',
+      description:
+        'Courses, books, certifications, or skills the user is actively studying or wants to learn — including platforms they use (Coursera, YouTube, etc.) and their learning pace.',
+      content: '# Learning & Development\n',
+    },
+    {
+      filename: 'Meetings.md',
+      title: 'Meetings & Commitments',
+      description:
+        'Recurring or important meetings, deadlines, and professional commitments the user has mentioned — useful context for scheduling, prepping, or following up.',
+      content: '# Meetings & Commitments\n',
+    },
+    {
+      filename: 'WorkChallenges.md',
+      title: 'Work Challenges',
+      description:
+        'Current or recurring challenges at work — difficult colleagues, unclear direction, imposter syndrome, workload issues, or anything making their professional life harder.',
+      content: '# Work Challenges\n',
+    },
+    {
+      filename: 'WorkStyle.md',
+      title: 'Work Style',
+      description:
+        'How the user works best — deep focus vs collaborative, morning vs night, remote vs office, how they handle stress at work, and what environments make them most productive.',
+      content: '# Work Style\n',
+    },
+    {
       filename: 'ImportantDates.md',
       title: 'Important Dates',
       description:
@@ -214,6 +263,41 @@ const MARKDOWN_FILE_REGEX = /\.md$/i,
       description:
         'Private thoughts, confessions, or sensitive information the user has shared in confidence — to be handled with care and never brought up unsolicited.',
       content: '# Secrets & Confessions\n',
+    },
+    {
+      filename: 'LivingSituation.md',
+      title: 'Living Situation',
+      description:
+        'Where and how the user lives — city, neighborhood, type of home, who they live with (alone, roommates, family, partner), and how they feel about their current living arrangement.',
+      content: '# Living Situation\n',
+    },
+    {
+      filename: 'Fears.md',
+      title: 'Fears & Insecurities',
+      description:
+        "Things the user is afraid of or feels insecure about — phobias, social anxieties, deep-seated worries, and recurring self-doubt patterns they've shared.",
+      content: '# Fears & Insecurities\n',
+    },
+    {
+      filename: 'Dreams.md',
+      title: 'Dreams & Aspirations',
+      description:
+        "The user's big-picture dreams that go beyond goals — bucket list items, fantasy life scenarios, things they'd do if money or time weren't a constraint.",
+      content: '# Dreams & Aspirations\n',
+    },
+    {
+      filename: 'Struggles.md',
+      title: 'Personal Struggles',
+      description:
+        'Ongoing personal challenges the user is dealing with — emotional, social, situational, or existential. Helps the AI give empathetic, contextually aware responses.',
+      content: '# Personal Struggles\n',
+    },
+    {
+      filename: 'SocialLife.md',
+      title: 'Social Life',
+      description:
+        'How the user socializes — frequency, preferred settings (parties vs small hangouts), social energy levels, current social satisfaction, and any ongoing social dynamics.',
+      content: '# Social Life\n',
     },
   ],
   DEFAULT_FILE_ORDER = new Map(
