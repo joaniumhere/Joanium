@@ -10,8 +10,9 @@ build/
 Config/User.json
 Config/WindowState.json
 
-# Data
+# Data (root-level only — Packages/**/Data/ must stay tracked)
 Data/
+!Packages/**/Data/
 
 # Instructions
 Instructions/
