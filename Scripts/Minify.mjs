@@ -29,13 +29,8 @@ const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'test', 'tests', '__t
 /** File extensions we handle. */
 const SUPPORTED_EXTS = new Set(['.js', '.css', '.html']);
 
-/** Shared CleanCSS instance. */
-const cleanCSS = new CleanCSS({
-  level: {
-    1: { all: true },
-    2: { restructureRules: true },
-  },
-});
+/** Shared CleanCSS instance — level 1 only, no rule restructuring. */
+const cleanCSS = new CleanCSS({ level: 1 });
 
 // ── File collection ────────────────────────────────────────────────────────────
 
@@ -68,9 +63,9 @@ async function processJS(content) {
   const result = await minifyJS(content, {
     module: true,
     compress: {
-      passes: 2,
-      dead_code: true,
-      drop_console: false, // keep console.* — useful for Electron diagnostics
+      passes: 1,
+      dead_code: false,
+      drop_console: false,
     },
     mangle: false,
     format: {
@@ -94,12 +89,8 @@ async function processHTML(content) {
     removeComments: true,
     removeRedundantAttributes: true,
     removeEmptyAttributes: true,
-    minifyCSS: true,
-    minifyJS: {
-      module: true,
-      compress: { passes: 1 },
-      mangle: false,
-    },
+    minifyCSS: false,
+    minifyJS: false,
   });
 }
 
@@ -197,7 +188,7 @@ export async function minifyAll(rootDir, opts = {}) {
 
   console.log(
     `[Minify] Done. ${processed} minified, ${skipped} skipped.` +
-      (!dry ? ` Total saved: ${(totalSavedBytes / 1024).toFixed(1)} KB` : ''),
+    (!dry ? ` Total saved: ${(totalSavedBytes / 1024).toFixed(1)} KB` : ''),
   );
 }
 
@@ -206,7 +197,7 @@ export async function minifyAll(rootDir, opts = {}) {
 const isMain =
   process.argv[1] &&
   path.resolve(process.argv[1]) ===
-    path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'Minify.mjs');
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'Minify.mjs');
 
 if (isMain) {
   const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
