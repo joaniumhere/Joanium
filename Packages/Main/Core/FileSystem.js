@@ -1,8 +1,49 @@
 import fs from 'fs';
 import path from 'path';
 import { cloneValue } from '../../System/Utils/CloneValue.js';
+const textFileCache = new Map(),
+  jsonFileCache = new Map();
 export function resolveFallback(fallback) {
   return 'function' == typeof fallback ? fallback() : cloneValue(fallback);
+}
+function normalizeCachePath(targetPath) {
+  return targetPath ? path.resolve(targetPath) : '';
+}
+function getFileSignature(filePath) {
+  if (!filePath) return null;
+  try {
+    const stat = fs.statSync(filePath);
+    return stat.isFile() ? `${stat.size}:${stat.mtimeMs}` : null;
+  } catch {
+    return null;
+  }
+}
+function clearCachedFile(filePath) {
+  const normalizedPath = normalizeCachePath(filePath);
+  normalizedPath && (textFileCache.delete(normalizedPath), jsonFileCache.delete(normalizedPath));
+}
+function readCachedTextFile(filePath) {
+  const normalizedPath = normalizeCachePath(filePath),
+    signature = getFileSignature(normalizedPath);
+  if (!normalizedPath || !signature) return void clearCachedFile(normalizedPath);
+  const cached = textFileCache.get(normalizedPath);
+  if (cached?.signature === signature) return cached.text;
+  const text = fs.readFileSync(normalizedPath, 'utf-8');
+  return (textFileCache.set(normalizedPath, { signature: signature, text: text }), text);
+}
+function setCachedTextFile(filePath, text) {
+  const normalizedPath = normalizeCachePath(filePath),
+    signature = getFileSignature(normalizedPath);
+  normalizedPath &&
+    signature &&
+    textFileCache.set(normalizedPath, { signature: signature, text: text });
+}
+function setCachedJsonFile(filePath, value) {
+  const normalizedPath = normalizeCachePath(filePath),
+    signature = getFileSignature(normalizedPath);
+  normalizedPath &&
+    signature &&
+    jsonFileCache.set(normalizedPath, { signature: signature, value: cloneValue(value) });
 }
 export function pathExists(targetPath) {
   return Boolean(targetPath) && fs.existsSync(targetPath);
@@ -34,8 +75,8 @@ export function ensureParentDir(filePath) {
 export function loadText(filePath, fallback = '', options = {}) {
   const { stripBom: stripBom = !0 } = options;
   try {
-    if (!fileExists(filePath)) return resolveFallback(fallback);
-    const raw = fs.readFileSync(filePath, 'utf-8');
+    const raw = readCachedTextFile(filePath);
+    if (null == raw) return resolveFallback(fallback);
     return stripBom ? raw.replace(/^\uFEFF/, '') : raw;
   } catch {
     return resolveFallback(fallback);
@@ -43,11 +84,18 @@ export function loadText(filePath, fallback = '', options = {}) {
 }
 export function loadJson(filePath, fallback = null) {
   try {
-    return fileExists(filePath)
-      ? JSON.parse(loadText(filePath, '', { stripBom: !0 }))
-      : resolveFallback(fallback);
+    const normalizedPath = normalizeCachePath(filePath),
+      signature = getFileSignature(normalizedPath);
+    if (!normalizedPath || !signature) return resolveFallback(fallback);
+    const cached = jsonFileCache.get(normalizedPath);
+    if (cached?.signature === signature) return cloneValue(cached.value);
+    const value = JSON.parse(loadText(normalizedPath, '', { stripBom: !0 }));
+    return (
+      jsonFileCache.set(normalizedPath, { signature: signature, value: cloneValue(value) }),
+      cloneValue(value)
+    );
   } catch {
-    return resolveFallback(fallback);
+    return (clearCachedFile(filePath), resolveFallback(fallback));
   }
 }
 export function persistText(filePath, content, options = {}) {
@@ -58,15 +106,20 @@ export function persistText(filePath, content, options = {}) {
   return (
     normalizeLineEndings && (next = next.replace(/\r\n/g, '\n')),
     finalNewline && !next.endsWith('\n') && (next += '\n'),
-    fs.writeFileSync(filePath, next, 'utf-8'),
+    readCachedTextFile(filePath) !== next && fs.writeFileSync(filePath, next, 'utf-8'),
+    setCachedTextFile(filePath, next),
+    jsonFileCache.delete(normalizeCachePath(filePath)),
     next
   );
 }
 export function persistJson(filePath, data, options = {}) {
   const { space: space = 2 } = options;
+  const serialized = JSON.stringify(data, null, space);
   return (
     ensureParentDir(filePath),
-    fs.writeFileSync(filePath, JSON.stringify(data, null, space), 'utf-8'),
+    readCachedTextFile(filePath) !== serialized && fs.writeFileSync(filePath, serialized, 'utf-8'),
+    setCachedTextFile(filePath, serialized),
+    setCachedJsonFile(filePath, data),
     data
   );
 }

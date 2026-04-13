@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { cloneValue } from '../../System/Utils/CloneValue.js';
 import Paths from '../Core/Paths.js';
 import {
   directoryExists,
@@ -11,7 +12,8 @@ import {
 import { loadJson, parseFrontmatter, persistJson } from './FileService.js';
 export const OFFICIAL_PUBLISHER = 'Joanium';
 const MARKDOWN_FILE_REGEX = /\.md$/i,
-  INVALID_PATH_SEGMENT_REGEX = /[<>:"/\\|?*\u0000-\u001f]+/g;
+  INVALID_PATH_SEGMENT_REGEX = /[<>:"/\\|?*\u0000-\u001f]+/g,
+  libraryEntriesCache = new Map();
 function sanitizeLibrarySegment(value, fallback) {
   return (
     String(value ?? '')
@@ -85,6 +87,22 @@ function getLibraryRoots(kind) {
     ? { userRoot: Paths.USER_PERSONAS_DIR, seedRoot: Paths.PERSONAS_SEED_DIR }
     : { userRoot: Paths.USER_SKILLS_DIR, seedRoot: Paths.SKILLS_SEED_DIR };
 }
+function buildLibrarySignature(rootDir, files = []) {
+  return files
+    .map((fullPath) => {
+      const relativePath = path.relative(rootDir, fullPath);
+      try {
+        const stat = fs.statSync(fullPath);
+        return `${relativePath}:${stat.size}:${stat.mtimeMs}`;
+      } catch {
+        return `${relativePath}:missing`;
+      }
+    })
+    .join('|');
+}
+function invalidateLibraryEntries(kind) {
+  kind ? libraryEntriesCache.delete(kind) : libraryEntriesCache.clear();
+}
 function copyMarkdownTree(sourceRoot, targetRoot) {
   for (const fullPath of scanMarkdownFiles(sourceRoot)) {
     const relativePath = path.relative(sourceRoot, fullPath),
@@ -103,8 +121,12 @@ export function initializeContentLibraries() {
 }
 function readMarkdownEntries(kind) {
   const { userRoot: userRoot } = getLibraryRoots(kind),
-    entries = new Map();
-  for (const fullPath of scanMarkdownFiles(userRoot))
+    files = scanMarkdownFiles(userRoot),
+    signature = buildLibrarySignature(userRoot, files),
+    cached = libraryEntriesCache.get(kind);
+  if (cached?.signature === signature) return cloneValue(cached.entries);
+  const entries = new Map();
+  for (const fullPath of files)
     try {
       const raw = loadText(fullPath, ''),
         { meta: meta, body: body } = parseFrontmatter(raw),
@@ -146,7 +168,11 @@ function readMarkdownEntries(kind) {
               };
       entries.set(id, entry);
     } catch {}
-  return [...entries.values()].sort(compareLibraryEntries);
+  const nextEntries = [...entries.values()].sort(compareLibraryEntries);
+  return (
+    libraryEntriesCache.set(kind, { signature: signature, entries: nextEntries }),
+    cloneValue(nextEntries)
+  );
 }
 function persistEnabledMap(map) {
   persistJson(Paths.SKILLS_FILE, { skills: map });
@@ -258,6 +284,7 @@ export function writeUserContent(kind, { publisher: publisher, filename: filenam
       normalizeLineEndings: !0,
       finalNewline: !0,
     }),
+    invalidateLibraryEntries(kind),
     target
   );
 }
