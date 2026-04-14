@@ -1,6 +1,7 @@
 {
   "name": "@Joanium/capability-netlify",
   "private": true,
+  "version": "1.0.0",
   "type": "module",
   "description": "Netlify capability package for Joanium.",
   "main": "./Core/Feature.js",

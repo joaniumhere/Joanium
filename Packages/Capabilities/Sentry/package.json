@@ -1,9 +1,9 @@
 {
-  "name": "@Joanium/capability-vercel",
+  "name": "@Joanium/capability-sentry",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Vercel capability package for Joanium.",
+  "description": "Sentry capability package for Joanium.",
   "main": "./Core/Feature.js",
   "exports": {
     ".": "./Core/Feature.js"

@@ -1,9 +1,9 @@
 {
-  "name": "@Joanium/capability-vercel",
+  "name": "@Joanium/capability-supabase",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Vercel capability package for Joanium.",
+  "description": "Supabase capability package for Joanium.",
   "main": "./Core/Feature.js",
   "exports": {
     ".": "./Core/Feature.js"

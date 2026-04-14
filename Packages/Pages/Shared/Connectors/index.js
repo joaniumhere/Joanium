@@ -151,10 +151,58 @@ function renderPanel() {
                 wrap.appendChild(title),
                 def.setupSteps.forEach((step, i) => {
                   const row = document.createElement('div');
-                  ((row.style.cssText =
-                    'display:flex;gap:8px;align-items:flex-start;margin-bottom:4px;font-size:12px;color:var(--text-secondary);'),
-                    (row.innerHTML = `<span style="min-width:16px;font-weight:500;color:var(--text-muted)">${i + 1}.</span><span>${step}</span>`),
-                    wrap.appendChild(row));
+                  row.style.cssText =
+                    'display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;font-size:12px;color:var(--text-secondary);';
+
+                  const num = document.createElement('span');
+                  num.style.cssText =
+                    'min-width:16px;font-weight:500;color:var(--text-muted);flex-shrink:0;';
+                  num.textContent = `${i + 1}.`;
+
+                  const content = document.createElement('span');
+                  content.style.cssText = 'flex:1;line-height:1.5;';
+
+                  // Detect URLs in the step text and render them with a copy button
+                  const urlPattern = /(https?:\/\/[^\s]+)/g;
+                  const parts = step.split(urlPattern);
+                  parts.forEach((part, pi) => {
+                    if (urlPattern.test(part)) {
+                      const urlSpan = document.createElement('span');
+                      urlSpan.style.cssText =
+                        'display:inline-flex;align-items:center;gap:4px;background:var(--bg-subtle,rgba(0,0,0,0.08));border-radius:4px;padding:1px 6px;font-family:monospace;font-size:11px;color:var(--text-primary);';
+                      urlSpan.textContent = part;
+
+                      const copyBtn = document.createElement('button');
+                      copyBtn.title = 'Copy';
+                      copyBtn.style.cssText =
+                        'background:none;border:none;cursor:pointer;padding:0;margin-left:2px;color:var(--text-muted);display:inline-flex;align-items:center;flex-shrink:0;opacity:0.7;';
+                      copyBtn.innerHTML =
+                        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+                      copyBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        navigator.clipboard.writeText(part).then(() => {
+                          copyBtn.innerHTML =
+                            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                          copyBtn.style.color = 'var(--accent-green,#22c55e)';
+                          setTimeout(() => {
+                            copyBtn.innerHTML =
+                              '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+                            copyBtn.style.color = '';
+                          }, 1500);
+                        });
+                      });
+
+                      urlSpan.appendChild(copyBtn);
+                      content.appendChild(urlSpan);
+                    } else if (part) {
+                      content.appendChild(document.createTextNode(part));
+                    }
+                    urlPattern.lastIndex = 0; // reset stateful regex
+                  });
+
+                  row.appendChild(num);
+                  row.appendChild(content);
+                  wrap.appendChild(row);
                 }),
                 wrap
               );

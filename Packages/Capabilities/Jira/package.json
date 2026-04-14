@@ -1,6 +1,7 @@
 {
   "name": "@Joanium/capability-jira",
   "private": true,
+  "version": "1.0.0",
   "type": "module",
   "description": "Jira capability package for Joanium.",
   "main": "./Core/Feature.js",

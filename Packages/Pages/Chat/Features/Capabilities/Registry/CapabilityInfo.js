@@ -80,6 +80,17 @@ import { Trigger as NotionTrigger } from '../../../../../Capabilities/Notion/Cor
 import { Trigger as LinearTrigger } from '../../../../../Capabilities/Linear/Core/Trigger.js';
 import { Trigger as JiraTrigger } from '../../../../../Capabilities/Jira/Core/Trigger.js';
 
+//// Monitoring & Infrastructure
+import { Trigger as SentryTrigger } from '../../../../../Capabilities/Sentry/Core/Trigger.js';
+import { Trigger as SupabaseTrigger } from '../../../../../Capabilities/Supabase/Core/Trigger.js';
+
+//// Payments & CRM
+import { Trigger as StripeTrigger } from '../../../../../Capabilities/Stripe/Core/Trigger.js';
+import { Trigger as HubSpotTrigger } from '../../../../../Capabilities/HubSpot/Core/Trigger.js';
+
+//// Entertainment
+import { Trigger as SpotifyTrigger } from '../../../../../Capabilities/Spotify/Core/Trigger.js';
+
 export const CAPABILITY_MANIFESTS = [
   {
     name: 'weather',
@@ -413,5 +424,50 @@ export const CAPABILITY_MANIFESTS = [
     executor: null,
     featureCategories: ['jira'],
     connectors: { jira: 'jira' },
+  },
+  {
+    name: 'sentry',
+    description: 'Sentry error tracking — unresolved issues, crash reports, and error levels',
+    triggers: SentryTrigger,
+    tools: [],
+    executor: null,
+    featureCategories: ['sentry'],
+    connectors: { sentry: 'sentry' },
+  },
+  {
+    name: 'supabase',
+    description: 'Supabase projects, databases, and edge functions',
+    triggers: SupabaseTrigger,
+    tools: [],
+    executor: null,
+    featureCategories: ['supabase'],
+    connectors: { supabase: 'supabase' },
+  },
+  {
+    name: 'stripe',
+    description: 'Stripe payments, charges, customers, and subscriptions',
+    triggers: StripeTrigger,
+    tools: [],
+    executor: null,
+    featureCategories: ['stripe'],
+    connectors: { stripe: 'stripe' },
+  },
+  {
+    name: 'hubspot',
+    description: 'HubSpot CRM — contacts, deals, companies, and sales pipeline',
+    triggers: HubSpotTrigger,
+    tools: [],
+    executor: null,
+    featureCategories: ['hubspot'],
+    connectors: { hubspot: 'hubspot' },
+  },
+  {
+    name: 'spotify',
+    description: 'Spotify music — currently playing, top tracks, and playlists',
+    triggers: SpotifyTrigger,
+    tools: [],
+    executor: null,
+    featureCategories: ['spotify'],
+    connectors: { spotify: 'spotify' },
   },
 ];

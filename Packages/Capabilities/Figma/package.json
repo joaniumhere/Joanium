@@ -1,6 +1,7 @@
 {
   "name": "@Joanium/capability-figma",
   "private": true,
+  "version": "1.0.0",
   "type": "module",
   "description": "Figma capability package for Joanium.",
   "main": "./Core/Feature.js",
