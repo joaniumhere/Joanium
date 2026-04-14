@@ -1,0 +1,17 @@
+{
+  "name": "@Joanium/capability-notion",
+  "private": true,
+  "type": "module",
+  "description": "Notion capability package for Joanium.",
+  "main": "./Core/Feature.js",
+  "exports": {
+    ".": "./Core/Feature.js"
+  },
+  "joanium": {
+    "discovery": {
+      "features": [
+        "./Core"
+      ]
+    }
+  }
+}

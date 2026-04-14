@@ -1,0 +1,17 @@
+{
+  "name": "@Joanium/capability-linear",
+  "private": true,
+  "type": "module",
+  "description": "Linear capability package for Joanium.",
+  "main": "./Core/Feature.js",
+  "exports": {
+    ".": "./Core/Feature.js"
+  },
+  "joanium": {
+    "discovery": {
+      "features": [
+        "./Core"
+      ]
+    }
+  }
+}
