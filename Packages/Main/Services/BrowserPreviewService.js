@@ -251,7 +251,6 @@ export class BrowserPreviewService extends EventEmitter {
     visible ? this.show() : this.hide();
   }
   setHostBounds(bounds) {
-    console.log('[BrowserPreview] setHostBounds:', JSON.stringify(bounds));
     const normalizedBounds = (function (bounds) {
       return !bounds || bounds.width <= 0 || bounds.height <= 0
         ? null
