@@ -11,13 +11,14 @@ export function getEventsHTML() {
             Live
           </span>
         </h2>
-        <p>Real-time log of every automation and agent run - successes, failures, and what happened.</p>
+        <p>Real-time log of every automation, agent, and channel interaction - successes, failures, and what happened.</p>
       </div>
       <div class="events-header-actions">
         <div class="events-filter-group">
           <button class="events-filter-btn active" data-filter="all">All</button>
           <button class="events-filter-btn" data-filter="agents">Agents</button>
           <button class="events-filter-btn" data-filter="automations">Automations</button>
+          <button class="events-filter-btn" data-filter="channels">Channels</button>
           <button class="events-filter-btn" data-filter="errors">Errors</button>
         </div>
         <button class="events-clear-btn" id="events-clear-btn" title="Clear event log">
@@ -32,7 +33,7 @@ export function getEventsHTML() {
     <div class="events-stats-bar">
       <div class="events-stat">
         <span class="events-stat-value" id="stat-total">-</span>
-        <span class="events-stat-label">Total runs</span>
+        <span class="events-stat-label">Total events</span>
       </div>
       <div class="events-stat-divider"></div>
       <div class="events-stat">
@@ -52,7 +53,7 @@ export function getEventsHTML() {
       <div class="events-stat-divider"></div>
       <div class="events-stat">
         <span class="events-stat-value" id="stat-agents">-</span>
-        <span class="events-stat-label">Active agents</span>
+        <span class="events-stat-label">Active sources</span>
       </div>
     </div>
 
@@ -69,7 +70,7 @@ export function getEventsHTML() {
         </svg>
       </div>
       <h3>No events yet</h3>
-      <p>Events will appear here as your automations and agents run. Create an automation or agent and run it to see live logs.</p>
+      <p>Events will appear here as automations run, agents complete, and channel messages are handled.</p>
     </div>
 
     <div id="events-feed" class="events-feed" style="display:none"></div>
@@ -104,7 +105,7 @@ export function getEventsHTML() {
     </div>
     <h2 class="events-confirm-title">Clear all events?</h2>
     <p class="events-confirm-body">
-      This will permanently delete all run history for every agent and automation.
+      This will permanently delete all run history and channel message logs.
       Events from future runs will still appear here.
     </p>
     <div class="events-confirm-actions">

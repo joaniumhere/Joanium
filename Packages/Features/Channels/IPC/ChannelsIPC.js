@@ -5,6 +5,32 @@ function loadMessages(messageStore) {
 function persistMessages(messageStore, data) {
   messageStore.save(data);
 }
+function toIsoOrFallback(value, fallbackIso = new Date().toISOString()) {
+  const fallbackDate = new Date(fallbackIso),
+    date = value ? new Date(value) : fallbackDate;
+  return Number.isNaN(date.getTime()) ? fallbackIso : date.toISOString();
+}
+function normalizeChannelMessage(msg = {}) {
+  const repliedAt = toIsoOrFallback(msg.repliedAt ?? msg.timestamp),
+    receivedAt = toIsoOrFallback(msg.receivedAt ?? repliedAt, repliedAt);
+  return {
+    id: `chmsg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    channel: String(msg.channel ?? ''),
+    from: String(msg.from ?? 'User'),
+    incoming: String(msg.incoming ?? ''),
+    reply: String(msg.reply ?? ''),
+    status: 'error' === msg.status ? 'error' : 'success',
+    error: msg.error ? String(msg.error) : null,
+    provider: msg.provider ? String(msg.provider) : null,
+    model: msg.model ? String(msg.model) : null,
+    receivedAt: receivedAt,
+    repliedAt: repliedAt,
+    timestamp: repliedAt,
+    externalId: msg.externalId ? String(msg.externalId) : null,
+    targetId: msg.targetId ? String(msg.targetId) : null,
+    conversationId: msg.conversationId ? String(msg.conversationId) : null,
+  };
+}
 export const ipcMeta = { needs: ['channelEngine', 'featureStorage'] };
 export function register(channelEngine, featureStorage) {
   const messageStore = featureStorage.get('channelMessages');
@@ -89,13 +115,7 @@ export function register(channelEngine, featureStorage) {
       try {
         const data = loadMessages(messageStore);
         return (
-          data.messages.unshift({
-            id: `chmsg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            channel: msg.channel,
-            incoming: msg.incoming,
-            reply: msg.reply,
-            timestamp: new Date().toISOString(),
-          }),
+          data.messages.unshift(normalizeChannelMessage(msg)),
           data.messages.length > 500 && (data.messages.length = 500),
           persistMessages(messageStore, data),
           { ok: !0 }

@@ -1,3 +1,14 @@
+const CHANNEL_LABELS = Object.freeze({
+  telegram: 'Telegram',
+  whatsapp: 'WhatsApp',
+  discord: 'Discord',
+  slack: 'Slack',
+});
+
+function channelLabel(name) {
+  return CHANNEL_LABELS[name] ?? name ?? 'Channel';
+}
+
 export async function fetchHistory() {
   const events = [];
   try {
@@ -48,6 +59,39 @@ export async function fetchHistory() {
             autoEnabled: automation.enabled,
           });
         }
+  } catch {}
+  try {
+    const res = await window.electronAPI?.invoke?.('get-channel-messages'),
+      messages = Array.isArray(res?.messages) ? res.messages : [];
+    for (const [index, entry] of messages.entries()) {
+      const timestamp =
+          entry.receivedAt || entry.timestamp || entry.repliedAt || new Date().toISOString(),
+        channelName = channelLabel(entry.channel);
+      events.push({
+        id: entry.id || `channel__${entry.channel ?? 'unknown'}__${timestamp}__${index}`,
+        type: 'channel',
+        source: channelName,
+        channel: entry.channel || 'channel',
+        status: entry.error || 'error' === entry.status ? 'error' : 'success',
+        timestamp: timestamp,
+        summary: entry.incoming || '',
+        fullResponse: entry.reply || '',
+        replyText: entry.reply || '',
+        inboundMessage: entry.incoming || '',
+        channelFrom: entry.from || 'User',
+        jobName: entry.from || 'User',
+        error: entry.error || null,
+        skipReason: null,
+        trigger: null,
+        receivedAt: entry.receivedAt || timestamp,
+        repliedAt: entry.repliedAt || entry.timestamp || null,
+        provider: entry.provider || null,
+        model: entry.model || null,
+        externalId: entry.externalId || null,
+        targetId: entry.targetId || null,
+        conversationId: entry.conversationId || null,
+      });
+    }
   } catch {}
   return (
     events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),

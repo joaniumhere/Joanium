@@ -24,19 +24,58 @@ const _stubLive = {
   getToolExecutionHooks: () => null,
 };
 
+function toIso(value, fallback = Date.now()) {
+  const date = value ? new Date(value) : new Date(fallback);
+  return Number.isNaN(date.getTime()) ? new Date(fallback).toISOString() : date.toISOString();
+}
+
+async function persistChannelMessage({
+  channelName,
+  from,
+  incoming,
+  reply,
+  status = 'success',
+  error = null,
+  metadata = {},
+  provider = null,
+  model = null,
+}) {
+  try {
+    const repliedAt = new Date().toISOString();
+    await api?.invoke?.('save-channel-message', {
+      channel: channelName,
+      from: from || 'User',
+      incoming: incoming || '',
+      reply: reply || '',
+      status: status,
+      error: error,
+      provider: provider,
+      model: model,
+      receivedAt: toIso(metadata?.receivedAt),
+      repliedAt: repliedAt,
+      timestamp: repliedAt,
+      externalId: metadata?.externalId ?? null,
+      targetId: metadata?.targetId ?? null,
+      conversationId: metadata?.conversationId ?? null,
+    });
+  } catch (persistError) {
+    console.warn('[ChannelGateway] message persistence failed:', persistError?.message);
+  }
+}
+
 export function initChannelGateway() {
   if (_initialised) return;
   _initialised = true;
 
-  api?.on?.('channel-incoming', ({ id, channelName, from, text }) => {
+  api?.on?.('channel-incoming', ({ id, channelName, from, text, metadata }) => {
     // Enqueue — guarantees serial processing, prevents AI provider saturation
     _channelChain = _channelChain
       .catch(() => {})
-      .then(() => _processChannelMessage(id, channelName, from, text));
+      .then(() => _processChannelMessage(id, channelName, from, text, metadata));
   });
 }
 
-async function _processChannelMessage(id, channelName, from, text) {
+async function _processChannelMessage(id, channelName, from, text, metadata = {}) {
   // Per-message abort controller — 1800-second hard cap
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), 1_800_000); // 30mins
@@ -48,11 +87,17 @@ async function _processChannelMessage(id, channelName, from, text) {
     }
 
     if (!state.selectedProvider || !state.selectedModel) {
-      await api.invoke(
-        'channel-reply',
-        id,
-        'No AI provider is configured yet. Open Settings → AI Providers to add one.',
-      );
+      const reply = 'No AI provider is configured yet. Open Settings → AI Providers to add one.';
+      await persistChannelMessage({
+        channelName,
+        from,
+        incoming: text,
+        reply: reply,
+        status: 'error',
+        error: 'No AI provider is configured yet.',
+        metadata,
+      });
+      await api.invoke('channel-reply', id, reply);
       return;
     }
 
@@ -120,14 +165,37 @@ async function _processChannelMessage(id, channelName, from, text) {
       runtimeOptions,
     );
 
-    await trackUsage(usage, `channel:${channelName}`, usedProvider, usedModel);
-    await api.invoke('channel-reply', id, reply ?? '(no response)');
+    await trackUsage(usage, `channel:${channelName}`, usedProvider, usedModel).catch((error) => {
+      console.warn('[ChannelGateway] trackUsage failed:', error?.message);
+    });
+
+    const finalReply = reply ?? '(no response)';
+    await persistChannelMessage({
+      channelName,
+      from,
+      incoming: text,
+      reply: finalReply,
+      status: 'success',
+      metadata,
+      provider: usedProvider,
+      model: usedModel,
+    });
+    await api.invoke('channel-reply', id, finalReply);
   } catch (err) {
     console.error('[ChannelGateway] processing error:', err);
     const msg =
       err?.name === 'AbortError'
         ? 'Sorry, the response took too long. Please try again.'
         : `Sorry, something went wrong: ${err.message}`;
+    await persistChannelMessage({
+      channelName,
+      from,
+      incoming: text,
+      reply: msg,
+      status: 'error',
+      error: err?.message ?? 'Unknown error',
+      metadata,
+    });
     try {
       await api.invoke('channel-reply', id, msg);
     } catch {

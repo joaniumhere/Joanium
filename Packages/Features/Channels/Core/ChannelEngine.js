@@ -155,6 +155,10 @@ function splitIntoChunks(text, maxLen) {
   for (; i < str.length; ) (chunks.push(str.slice(i, i + maxLen)), (i += maxLen));
   return chunks;
 }
+function toIsoTimestamp(value, fallback = Date.now()) {
+  const date = value ? new Date(value) : new Date(fallback);
+  return Number.isNaN(date.getTime()) ? new Date(fallback).toISOString() : date.toISOString();
+}
 export class ChannelEngine {
   constructor(storage) {
     this.storage = storage;
@@ -174,7 +178,7 @@ export class ChannelEngine {
     const p = this._pending.get(id);
     p && (this._pending.delete(id), p.resolve(text));
   }
-  _dispatchToRenderer(channelName, from, text) {
+  _dispatchToRenderer(channelName, from, text, metadata = {}) {
     return new Promise((resolve, reject) => {
       if (!this._mainWindow || this._mainWindow.isDestroyed())
         return reject(new Error('App window not available'));
@@ -205,6 +209,7 @@ export class ChannelEngine {
         channelName,
         from,
         text,
+        metadata,
       });
     });
   }
@@ -511,6 +516,7 @@ export class ChannelEngine {
             chatId: u.message.chat.id,
             text: u.message.text,
             from: u.message.from?.first_name ?? 'User',
+            receivedAt: toIsoTimestamp(u.message?.date ? 1000 * u.message.date : null),
           }));
       } finally {
         clearTimeout(fetchTimer);
@@ -537,7 +543,12 @@ export class ChannelEngine {
             }).catch(() => {});
           sendTyping();
           typingInterval = setInterval(sendTyping, 4500);
-          const reply = await this._dispatchToRenderer('telegram', msg.from, msg.text);
+          const reply = await this._dispatchToRenderer('telegram', msg.from, msg.text, {
+            externalId: String(msg.updateId),
+            targetId: String(msg.chatId),
+            conversationId: String(msg.chatId),
+            receivedAt: msg.receivedAt,
+          });
           clearInterval(typingInterval);
           await sendTelegram(cfg.botToken, msg.chatId, reply);
         } catch (err) {
@@ -564,7 +575,13 @@ export class ChannelEngine {
           'inbound' === msg.direction &&
             (seenSids.has(msg.sid) ||
               Date.now() - new Date(msg.date_created).getTime() > 2e4 ||
-              (messages.push({ sid: msg.sid, from: msg.from, to: msg.to, text: msg.body }),
+              (messages.push({
+                sid: msg.sid,
+                from: msg.from,
+                to: msg.to,
+                text: msg.body,
+                receivedAt: toIsoTimestamp(msg.date_created),
+              }),
               seenSids.add(msg.sid)));
         // Cap at 200 (down from 500) — WhatsApp sandbox rates are low
         cfg._seenSids = seenSids.size > 200 ? new Set(Array.from(seenSids).slice(-200)) : seenSids;
@@ -577,7 +594,12 @@ export class ChannelEngine {
     for (const msg of messages)
       (async () => {
         try {
-          const reply = await this._dispatchToRenderer('whatsapp', msg.from, msg.text);
+          const reply = await this._dispatchToRenderer('whatsapp', msg.from, msg.text, {
+            externalId: msg.sid,
+            targetId: msg.to,
+            conversationId: msg.from,
+            receivedAt: msg.receivedAt,
+          });
           await sendWhatsApp(cfg, msg.from, reply);
         } catch (err) {
           console.error(`[ChannelEngine] WhatsApp reply failed (${msg.from}):`, err.message);
@@ -619,6 +641,7 @@ export class ChannelEngine {
                 channelId: m.channel_id,
                 text: m.content,
                 from: m.author?.username ?? 'User',
+                receivedAt: toIsoTimestamp(m.timestamp),
               }))
               .reverse()
           : [];
@@ -638,7 +661,12 @@ export class ChannelEngine {
               headers: { Authorization: `Bot ${cfg.botToken}` },
             }).catch(() => {});
           (sendTyping(), (typingInterval = setInterval(sendTyping, 9e3)));
-          const reply = await this._dispatchToRenderer('discord', msg.from, msg.text);
+          const reply = await this._dispatchToRenderer('discord', msg.from, msg.text, {
+            externalId: msg.id,
+            targetId: msg.channelId,
+            conversationId: msg.channelId,
+            receivedAt: msg.receivedAt,
+          });
           (clearInterval(typingInterval), await sendDiscord(cfg.botToken, msg.channelId, reply));
         } catch (err) {
           (typingInterval && clearInterval(typingInterval),
@@ -695,6 +723,7 @@ export class ChannelEngine {
             channelId: cfg.channelId,
             text: m.text,
             from: m.user || 'User',
+            receivedAt: toIsoTimestamp(Number.parseFloat(m.ts) * 1000),
           }))
           .reverse();
       })(cfg);
@@ -706,7 +735,12 @@ export class ChannelEngine {
     for (const msg of messages)
       (async () => {
         try {
-          const reply = await this._dispatchToRenderer('slack', msg.from, msg.text);
+          const reply = await this._dispatchToRenderer('slack', msg.from, msg.text, {
+            externalId: msg.ts,
+            targetId: msg.channelId,
+            conversationId: msg.channelId,
+            receivedAt: msg.receivedAt,
+          });
           await sendSlack(cfg.botToken, cfg.channelId, reply);
         } catch (err) {
           console.error(`[ChannelEngine] Slack reply failed (${msg.from}):`, err.message);
