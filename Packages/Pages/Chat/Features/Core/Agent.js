@@ -219,7 +219,10 @@ async function loadWorkspaceSummary(workspacePath = state.workspacePath) {
         }),
         value = res?.ok ? res.summary : null;
       // Cap cache at 5 entries — evict oldest when full
-      if (workspaceSummaryCache.size >= 5) { const [oldKey] = workspaceSummaryCache.keys(); workspaceSummaryCache.delete(oldKey); }
+      if (workspaceSummaryCache.size >= 5) {
+        const [oldKey] = workspaceSummaryCache.keys();
+        workspaceSummaryCache.delete(oldKey);
+      }
       return (
         workspaceSummaryCache.set(key, {
           value: value,
@@ -240,7 +243,10 @@ async function loadWorkspaceSummary(workspacePath = state.workspacePath) {
         });
     }
   })();
-  if (workspaceSummaryCache.size >= 5) { const [oldKey] = workspaceSummaryCache.keys(); workspaceSummaryCache.delete(oldKey); }
+  if (workspaceSummaryCache.size >= 5) {
+    const [oldKey] = workspaceSummaryCache.keys();
+    workspaceSummaryCache.delete(oldKey);
+  }
   return (
     workspaceSummaryCache.set(key, {
       value: cached?.value ?? null,
@@ -263,7 +269,10 @@ async function loadAvailableToolsCached(options = {}) {
     try {
       const value = await getAvailableTools({ workspacePath: workspacePath });
       // Cap cache at 10 entries — evict oldest when full
-      if (toolsCache.size >= 10) { const [oldKey] = toolsCache.keys(); toolsCache.delete(oldKey); }
+      if (toolsCache.size >= 10) {
+        const [oldKey] = toolsCache.keys();
+        toolsCache.delete(oldKey);
+      }
       return (
         toolsCache.set(key, { value: value, expiresAt: Date.now() + 1e4, promise: null }),
         value
@@ -280,7 +289,10 @@ async function loadAvailableToolsCached(options = {}) {
         });
     }
   })();
-  if (toolsCache.size >= 10) { const [oldKey] = toolsCache.keys(); toolsCache.delete(oldKey); }
+  if (toolsCache.size >= 10) {
+    const [oldKey] = toolsCache.keys();
+    toolsCache.delete(oldKey);
+  }
   return (
     toolsCache.set(key, {
       value: cached?.value ?? [],
@@ -479,7 +491,7 @@ function stringifyForAnalysis(value) {
   }
 }
 function looksLikeBrowserAutomationTool(tool = {}) {
-  if ('mcp' !== tool.source) return !1;
+  if (!tool || 'mcp' !== tool.source) return !1;
   const haystack = [
     tool.name,
     tool.description,
