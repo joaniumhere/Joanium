@@ -336,4 +336,375 @@ export const LINEAR_TOOLS = [
       color: { type: 'string', description: 'Hex color (e.g. #FF5733).', required: false },
     },
   },
+
+  // ── Issue Relations (NEW) ─────────────────────────────────────────────────
+  {
+    name: 'linear_list_issue_relations',
+    description: 'List all relations for a Linear issue (blocks, duplicates, related issues).',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      issueId: { type: 'string', description: 'The issue ID.', required: true },
+    },
+  },
+  {
+    name: 'linear_create_issue_relation',
+    description: 'Create a relation between two Linear issues.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      issueId: { type: 'string', description: 'The source issue ID.', required: true },
+      relatedIssueId: { type: 'string', description: 'The related issue ID.', required: true },
+      type: {
+        type: 'string',
+        description:
+          'Relation type: "blocks" | "blocked_by" | "duplicate" | "duplicate_of" | "related".',
+        required: true,
+      },
+    },
+  },
+  {
+    name: 'linear_delete_issue_relation',
+    description: 'Remove a relation between two Linear issues.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The issue relation ID to delete.', required: true },
+    },
+  },
+  {
+    name: 'linear_unarchive_issue',
+    description: 'Restore a previously archived Linear issue.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The issue ID to unarchive.', required: true },
+    },
+  },
+
+  // ── Attachments (NEW) ─────────────────────────────────────────────────────
+  {
+    name: 'linear_list_attachments',
+    description: 'List all URL attachments on a Linear issue.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      issueId: { type: 'string', description: 'The issue ID.', required: true },
+    },
+  },
+  {
+    name: 'linear_create_attachment',
+    description: 'Add a URL attachment (link) to a Linear issue.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      issueId: { type: 'string', description: 'The issue ID.', required: true },
+      title: { type: 'string', description: 'Attachment title.', required: true },
+      url: { type: 'string', description: 'The URL to attach.', required: true },
+      subtitle: {
+        type: 'string',
+        description: 'Optional subtitle / description.',
+        required: false,
+      },
+      iconUrl: { type: 'string', description: 'Optional icon URL.', required: false },
+    },
+  },
+  {
+    name: 'linear_delete_attachment',
+    description: 'Remove an attachment from a Linear issue.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The attachment ID to delete.', required: true },
+    },
+  },
+
+  // ── Notifications (NEW) ───────────────────────────────────────────────────
+  {
+    name: 'linear_list_notifications',
+    description: "List the authenticated user's Linear notifications.",
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      limit: { type: 'number', description: 'Max results (default 25).', required: false },
+    },
+  },
+  {
+    name: 'linear_mark_notification_read',
+    description: 'Mark a specific Linear notification as read.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The notification ID.', required: true },
+    },
+  },
+  {
+    name: 'linear_archive_notification',
+    description: 'Archive a Linear notification to dismiss it.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The notification ID to archive.', required: true },
+    },
+  },
+
+  // ── Projects — extended (NEW) ─────────────────────────────────────────────
+  {
+    name: 'linear_update_project',
+    description: 'Update a Linear project name, description, state, or dates.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The project ID.', required: true },
+      name: { type: 'string', description: 'New project name.', required: false },
+      description: { type: 'string', description: 'New description.', required: false },
+      state: {
+        type: 'string',
+        description: 'New state: "planned" | "started" | "paused" | "completed" | "cancelled".',
+        required: false,
+      },
+      startDate: { type: 'string', description: 'Start date YYYY-MM-DD.', required: false },
+      targetDate: { type: 'string', description: 'Target date YYYY-MM-DD.', required: false },
+      leadId: { type: 'string', description: 'User ID of the project lead.', required: false },
+    },
+  },
+  {
+    name: 'linear_archive_project',
+    description: 'Archive a Linear project.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The project ID to archive.', required: true },
+    },
+  },
+
+  // ── Project Milestones (NEW) ──────────────────────────────────────────────
+  {
+    name: 'linear_list_project_milestones',
+    description: 'List all milestones for a Linear project.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      projectId: { type: 'string', description: 'The project ID.', required: true },
+    },
+  },
+  {
+    name: 'linear_create_project_milestone',
+    description: 'Create a milestone inside a Linear project.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      projectId: { type: 'string', description: 'The project ID.', required: true },
+      name: { type: 'string', description: 'Milestone name.', required: true },
+      targetDate: { type: 'string', description: 'Target date YYYY-MM-DD.', required: false },
+      description: { type: 'string', description: 'Milestone description.', required: false },
+    },
+  },
+  {
+    name: 'linear_update_project_milestone',
+    description: 'Update the name, date, or description of a project milestone.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The milestone ID.', required: true },
+      name: { type: 'string', description: 'New name.', required: false },
+      targetDate: { type: 'string', description: 'New target date YYYY-MM-DD.', required: false },
+      description: { type: 'string', description: 'New description.', required: false },
+    },
+  },
+  {
+    name: 'linear_delete_project_milestone',
+    description: 'Delete a milestone from a Linear project.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The milestone ID to delete.', required: true },
+    },
+  },
+
+  // ── Project Updates (NEW) ─────────────────────────────────────────────────
+  {
+    name: 'linear_list_project_updates',
+    description: 'List status updates (health posts) for a Linear project.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      projectId: { type: 'string', description: 'The project ID.', required: true },
+      limit: { type: 'number', description: 'Max results (default 10).', required: false },
+    },
+  },
+  {
+    name: 'linear_create_project_update',
+    description: 'Post a status update on a Linear project with optional health signal.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      projectId: { type: 'string', description: 'The project ID.', required: true },
+      body: { type: 'string', description: 'Update body (markdown).', required: true },
+      health: {
+        type: 'string',
+        description: 'Health signal: "onTrack" | "atRisk" | "offTrack".',
+        required: false,
+      },
+    },
+  },
+
+  // ── Cycles — extended (NEW) ───────────────────────────────────────────────
+  {
+    name: 'linear_create_cycle',
+    description: 'Create a new sprint cycle for a team.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      teamId: { type: 'string', description: 'The team ID.', required: true },
+      startsAt: {
+        type: 'string',
+        description: 'Cycle start date-time (ISO 8601).',
+        required: true,
+      },
+      endsAt: { type: 'string', description: 'Cycle end date-time (ISO 8601).', required: true },
+      name: { type: 'string', description: 'Optional cycle name.', required: false },
+    },
+  },
+  {
+    name: 'linear_update_cycle',
+    description: 'Update a sprint cycle name or dates.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The cycle ID.', required: true },
+      name: { type: 'string', description: 'New cycle name.', required: false },
+      startsAt: { type: 'string', description: 'New start date-time (ISO 8601).', required: false },
+      endsAt: { type: 'string', description: 'New end date-time (ISO 8601).', required: false },
+      description: { type: 'string', description: 'Cycle description.', required: false },
+    },
+  },
+  {
+    name: 'linear_archive_cycle',
+    description: 'Archive a sprint cycle.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The cycle ID to archive.', required: true },
+    },
+  },
+  {
+    name: 'linear_add_issues_to_cycle',
+    description: 'Add one or more issues to a sprint cycle.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      cycleId: { type: 'string', description: 'The cycle ID.', required: true },
+      issueIds: { type: 'array', description: 'Array of issue IDs to add.', required: true },
+    },
+  },
+
+  // ── Workflow States (NEW) ─────────────────────────────────────────────────
+  {
+    name: 'linear_create_workflow_state',
+    description: 'Create a new workflow state for a team (e.g. a custom "In Review" column).',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      teamId: { type: 'string', description: 'The team ID.', required: true },
+      name: { type: 'string', description: 'State name.', required: true },
+      type: {
+        type: 'string',
+        description:
+          'State type: "triage" | "backlog" | "unstarted" | "started" | "completed" | "cancelled".',
+        required: true,
+      },
+      color: { type: 'string', description: 'Hex color (e.g. #FF5733).', required: true },
+      position: {
+        type: 'number',
+        description: 'Sort position within its type group.',
+        required: false,
+      },
+    },
+  },
+  {
+    name: 'linear_update_workflow_state',
+    description: 'Update the name, color, or position of an existing workflow state.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The workflow state ID.', required: true },
+      name: { type: 'string', description: 'New state name.', required: false },
+      color: { type: 'string', description: 'New hex color.', required: false },
+      position: { type: 'number', description: 'New sort position.', required: false },
+      description: { type: 'string', description: 'State description.', required: false },
+    },
+  },
+  {
+    name: 'linear_archive_workflow_state',
+    description: 'Archive a workflow state, removing it from active use.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The workflow state ID to archive.', required: true },
+    },
+  },
+
+  // ── Teams — extended (NEW) ────────────────────────────────────────────────
+  {
+    name: 'linear_update_team',
+    description: 'Update a Linear team name, description, identifier key, or timezone.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The team ID.', required: true },
+      name: { type: 'string', description: 'New team name.', required: false },
+      description: { type: 'string', description: 'New description.', required: false },
+      key: {
+        type: 'string',
+        description: 'New team identifier key (e.g. "ENG").',
+        required: false,
+      },
+      timezone: {
+        type: 'string',
+        description: 'Timezone string (e.g. "America/New_York").',
+        required: false,
+      },
+    },
+  },
+
+  // ── Labels — extended (NEW) ───────────────────────────────────────────────
+  {
+    name: 'linear_update_label',
+    description: 'Update the name or color of an existing issue label.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The label ID.', required: true },
+      name: { type: 'string', description: 'New label name.', required: false },
+      color: { type: 'string', description: 'New hex color.', required: false },
+    },
+  },
+  {
+    name: 'linear_archive_label',
+    description: 'Archive an issue label, removing it from active use.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {
+      id: { type: 'string', description: 'The label ID to archive.', required: true },
+    },
+  },
+
+  // ── Favorites (NEW) ───────────────────────────────────────────────────────
+  {
+    name: 'linear_list_favorites',
+    description: "List the authenticated user's favorited issues and projects in Linear.",
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {},
+  },
+
+  // ── Organization (NEW) ────────────────────────────────────────────────────
+  {
+    name: 'linear_get_organization',
+    description: 'Get the current Linear workspace/organization details including user count.',
+    category: 'linear',
+    connectorId: 'linear',
+    parameters: {},
+  },
 ];
