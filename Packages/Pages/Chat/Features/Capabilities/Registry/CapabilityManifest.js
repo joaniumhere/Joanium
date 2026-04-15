@@ -1,4 +1,3 @@
-
 import { CAPABILITY_MANIFESTS } from './CapabilityInfo.js';
 export { CAPABILITY_MANIFESTS };
 

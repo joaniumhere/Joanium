@@ -102,23 +102,6 @@
         "output": 0.2
       }
     },
-    "z-ai/glm4.7": {
-      "name": "GLM 4.7",
-      "description": "Z-AI's GLM 4.7 model",
-      "rank": 8,
-      "context_window": 131072,
-      "max_output": 8192,
-      "inputs": {
-        "text": true,
-        "image": false,
-        "pdf": false,
-        "docx": false
-      },
-      "pricing": {
-        "input": 0.1,
-        "output": 0.2
-      }
-    },
     "google/gemma-4-31b-it": {
       "name": "Gemma 4 31B IT",
       "description": "Google's Gemma 4 31B IT model",
@@ -157,6 +140,23 @@
       "name": "Nemotron 3 Super 120B A12B",
       "description": "NVIDIA's Nemotron 3 Super 120B A12B model",
       "rank": 9,
+      "context_window": 131072,
+      "max_output": 16384,
+      "inputs": {
+        "text": true,
+        "image": false,
+        "pdf": false,
+        "docx": false
+      },
+      "pricing": {
+        "input": 0.01,
+        "output": 0.02
+      }
+    },
+    "minimaxai/minimax-m2.5": {
+      "name": "Minimax M2.5",
+      "description": "Minimax M2.5 model",
+      "rank": 12,
       "context_window": 131072,
       "max_output": 16384,
       "inputs": {

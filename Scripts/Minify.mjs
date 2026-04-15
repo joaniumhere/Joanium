@@ -188,7 +188,7 @@ export async function minifyAll(rootDir, opts = {}) {
 
   console.log(
     `[Minify] Done. ${processed} minified, ${skipped} skipped.` +
-    (!dry ? ` Total saved: ${(totalSavedBytes / 1024).toFixed(1)} KB` : ''),
+      (!dry ? ` Total saved: ${(totalSavedBytes / 1024).toFixed(1)} KB` : ''),
   );
 }
 
@@ -197,7 +197,7 @@ export async function minifyAll(rootDir, opts = {}) {
 const isMain =
   process.argv[1] &&
   path.resolve(process.argv[1]) ===
-  path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'Minify.mjs');
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'Minify.mjs');
 
 if (isMain) {
   const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
