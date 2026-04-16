@@ -165,7 +165,7 @@ function renderPanel() {
                   // Detect URLs in the step text and render them with a copy button
                   const urlPattern = /(https?:\/\/[^\s]+)/g;
                   const parts = step.split(urlPattern);
-                  parts.forEach((part, pi) => {
+                  parts.forEach((part, _pi) => {
                     if (urlPattern.test(part)) {
                       const urlSpan = document.createElement('span');
                       urlSpan.style.cssText =

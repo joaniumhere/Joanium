@@ -250,7 +250,7 @@ let systemPromptConfig = {};
 try {
   const spPath = path.join(PROJECT_ROOT, 'SystemInstructions', 'SystemPrompt.json');
   fs.existsSync(spPath) && (systemPromptConfig = JSON.parse(fs.readFileSync(spPath, 'utf-8')));
-} catch (e) {}
+} catch {}
 
 const getConfig = (key, fallback = null) => systemPromptConfig[key] || fallback;
 
@@ -283,7 +283,6 @@ async function collectSystemInfo() {
 
   const geoInfo = await fetchGeoInfo();
 
-  const platform = process.platform;
   const release = os.release();
   const freeMem = os.freemem();
   const usedMem = _cachedStaticInfo.totalMem - freeMem;

@@ -17,7 +17,7 @@ export function createCardPool({
           (card.style.display = ''),
           active.add(card));
       }
-      for (const [key, card] of pool) active.has(card) || (card.style.display = 'none');
+      for (const [, card] of pool) active.has(card) || (card.style.display = 'none');
     },
     clear: function () {
       for (const [, card] of pool) card.remove();
