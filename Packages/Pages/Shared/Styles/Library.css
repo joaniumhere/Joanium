@@ -95,6 +95,39 @@
   flex-direction: column;
   gap: 10px;
 }
+
+/* ── Section grouping (Pinned / All Chats) ── */
+.lp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lp-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 2px 4px 4px;
+}
+.lp-section-label svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.lp-pin-count {
+  margin-left: 2px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+/* ── Chat item ── */
 .lp-item {
   padding: 14px 16px;
   border-radius: 18px;
@@ -123,6 +156,17 @@
 .lp-item.active .lp-item-title {
   color: var(--accent);
 }
+
+/* Pinned item highlight */
+.lp-item--pinned {
+  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg-tertiary));
+}
+.lp-item--pinned:hover {
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+/* ── Item info (title + datetime) ── */
 .lp-item-info {
   flex: 1;
   min-width: 0;
@@ -137,6 +181,79 @@
   text-overflow: ellipsis;
   transition: color var(--transition-fast);
 }
+
+/* datetime row */
+.lp-item-datetime {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.lp-item-timeago {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.lp-item-fulldate {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lp-item-fulldate::before {
+  content: '·';
+  margin-right: 6px;
+  opacity: 0.5;
+}
+
+/* ── Pin button ── */
+.lp-pin-btn {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  margin-left: 4px;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+.lp-pin-btn svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+.lp-item:hover .lp-pin-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+/* Always show pin button when pinned */
+.lp-pin-btn--active {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  color: var(--accent);
+}
+.lp-pin-btn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.lp-pin-btn:active {
+  transform: scale(0.92) !important;
+}
+
+/* ── Delete button ── */
 .lp-delete-btn,
 .lp-empty,
 .lp-item-meta {
@@ -156,7 +273,7 @@
   background: 0 0;
   opacity: 0;
   transform: scale(0.85);
-  margin-left: 8px;
+  margin-left: 4px;
   transition:
     opacity 0.15s ease,
     transform 0.15s ease,
@@ -179,6 +296,8 @@
   height: 14px;
   pointer-events: none;
 }
+
+/* ── Empty state ── */
 .lp-empty {
   padding: 32px 20px;
   text-align: center;
@@ -187,6 +306,7 @@
   border: 1px dashed var(--border);
   border-radius: 18px;
 }
+
 @media (max-width: 860px) {
   #library-modal-backdrop {
     padding: 18px;
