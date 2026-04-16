@@ -8,6 +8,7 @@ build/
 
 # Config
 Config/User.json
+Config/System.json
 Config/WindowState.json
 
 # Data (root-level only — Packages/**/Data/ must stay tracked)
