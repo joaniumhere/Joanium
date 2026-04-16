@@ -531,6 +531,11 @@ export function createLiveRow(doSendFromStateFn) {
       finalize(markdown, usage, provider, modelId) {
         _streamFilter.reset();
         const safeMarkdown = stripAssistantReasoningTags(markdown) || '(empty response)';
+        logEl.querySelectorAll('.agent-log-dot').forEach((dot) => {
+          ((dot.className = 'agent-log-icon-success'),
+            (dot.innerHTML =
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>'));
+        });
         ((_accumulated = safeMarkdown),
           renderReasoning(!0),
           _cursorEl?.remove(),
@@ -585,6 +590,11 @@ export function createLiveRow(doSendFromStateFn) {
           _cursorEl?.remove(),
           (_cursorEl = null),
           replyTextEl.classList.remove('is-streaming'),
+          logEl.querySelectorAll('.agent-log-dot').forEach((dot) => {
+            ((dot.className = 'agent-log-icon-success'),
+              (dot.innerHTML =
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>'));
+          }),
           'error' !== _thinkingState && setThinkingState('complete'),
           _accumulated)
         ) {
