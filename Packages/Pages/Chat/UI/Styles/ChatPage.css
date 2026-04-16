@@ -46,41 +46,44 @@
 /* 16. Settings modal */
 @import '../../../Shared/Styles/Settings.css';
 
-/* 17. Provider row (API key UI) */
+/* 17. Shortcuts panel */
+@import '../../../Shared/Styles/Shortcuts.css';
+
+/* 18. Provider row (API key UI) */
 @import '../../../Shared/Styles/Providers.css';
 
-/* 18. Footer credits + chips */
+/* 19. Footer credits + chips */
 @import '../../../Shared/Styles/Footer.css';
 
-/* 19. About modal */
+/* 20. About modal */
 @import '../../../Shared/Styles/About.css';
 
-/* 20. Themes */
+/* 21. Themes */
 @import '../../../Shared/Styles/Themes.css';
 
-/* 21. Root */
+/* 22. Root */
 @import '../../../Shared/Styles/Root.css';
 
-/* 22. Connectors */
+/* 23. Connectors */
 @import '../../../Shared/Styles/Connectors.css';
 
-/* 23. Memory */
+/* 24. Memory */
 @import '../../../Shared/Styles/Memory.css';
 
-/* 24. Agent Log */
+/* 25. Agent Log */
 @import './AgentLog.css';
 
-/* 25. Free API Connectors */
+/* 26. Free API Connectors */
 @import '../../../Shared/Styles/FreeConnectors.css';
 
-/* 26. Markdown */
+/* 27. Markdown */
 @import './Markdown.css';
 
-/* 27. Chat Edit Retry */
+/* 28. Chat Edit Retry */
 @import './ChatEditRetry.css';
 
-/* 28. Chat Timeline + scroll-to-bottom */
+/* 29. Chat Timeline + scroll-to-bottom */
 @import './ChatTimeline.css';
 
-/* 29. HTML preview modal */
+/* 30. HTML preview modal */
 @import './HtmlPreview.css';

@@ -43,38 +43,41 @@
 /* 15. Settings modal */
 @import '../../../Shared/Styles/Settings.css';
 
-/* 16. Provider row (API key UI) */
+/* 16. Shortcuts panel */
+@import '../../../Shared/Styles/Shortcuts.css';
+
+/* 17. Provider row (API key UI) */
 @import '../../../Shared/Styles/Providers.css';
 
-/* 17. Footer credits + chips */
+/* 18. Footer credits + chips */
 @import '../../../Shared/Styles/Footer.css';
 
-/* 18. About modal */
+/* 19. About modal */
 @import '../../../Shared/Styles/About.css';
 
-/* 19. Themes */
+/* 20. Themes */
 @import '../../../Shared/Styles/Themes.css';
 
-/* 20. Root */
+/* 21. Root */
 @import '../../../Shared/Styles/Root.css';
 
-/* 21. Connectors */
+/* 22. Connectors */
 @import '../../../Shared/Styles/Connectors.css';
 
-/* 22. Memory */
+/* 23. Memory */
 @import '../../../Shared/Styles/Memory.css';
 
-/* 23. Agent Log */
+/* 24. Agent Log */
 @import '../../../Chat/UI/Styles/AgentLog.css';
 
-/* 24. Automations */
+/* 25. Automations */
 @import './Automations.css';
 
-/* 25. Tagline pill (shared with Automations header in injected templates) */
+/* 26. Tagline pill (shared with Automations header in injected templates) */
 @import '../../../Shared/Styles/PageTaglineBadge.css';
 
-/* 26. Agent builder utilities reused by the new Agents page */
+/* 27. Agent builder utilities reused by the new Agents page */
 @import '../../../Agents/UI/Styles/Agents.css';
 
-/* 27. Free API Connectors */
+/* 28. Free API Connectors */
 @import '../../../Shared/Styles/FreeConnectors.css';
