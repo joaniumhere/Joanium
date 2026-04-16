@@ -1,64 +1,189 @@
 import { createExecutor } from '../Shared/createExecutor.js';
 import { safeJson } from '../Shared/Utils.js';
 import { toolsList } from './ToolsList.js';
+
+// ── SearXNG multi-instance helper ────────────────────────────────────────────
+// SearXNG is open-source meta-search: each instance aggregates results from
+// Google, Bing, Brave, DuckDuckGo, and many others — no API key required.
+// We try several public instances in order and return the first that responds.
+const SEARX_INSTANCES = [
+  'https://searx.be',
+  'https://priv.au',
+  'https://search.ononoki.org',
+  'https://searxng.site',
+  'https://search.mdosch.de',
+  'https://searx.fmac.xyz',
+];
+
+async function fetchSearXNG(query) {
+  for (const base of SEARX_INSTANCES) {
+    try {
+      const url = `${base}/search?q=${encodeURIComponent(query)}&format=json&categories=general&language=en-US`;
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Joanium/1.0)' },
+      });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      if (data?.results?.length > 0) {
+        data._instance = base.replace('https://', '');
+        return data;
+      }
+    } catch {
+      // instance unavailable — try the next one
+    }
+  }
+  return null;
+}
+
 export const { handles: handles, execute: execute } = createExecutor({
   name: 'SearchExecutor',
   tools: toolsList,
   handlers: {
     search_web: async (params, onStage) => {
-      const { query: query } = params;
+      const { query } = params;
       if (!query?.trim()) throw new Error('Missing required param: query');
       onStage(`🔍 Searching the web for "${query}"…`);
-      const data = await safeJson(
+
+      // Fire all sources in parallel for maximum speed
+      const [ddgResult, searxResult, wikiResult, hnResult] = await Promise.allSettled([
+        // 1. DuckDuckGo Instant Answers – structured knowledge cards & infobox
+        safeJson(
           `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1&skip_disambig=0`,
         ),
-        lines = [`🔍 Web Search: "${query}"`, ''];
-      (data.AbstractText &&
-        (lines.push('**Answer:**'),
-        lines.push(data.AbstractText),
-        data.AbstractSource &&
-          lines.push(`Source: ${data.AbstractSource} — ${data.AbstractURL || ''}`),
-        lines.push('')),
-        data.Answer &&
-          data.Answer !== data.AbstractText &&
-          (lines.push(`**Instant Answer:** ${data.Answer}`), lines.push('')),
-        data.Definition &&
-          (lines.push(`**Definition:** ${data.Definition}`),
-          data.DefinitionSource && lines.push(`Source: ${data.DefinitionSource}`),
-          lines.push('')));
-      const infobox = data.Infobox?.content ?? [];
-      infobox.length > 0 &&
-        (lines.push('**Key Facts:**'),
+        // 2. SearXNG – real ranked web results from Google, Bing, Brave & more
+        fetchSearXNG(query),
+        // 3. Wikipedia – free encyclopedia context
+        safeJson(
+          `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&srlimit=3&srprop=snippet`,
+        ),
+        // 4. HackerNews (via Algolia) – tech community discussions & links
+        safeJson(
+          `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(query)}&tags=story&hitsPerPage=3`,
+        ),
+      ]);
+
+      const ddg = ddgResult.status === 'fulfilled' ? ddgResult.value : null;
+      const searx = searxResult.status === 'fulfilled' ? searxResult.value : null;
+      const wiki = wikiResult.status === 'fulfilled' ? wikiResult.value : null;
+      const hn = hnResult.status === 'fulfilled' ? hnResult.value : null;
+
+      const lines = [`🔍 Web Search: "${query}"`, ''];
+      const sources = new Set();
+
+      // ── DuckDuckGo: Instant Answer / Abstract ─────────────────────────────
+      if (ddg?.AbstractText) {
+        lines.push('**Answer:**');
+        lines.push(ddg.AbstractText);
+        if (ddg.AbstractSource) {
+          lines.push(`Source: ${ddg.AbstractSource} — ${ddg.AbstractURL || ''}`);
+        }
+        lines.push('');
+        sources.add('DuckDuckGo');
+      }
+      if (ddg?.Answer && ddg.Answer !== ddg?.AbstractText) {
+        lines.push(`**Instant Answer:** ${ddg.Answer}`);
+        lines.push('');
+        sources.add('DuckDuckGo');
+      }
+      if (ddg?.Definition) {
+        lines.push(`**Definition:** ${ddg.Definition}`);
+        ddg.DefinitionSource && lines.push(`Source: ${ddg.DefinitionSource}`);
+        lines.push('');
+        sources.add('DuckDuckGo');
+      }
+
+      // DuckDuckGo Infobox (structured key facts)
+      const infobox = ddg?.Infobox?.content ?? [];
+      if (infobox.length > 0) {
+        lines.push('**Key Facts:**');
         infobox.slice(0, 8).forEach((item) => {
           item.label && item.value && lines.push(`  • ${item.label}: ${item.value}`);
-        }),
-        lines.push(''));
-      const related = (data.RelatedTopics ?? []).filter((t) => t.Text && t.FirstURL);
-      related.length > 0 &&
-        (lines.push('**Related Topics:**'),
-        related.slice(0, 6).forEach((t, i) => {
-          const text = t.Text.slice(0, 120) + (t.Text.length > 120 ? '…' : '');
-          (lines.push(`  ${i + 1}. ${text}`), lines.push(`     🔗 ${t.FirstURL}`));
-        }),
-        lines.push(''));
-      const results = (data.Results ?? []).filter((r) => r.Text && r.FirstURL);
-      return (
-        results.length > 0 &&
-          (lines.push('**Top Results:**'),
-          results.slice(0, 4).forEach((r, i) => {
-            (lines.push(`  ${i + 1}. ${r.Text.slice(0, 100)}`),
-              lines.push(`     🔗 ${r.FirstURL}`));
-          }),
-          lines.push('')),
-        lines.length <= 2
-          ? lines.push(
-              `No instant answer found for "${query}".`,
-              '',
-              `Try searching directly at: https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
-            )
-          : lines.push('Source: DuckDuckGo Instant Answers (duckduckgo.com)'),
-        lines.join('\n')
-      );
+        });
+        lines.push('');
+        sources.add('DuckDuckGo');
+      }
+
+      // ── SearXNG: Real Web Results ──────────────────────────────────────────
+      const searxHits = searx?.results ?? [];
+      if (searxHits.length > 0) {
+        lines.push('**Web Results:**');
+        searxHits.slice(0, 5).forEach((r, i) => {
+          lines.push(`  ${i + 1}. **${r.title ?? 'Untitled'}**`);
+          const snippet = (r.content ?? r.snippet ?? '').trim();
+          if (snippet) {
+            lines.push(`     ${snippet.slice(0, 160)}${snippet.length > 160 ? '…' : ''}`);
+          }
+          lines.push(`     🔗 ${r.url}`);
+          lines.push('');
+        });
+        sources.add(`SearXNG (${searx._instance ?? 'public'})`);
+      } else {
+        // SearXNG unavailable – fall back to DuckDuckGo related topics & results
+        const ddgResults = (ddg?.Results ?? []).filter((r) => r.Text && r.FirstURL);
+        if (ddgResults.length > 0) {
+          lines.push('**Top Results:**');
+          ddgResults.slice(0, 4).forEach((r, i) => {
+            lines.push(`  ${i + 1}. ${r.Text.slice(0, 100)}`);
+            lines.push(`     🔗 ${r.FirstURL}`);
+          });
+          lines.push('');
+          sources.add('DuckDuckGo');
+        }
+        const related = (ddg?.RelatedTopics ?? []).filter((t) => t.Text && t.FirstURL);
+        if (related.length > 0) {
+          lines.push('**Related Topics:**');
+          related.slice(0, 6).forEach((t, i) => {
+            const text = t.Text.slice(0, 120) + (t.Text.length > 120 ? '…' : '');
+            lines.push(`  ${i + 1}. ${text}`);
+            lines.push(`     🔗 ${t.FirstURL}`);
+          });
+          lines.push('');
+          sources.add('DuckDuckGo');
+        }
+      }
+
+      // ── Wikipedia ─────────────────────────────────────────────────────────
+      const wikiHits = wiki?.query?.search ?? [];
+      if (wikiHits.length > 0) {
+        lines.push('**Wikipedia:**');
+        wikiHits.slice(0, 2).forEach((r, i) => {
+          const snippet = r.snippet.replace(/<[^>]+>/g, '').trim();
+          lines.push(
+            `  ${i + 1}. **${r.title}** — ${snippet.slice(0, 130)}${snippet.length > 130 ? '…' : ''}`,
+          );
+          lines.push(
+            `     🔗 https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`,
+          );
+          lines.push('');
+        });
+        sources.add('Wikipedia');
+      }
+
+      // ── HackerNews ────────────────────────────────────────────────────────
+      const hnHits = (hn?.hits ?? []).filter((h) => h.title && h.objectID);
+      if (hnHits.length > 0) {
+        lines.push('**HackerNews Discussions:**');
+        hnHits.slice(0, 3).forEach((r, i) => {
+          lines.push(`  ${i + 1}. **${r.title}**`);
+          if (r.points) lines.push(`     ▲ ${r.points} pts  💬 ${r.num_comments ?? 0} comments`);
+          lines.push(`     🔗 https://news.ycombinator.com/item?id=${r.objectID}`);
+          if (r.url) lines.push(`     🌐 ${r.url}`);
+          lines.push('');
+        });
+        sources.add('HackerNews');
+      }
+
+      if (lines.length <= 2) {
+        lines.push(`No results found for "${query}".`);
+        lines.push('');
+        lines.push(
+          `Try searching directly at: https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
+        );
+      } else {
+        lines.push(`Sources: ${[...sources].join(' · ')}`);
+      }
+
+      return lines.join('\n');
     },
     search_npm: async (params, onStage) => {
       const { query: query } = params;
@@ -208,7 +333,7 @@ export const { handles: handles, execute: execute } = createExecutor({
                 .replace('http://arxiv.org/abs/', '')
                 .replace('https://arxiv.org/abs/', ''),
               published = entry.match(/<published>(.*?)<\/published>/)?.[1]?.slice(0, 10) ?? '',
-              authors = [...entry.matchAll(/<name>(.*?)<\/name>/g)]
+              authors = [...entry.matchAll(/<n>(.*?)<\/name>/g)]
                 .map((m) => m[1].trim())
                 .slice(0, 3)
                 .join(', ');

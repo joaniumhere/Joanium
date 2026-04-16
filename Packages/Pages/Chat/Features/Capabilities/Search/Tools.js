@@ -2,7 +2,7 @@ export const SEARCH_TOOLS = [
   {
     name: 'search_web',
     description:
-      'Search the web for any topic and get instant answers, related topics, and result summaries using DuckDuckGo. Great for quick lookups, current events, definitions, and general knowledge.',
+      'Search the web for any topic using multiple search engines simultaneously. Queries SearXNG (which aggregates Google, Bing, Brave, DuckDuckGo, and more), Wikipedia, HackerNews, and DuckDuckGo Instant Answers in parallel — returning ranked web results, encyclopedia context, community discussions, and structured knowledge cards. Best tool for current events, general knowledge, technical questions, news, and anything that benefits from real web results.',
     category: 'search',
     parameters: {
       query: {
