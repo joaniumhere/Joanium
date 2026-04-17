@@ -2,15 +2,11 @@
   width: min(92%, 960px);
   margin: 16px auto 0;
   padding: 10px 12px 10px 16px;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border-subtle));
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 8%, var(--bg-secondary)),
-    var(--bg-secondary)
-  );
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
-  animation: fadeScaleIn 0.3s var(--motion-smooth);
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border-subtle));
+  background: var(--bg-secondary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  animation: fadeScaleIn 0.25s var(--motion-smooth);
   position: relative;
 }
 
@@ -54,7 +50,7 @@
 .pcb-chevron {
   font-size: 14px;
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.4;
   flex-shrink: 0;
 }
 
@@ -68,19 +64,21 @@
 .pcb-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
+/* ── Branch selector ─────────────────────────── */
 .pcb-branch-wrap {
   position: relative;
 }
 
+/* FIX 3: Match the existing Open/Leave button style exactly */
 .pcb-branch-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: none;
@@ -89,47 +87,41 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
 }
 
 .pcb-branch-btn:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-  border-color: var(--accent);
+  border-color: var(--border);
 }
 
 .pcb-caret {
-  opacity: 0.6;
-}
-
-.pcb-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: transparent;
+  opacity: 0.5;
   flex-shrink: 0;
 }
 
+/* FIX 2: Remove the blinking animation — static dot only */
+.pcb-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
 .pcb-status-dot.is-dirty {
-  background: #f0a500;
-  animation: pcb-pulse 2s infinite;
+  background: #e6a020; /* static amber, no pulse */
 }
 
 .pcb-status-dot.is-clean {
-  background: #4caf84;
+  background: #3db87a;
 }
 
-@keyframes pcb-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.45;
-  }
-}
-
+/* ── Action split-button ─────────────────────── */
+/* FIX 3: Align split-button to match existing project-primary-btn style */
 .pcb-git-actions {
   display: flex;
   align-items: center;
@@ -137,65 +129,94 @@
 }
 
 .pcb-git-action-btn {
-  padding: 5px 12px;
+  padding: 4px 12px;
   border-radius: 999px 0 0 999px;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--border);
   border-right: none;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-family: var(--font-ui);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+  white-space: nowrap;
 }
 
-.pcb-git-action-btn:hover {
-  background: var(--accent);
-  color: #fff;
+.pcb-git-action-btn:hover:not(.is-disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .pcb-git-action-toggle {
-  padding: 5px 8px;
+  padding: 4px 7px;
   border-radius: 0 999px 999px 0;
-  border: 1px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
 }
 
-.pcb-git-action-toggle:hover {
-  background: var(--accent);
-  color: #fff;
+.pcb-git-action-toggle:hover:not(.is-disabled) {
+  background: var(--bg-hover);
 }
 
+/* Disabled state */
+.pcb-git-action-btn.is-disabled,
+.pcb-git-action-toggle.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-muted);
+}
+
+/* ── Dropdown base ───────────────────────────── */
 .pcb-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 160px;
+  min-width: 190px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
   z-index: 400;
   overflow: hidden;
+  padding: 4px;
 }
 
 .pcb-branch-wrap .pcb-dropdown {
   left: 0;
   right: auto;
-  min-width: 180px;
+  min-width: 210px;
 }
 
+/* Branch list section */
+.pcb-branch-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.pcb-dropdown-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+/* ── Dropdown items ──────────────────────────── */
 .pcb-dropdown-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 9px 14px;
+  padding: 7px 10px;
   border: none;
+  border-radius: 8px;
   background: none;
   color: var(--text-primary);
   font-family: var(--font-ui);
@@ -205,7 +226,7 @@
   transition: background var(--transition-fast);
 }
 
-.pcb-dropdown-item:hover {
+.pcb-dropdown-item:hover:not(.is-muted):not([disabled]) {
   background: var(--bg-hover);
 }
 
@@ -214,24 +235,117 @@
   font-weight: 600;
 }
 
+.pcb-dropdown-item.is-muted,
+.pcb-dropdown-item[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Branch item layout */
+.pcb-branch-check {
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.pcb-branch-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Action item layout (label + meta description) */
+.pcb-dropdown-item-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.pcb-dropdown-item-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .pcb-dropdown-loading,
 .pcb-dropdown-empty {
-  padding: 10px 14px;
+  padding: 10px 12px;
   font-size: 12px;
   color: var(--text-muted);
 }
 
+/* ── New branch row ──────────────────────────── */
+.pcb-new-branch-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+}
+
+.pcb-new-branch-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.pcb-new-branch-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.pcb-new-branch-input:focus {
+  border-color: var(--accent);
+}
+
+/* FIX 3: New branch confirm button also matches secondary style */
+.pcb-new-branch-confirm {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.pcb-new-branch-confirm:hover:not([disabled]) {
+  background: var(--bg-hover);
+}
+
+.pcb-new-branch-confirm[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Commit popover ──────────────────────────── */
 .pcb-commit-popover {
   position: absolute;
   top: calc(100% + 10px);
   right: 12px;
-  width: min(340px, calc(100vw - 32px));
+  width: min(320px, calc(100vw - 32px));
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
   z-index: 400;
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -241,15 +355,16 @@
 .pcb-commit-textarea {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--bg-input);
   color: var(--text-primary);
   font-family: var(--font-ui);
   font-size: 13px;
-  padding: 10px 12px;
+  padding: 9px 11px;
   resize: none;
   outline: none;
   transition: border-color var(--transition-fast);
+  box-sizing: border-box;
 }
 
 .pcb-commit-textarea:focus {
@@ -260,9 +375,10 @@
 .pcb-commit-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
+/* ── Toast ───────────────────────────────────── */
 .pcb-toast {
   position: fixed;
   bottom: 24px;
@@ -271,15 +387,13 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 8px 18px;
-  font-size: 13px;
+  padding: 7px 16px;
+  font-size: 12.5px;
   color: var(--text-primary);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
   z-index: 9999;
   opacity: 0;
-  transition:
-    opacity 0.2s,
-    transform 0.2s;
+  transition: opacity 0.2s, transform 0.2s;
   pointer-events: none;
   white-space: nowrap;
 }
@@ -290,6 +404,6 @@
 }
 
 .pcb-toast.pcb-toast-error {
-  border-color: rgba(239, 155, 155, 0.4);
-  color: #ef9b9b;
+  border-color: rgba(239, 100, 100, 0.35);
+  color: #f08080;
 }
