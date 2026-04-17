@@ -133,8 +133,8 @@ export class BrowserPreviewService extends EventEmitter {
       (this._loading = !1),
       (this._sessionConfigured = !1),
       (this._lastEmittedState = null),
-      // Network idle tracking
-      (this._pendingRequests = 0),
+      // Network idle tracking — Map<requestId, startTime> so we can ignore stale long-poll/SSE requests
+      (this._pendingRequests = new Map()),
       (this._networkIdleCallbacks = []),
       (this._networkIdleTimer = null));
   }
@@ -233,7 +233,7 @@ export class BrowserPreviewService extends EventEmitter {
     // The page is already visually loaded at this point; we just want any immediate post-load
     // XHR burst (e.g. hydration fetches) to settle before the AI starts reading the DOM.
     if (waitUntil === 'networkidle' || waitUntil === 'stable') {
-      await this.waitForNetworkIdle(Math.min(timeoutMs, 2500)).catch(() => {});
+      await this.waitForNetworkIdle(Math.min(timeoutMs, 1000)).catch(() => {});
     }
 
     // Phase 3: DOM stability (no mutations for 250ms), only for 'stable' mode
@@ -315,7 +315,7 @@ export class BrowserPreviewService extends EventEmitter {
           ((this._url = url || this._url),
             (this._status = url ? `Opening ${url}` : 'Loading page...'));
           // Reset network tracking for each new top-level navigation
-          this._pendingRequests = 0;
+          this._pendingRequests = new Map();
           if (this._networkIdleTimer) clearTimeout(this._networkIdleTimer);
           this._networkIdleTimer = null;
           const stale = this._networkIdleCallbacks.splice(0);
@@ -365,30 +365,27 @@ export class BrowserPreviewService extends EventEmitter {
     return ['mainFrame', 'subFrame', 'xhr', 'fetch'].includes(type);
   }
   _checkNetworkIdle() {
-    if (this._pendingRequests > 0) return;
+    const now = Date.now();
+    // Ignore requests that have been pending for > 3 000ms — they are almost certainly
+    // SSE streams, long-polling connections, or stalled downloads and should never block idle.
+    const activeCount = [...this._pendingRequests.values()].filter((t) => now - t < 3000).length;
+    if (activeCount > 0) return;
     if (this._networkIdleTimer) clearTimeout(this._networkIdleTimer);
-    // Reduced grace window: 200ms instead of 500ms.
-    // 200ms is enough to catch rapid-fire XHR bursts while avoiding long hangs on polling sites.
+    // 50ms grace window — catches rapid-fire XHR bursts without hanging.
     this._networkIdleTimer = setTimeout(() => {
-      if (this._pendingRequests > 0) return;
+      const now2 = Date.now();
+      const stillActive = [...this._pendingRequests.values()].filter((t) => now2 - t < 3000).length;
+      if (stillActive > 0) return;
       const cbs = this._networkIdleCallbacks.splice(0);
       cbs.forEach((cb) => cb());
-    }, 200);
+    }, 50);
   }
   waitForNetworkIdle(timeoutMs = 10000) {
     return new Promise((resolve) => {
-      if (this._pendingRequests === 0) {
-        // Already idle — honour a short 200ms grace window then resolve.
-        // Fixed: previously a leaked `guard` timer was never cleared.
-        const t = setTimeout(resolve, 200);
-        const guard = setTimeout(
-          () => {
-            clearTimeout(t);
-            resolve();
-          },
-          Math.min(timeoutMs, 200),
-        );
-        void guard;
+      const now = Date.now();
+      const active = [...this._pendingRequests.values()].filter((t) => now - t < 3000).length;
+      if (active === 0) {
+        resolve();
         return;
       }
       const timer = setTimeout(() => {
@@ -430,18 +427,18 @@ export class BrowserPreviewService extends EventEmitter {
       callback({ requestHeaders: buildRequestHeaders(details) });
     });
     session.webRequest.onBeforeRequest((details, callback) => {
-      if (this._isTrackedRequest(details)) this._pendingRequests++;
+      if (this._isTrackedRequest(details)) this._pendingRequests.set(details.id, Date.now());
       callback({});
     });
     session.webRequest.onCompleted((details) => {
       if (this._isTrackedRequest(details)) {
-        this._pendingRequests = Math.max(0, this._pendingRequests - 1);
+        this._pendingRequests.delete(details.id);
         this._checkNetworkIdle();
       }
     });
     session.webRequest.onErrorOccurred((details) => {
       if (this._isTrackedRequest(details)) {
-        this._pendingRequests = Math.max(0, this._pendingRequests - 1);
+        this._pendingRequests.delete(details.id);
         this._checkNetworkIdle();
       }
     });
@@ -485,19 +482,24 @@ export class BrowserPreviewService extends EventEmitter {
   _updateBounds() {
     if (!this._view || !this._viewAttached) return;
     const immediateBounds = this._hostBounds || this._computeFallbackBounds();
-    (immediateBounds && (this._view.setBounds(immediateBounds), this._view.setVisible(!0)),
+    if (immediateBounds) {
+      this._view.setBounds(immediateBounds);
+      this._view.setVisible(true);
+    }
+    // Throttle the async renderer-bounds query to at most once every 150ms.
+    // Without throttling this fires an executeJavaScript round-trip on every
+    // resize/attach/setHostBounds call, stacking up IPC overhead on rapid events.
+    if (this._boundsQueryPending) return;
+    this._boundsQueryPending = true;
+    setTimeout(() => {
+      this._boundsQueryPending = false;
       this._queryRendererBounds().then((precise) => {
-        precise &&
-          this._view &&
-          this._viewAttached &&
-          (this._view.setBounds(precise),
-          this._view.setVisible(!0),
-          setTimeout(() => {
-            this._queryRendererBounds().then((final) => {
-              final && this._view && this._viewAttached && this._view.setBounds(final);
-            });
-          }, 400));
-      }));
+        if (precise && this._view && this._viewAttached) {
+          this._view.setBounds(precise);
+          this._view.setVisible(true);
+        }
+      });
+    }, 150);
   }
   _emitState(force = !1) {
     const state = this.getState();

@@ -1474,12 +1474,13 @@ export class BrowserMCPServer {
     const activeWebContents = webContents ?? (await this._getWebContents()),
       url = activeWebContents.getURL() || '(no page loaded)',
       title = activeWebContents.getTitle() || '(untitled page)',
-      excerpt = await this._getTextExcerpt(includeExcerpt ? excerptLimit : 220).catch(() => ''),
-      isGoogleBlockPage = (function (text = '') {
-        return /google\.com\/sorry|sorry\/index|\bunusual traffic\b|\brecaptcha\b|\bi am not a robot\b|\bi'm not a robot\b/i.test(
-          String(text ?? ''),
-        );
-      })(`${url}\n${title}\n${excerpt}`),
+      // Only do the expensive JS round-trip when the caller explicitly wants the excerpt
+      excerpt = includeExcerpt ? await this._getTextExcerpt(excerptLimit).catch(() => '') : '',
+      // CAPTCHA detection via URL/title only — no JS needed
+      isGoogleBlockPage =
+        /google\.com\/sorry|sorry\/index|\bunusual traffic\b|\brecaptcha\b|\bi am not a robot\b|\bi'm not a robot\b/i.test(
+          `${url}\n${title}`,
+        ),
       lines = [
         `Current title: ${title}`,
         `Current URL: ${url}`,
@@ -1495,13 +1496,31 @@ export class BrowserMCPServer {
       lines.join('\n')
     );
   }
+  async _waitForNavigationStart(webContents, windowMs = 300) {
+    // Returns true immediately if already loading, or waits up to windowMs for a nav event.
+    if (webContents.isLoading()) return true;
+    return new Promise((resolve) => {
+      let resolved = false;
+      const done = (result) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        webContents.removeListener('did-start-navigation', onNav);
+        webContents.removeListener('did-navigate-in-page', onNav);
+        resolve(result);
+      };
+      const onNav = () => done(true);
+      const timer = setTimeout(() => done(false), windowMs);
+      webContents.on('did-start-navigation', onNav);
+      webContents.on('did-navigate-in-page', onNav);
+    });
+  }
   async _waitForActionNavigation(webContents, timeoutMs = 1500) {
+    const navStarted = await this._waitForNavigationStart(webContents, 100);
+    if (!navStarted) return ''; // nothing navigated → return instantly
     try {
-      await this._waitForPotentialNavigation(webContents, timeoutMs);
-      // After load stop, give a brief window for any immediate AJAX triggered by the action.
-      // Capped at 800ms — enough to catch instant post-click fetches without stalling on
-      // polling-heavy or SPA sites that never fully go idle.
-      await this._preview.waitForNetworkIdle(800).catch(() => {});
+      await this._waitForLoadStop(webContents, Math.min(timeoutMs, 10000));
+      await this._preview.waitForNetworkIdle(150).catch(() => {});
       return '';
     } catch (err) {
       if (
@@ -1630,7 +1649,6 @@ export class BrowserMCPServer {
       `\n      (() => {\n        ${PAGE_HELPERS}\n        const el = resolveTarget(${JSON.stringify(target)});\n        if (!el) return { ok: false, error: 'Element not found.' };\n        focusElement(el);\n        el.click?.();\n        return { ok: true, info: describeElement(el) };\n      })()\n    `,
     );
     if (!result?.ok) throw new Error(result?.error ?? 'Could not click the requested element.');
-    await wait(250);
     const navigationNote = await this._waitForActionNavigation(webContents, 1500),
       pageSummary = await this._getCurrentPageSummary(webContents);
     return (
@@ -1667,7 +1685,6 @@ export class BrowserMCPServer {
       `\n      (() => {\n        ${PAGE_HELPERS}\n        let el = resolveTarget(${JSON.stringify(target)}, { preferTextField: true, allowFocused: true });\n        if (!el) {\n          const fallback = resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true });\n          if (fallback) {\n            focusElement(fallback);\n            fallback.click?.();\n            el = findNearbyTextField(document.activeElement) || findNearbyTextField(fallback);\n          }\n        } else if (!isTextLike(el)) {\n          focusElement(el);\n          el.click?.();\n          el = findNearbyTextField(document.activeElement) || findNearbyTextField(el);\n        }\n\n        if (!el) return { ok: false, error: 'Field not found.' };\n        if (!isTextLike(el)) {\n          return { ok: false, error: 'Target is not a text field. Try browser_focus or browser_click first, then use target "focused".' };\n        }\n\n        focusElement(el);\n        const nextValue = ${clearFirst ? JSON.stringify(String(text)) : `String(el.value ?? el.textContent ?? '') + ${JSON.stringify(String(text))}`};\n        setElementValue(el, nextValue);\n\n        if (${pressEnter ? 'true' : 'false'}) {\n          dispatchKeyboard(el, 'Enter');\n          el.form?.requestSubmit?.();\n        }\n\n        return { ok: true, info: describeElement(el), value: nextValue };\n      })()\n    `,
     );
     if (!result?.ok) throw new Error(result?.error ?? 'Could not type into the requested field.');
-    await wait(150);
     let navigationNote = '';
     pressEnter && (navigationNote = await this._waitForActionNavigation(webContents, 1e3));
     const pageSummary = await this._getCurrentPageSummary(webContents);
@@ -1693,7 +1710,6 @@ export class BrowserMCPServer {
       `\n      (() => {\n        ${PAGE_HELPERS}\n        const el = ${target ? `resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true })` : '(document.activeElement || document.body)'};\n        if (!el) return { ok: false, error: 'No element is available to receive the key press.' };\n        focusElement(el);\n        dispatchKeyboard(el, ${JSON.stringify(String(key))});\n        if (${JSON.stringify(String(key))} === 'Enter') {\n          el.form?.requestSubmit?.();\n        }\n        return { ok: true, info: describeElement(el) };\n      })()\n    `,
     );
     if (!result?.ok) throw new Error(result?.error ?? 'Could not press the requested key.');
-    await wait(150);
     let navigationNote = '';
     'Enter' === String(key) &&
       (navigationNote = await this._waitForActionNavigation(webContents, 1e3));
@@ -1865,7 +1881,6 @@ export class BrowserMCPServer {
       `\n      (() => {\n        ${PAGE_HELPERS}\n        const targetNode = ${target ? `resolveTarget(${JSON.stringify(target)}, { preferTextField: false, allowFocused: true })` : '(document.activeElement || null)'};\n        if (!targetNode) return { ok: false, error: 'No form target is available.' };\n        const form = targetNode.form || targetNode.closest?.('form');\n        const submitSelector = 'button[type="submit"], input[type="submit"], [role="button"][aria-label*="submit" i], [role="button"][aria-label*="continue" i]';\n        if (form) {\n          const submitter = form.querySelector(submitSelector);\n          if (submitter) {\n            focusElement(submitter);\n            submitter.click?.();\n            return { ok: true, mode: 'click', info: describeElement(submitter) };\n          }\n          if (typeof form.requestSubmit === 'function') {\n            form.requestSubmit();\n            return { ok: true, mode: 'submit', info: describeElement(targetNode) };\n          }\n        }\n        if (targetNode.matches?.('button, input[type="submit"], [role="button"]')) {\n          focusElement(targetNode);\n          targetNode.click?.();\n          return { ok: true, mode: 'click', info: describeElement(targetNode) };\n        }\n        focusElement(targetNode);\n        dispatchKeyboard(targetNode, 'Enter');\n        targetNode.form?.requestSubmit?.();\n        return { ok: true, mode: 'enter', info: describeElement(targetNode) };\n      })()\n    `,
     );
     if (!result?.ok) throw new Error(result?.error ?? 'Could not submit the requested form.');
-    await wait(250);
     const navigationNote = await this._waitForActionNavigation(webContents, 1500),
       pageSummary = await this._getCurrentPageSummary(webContents);
     return (
@@ -1935,8 +1950,8 @@ export class BrowserMCPServer {
     this._preview.setStatus('Waiting for navigation');
     // Phase 1: wait for the base page load event
     await this._waitForPotentialNavigation(webContents, timeout);
-    // Phase 2: wait for AJAX/XHR to settle — capped at 2500ms to avoid stalling on polling sites
-    await this._preview.waitForNetworkIdle(Math.min(timeout, 2500)).catch(() => {});
+    // Phase 2: wait for AJAX/XHR to settle — capped at 1000ms to avoid stalling on polling sites
+    await this._preview.waitForNetworkIdle(Math.min(timeout, 1000)).catch(() => {});
     const pageSummary = await this._getCurrentPageSummary(webContents);
     return (this._preview.clearStatus(), `Navigation finished.\n${pageSummary}`);
   }
@@ -1948,10 +1963,10 @@ export class BrowserMCPServer {
     if (webContents.isLoading()) {
       await this._waitForLoadStop(webContents, timeout).catch(() => {});
     }
-    // Phase 2: network idle — capped at 3000ms to avoid long hangs on polling/SPA sites
+    // Phase 2: network idle — capped at 1200ms to avoid long hangs on polling/SPA sites
     const mode = String(waitUntil ?? 'networkidle').toLowerCase();
     if (mode === 'networkidle' || mode === 'stable') {
-      await this._preview.waitForNetworkIdle(Math.min(timeout, 3000)).catch(() => {});
+      await this._preview.waitForNetworkIdle(Math.min(timeout, 1200)).catch(() => {});
     }
     // Phase 3: DOM stability
     if (mode === 'stable') {
@@ -1988,9 +2003,41 @@ export class BrowserMCPServer {
     const webContents = await this._getWebContents();
     if (!webContents.navigationHistory?.canGoBack?.())
       return 'No previous page is available in the built-in browser session.';
-    (this._preview.setStatus('Going back'),
-      webContents.goBack(),
-      await this._waitForPotentialNavigation(webContents, 15e3));
+    this._preview.setStatus('Going back');
+    // Register listeners BEFORE triggering navigation to avoid the race where a cached
+    // page fires did-stop-loading before _waitForPotentialNavigation can subscribe.
+    // did-navigate is ALSO listened for because bfcache hits skip did-start-loading
+    // entirely — without it we'd silently wait 15 s on every back-navigation to a cached page.
+    await new Promise((resolve) => {
+      let started = false;
+      const timer = setTimeout(resolve, 10000);
+      const cleanup = () => {
+        clearTimeout(timer);
+        webContents.removeListener('did-start-loading', onStart);
+        webContents.removeListener('did-stop-loading', onStop);
+        webContents.removeListener('did-navigate', onNavigate);
+        webContents.removeListener('destroyed', resolve);
+      };
+      const onStart = () => {
+        started = true;
+      };
+      const onStop = () => {
+        if (started) {
+          cleanup();
+          resolve();
+        }
+      };
+      // Catches bfcache hits where did-start-loading never fires
+      const onNavigate = () => {
+        cleanup();
+        resolve();
+      };
+      webContents.on('did-start-loading', onStart);
+      webContents.on('did-stop-loading', onStop);
+      webContents.once('did-navigate', onNavigate);
+      webContents.once('destroyed', resolve);
+      webContents.goBack();
+    });
     const pageSummary = await this._getCurrentPageSummary(webContents);
     return (this._preview.clearStatus(), `Navigated back to the previous page.\n${pageSummary}`);
   }
@@ -1998,17 +2045,76 @@ export class BrowserMCPServer {
     const webContents = await this._getWebContents();
     if (!webContents.navigationHistory?.canGoForward?.())
       return 'No forward page is available in the built-in browser session.';
-    (this._preview.setStatus('Going forward'),
-      webContents.goForward(),
-      await this._waitForPotentialNavigation(webContents, 15e3));
+    this._preview.setStatus('Going forward');
+    // Register listeners BEFORE triggering navigation to avoid race with cached pages.
+    // did-navigate resolves bfcache hits that skip did-start-loading entirely.
+    await new Promise((resolve) => {
+      let started = false;
+      const timer = setTimeout(resolve, 10000);
+      const cleanup = () => {
+        clearTimeout(timer);
+        webContents.removeListener('did-start-loading', onStart);
+        webContents.removeListener('did-stop-loading', onStop);
+        webContents.removeListener('did-navigate', onNavigate);
+        webContents.removeListener('destroyed', resolve);
+      };
+      const onStart = () => {
+        started = true;
+      };
+      const onStop = () => {
+        if (started) {
+          cleanup();
+          resolve();
+        }
+      };
+      const onNavigate = () => {
+        cleanup();
+        resolve();
+      };
+      webContents.on('did-start-loading', onStart);
+      webContents.on('did-stop-loading', onStop);
+      webContents.once('did-navigate', onNavigate);
+      webContents.once('destroyed', resolve);
+      webContents.goForward();
+    });
     const pageSummary = await this._getCurrentPageSummary(webContents);
     return (this._preview.clearStatus(), `Navigated forward to the next page.\n${pageSummary}`);
   }
   async _refresh() {
     const webContents = await this._getWebContents();
-    (this._preview.setStatus('Refreshing page'),
-      webContents.reload(),
-      await this._waitForLoadStop(webContents, 2e4));
+    this._preview.setStatus('Refreshing page');
+    // Register listeners BEFORE calling reload() to eliminate the race condition where
+    // a cached page fires did-stop-loading before _waitForLoadStop subscribes.
+    // did-navigate is the safety net for cases where did-start-loading is skipped.
+    await new Promise((resolve) => {
+      let started = false;
+      const timer = setTimeout(resolve, 10000);
+      const cleanup = () => {
+        clearTimeout(timer);
+        webContents.removeListener('did-start-loading', onStart);
+        webContents.removeListener('did-stop-loading', onStop);
+        webContents.removeListener('did-navigate', onNavigate);
+        webContents.removeListener('destroyed', resolve);
+      };
+      const onStart = () => {
+        started = true;
+      };
+      const onStop = () => {
+        if (started) {
+          cleanup();
+          resolve();
+        }
+      };
+      const onNavigate = () => {
+        cleanup();
+        resolve();
+      };
+      webContents.on('did-start-loading', onStart);
+      webContents.on('did-stop-loading', onStop);
+      webContents.once('did-navigate', onNavigate);
+      webContents.once('destroyed', resolve);
+      webContents.reload();
+    });
     const pageSummary = await this._getCurrentPageSummary(webContents);
     return (this._preview.clearStatus(), `Refreshed the current page.\n${pageSummary}`);
   }
@@ -2021,7 +2127,6 @@ export class BrowserMCPServer {
     );
     if (!result?.ok)
       throw new Error(result?.error ?? 'Could not double-click the requested element.');
-    await wait(200);
     const navigationNote = await this._waitForActionNavigation(webContents, 1e3),
       pageSummary = await this._getCurrentPageSummary(webContents);
     return (
@@ -2062,8 +2167,7 @@ export class BrowserMCPServer {
     (this._preview.setStatus(`Clicking at (${px}, ${py})`),
       await this._execute(
         `\n      (() => {\n        const el = document.elementFromPoint(${px}, ${py}) || document.body;\n        const eventInit = { bubbles: true, cancelable: true, view: window, clientX: ${px}, clientY: ${py} };\n        el.dispatchEvent(new MouseEvent('mousedown', eventInit));\n        el.dispatchEvent(new MouseEvent('mouseup', eventInit));\n        el.dispatchEvent(new MouseEvent('click', eventInit));\n      })()\n    `,
-      ),
-      await wait(200));
+      ));
     const navigationNote = await this._waitForActionNavigation(webContents, 1e3),
       pageSummary = await this._getCurrentPageSummary(webContents);
     return (
