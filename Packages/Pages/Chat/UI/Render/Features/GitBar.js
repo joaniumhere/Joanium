@@ -5,8 +5,9 @@ let _workingDir = null,
   _unpushedCount = -1,
   _hasNoCommits = false,
   _pendingAction = null,
-  _cachedBranches = null, // ← cache branches to avoid re-fetching every click
-  _confirmCallback = null;
+  _cachedBranches = null,
+  _confirmCallback = null,
+  _busy = false; // prevents concurrent git ops
 
 const POLL_MS = 15000;
 const $ = (id) => document.getElementById(id);
@@ -31,52 +32,82 @@ async function gitCall(ch, args = {}) {
 }
 
 function showToast(msg, err = false) {
+  const text = String(msg || '').trim();
+  const firstLine = text.split('\n').find((l) => l.trim()) || text;
+  const display = firstLine.length > 120 ? firstLine.slice(0, 117) + '\u2026' : firstLine;
   const t = Object.assign(document.createElement('div'), {
     className: `pcb-toast${err ? ' pcb-toast-error' : ''}`,
-    textContent: msg,
+    textContent: display,
   });
   document.body.appendChild(t);
   requestAnimationFrame(() => t.classList.add('pcb-toast-show'));
   setTimeout(() => {
     t.classList.remove('pcb-toast-show');
     setTimeout(() => t.remove(), 300);
-  }, 3000);
+  }, 3500);
+}
+
+// ── UI lock helpers ───────────────────────────────────────────────────────────
+function setGitBusy(busy) {
+  _busy = busy;
+  const btn = $('pcb-git-action-btn');
+  const toggle = $('pcb-git-action-toggle');
+  const branchBtn = $('pcb-branch-btn');
+  [btn, toggle, branchBtn].forEach((el) => {
+    if (!el) return;
+    el.disabled = busy;
+    el.classList.toggle('is-disabled', busy);
+  });
+}
+
+function setCommitPopoverBusy(busy, label = '') {
+  const confirm = $('pcb-commit-confirm');
+  const cancel = $('pcb-commit-cancel');
+  const textarea = $('pcb-commit-msg');
+  if (confirm) {
+    confirm.disabled = busy;
+    if (label) confirm.textContent = label;
+  }
+  if (cancel) cancel.disabled = busy;
+  if (textarea) textarea.disabled = busy;
 }
 
 function updatePrimaryBtn() {
+  if (_busy) return;
   const btn = $('pcb-git-action-btn');
   const toggle = $('pcb-git-action-toggle');
   if (!btn) return;
 
   const canCommit = _isDirty;
-  const canPush = _unpushedCount > 0;
-
-  const enableToggle = () => {
-    if (toggle) {
-      toggle.disabled = false;
-      toggle.classList.remove('is-disabled');
-      toggle.title = 'More actions';
-    }
-  };
+  const canPush = _unpushedCount !== 0;
 
   if (canCommit) {
     btn.textContent = 'Commit';
     btn.dataset.action = 'commit';
     btn.disabled = false;
     btn.classList.remove('is-disabled');
-    enableToggle();
-  } else if (canPush) {
-    btn.textContent = 'Push';
-    btn.dataset.action = 'push';
-    btn.disabled = false;
-    btn.classList.remove('is-disabled');
-    enableToggle();
+    if (toggle) {
+      toggle.disabled = false;
+      toggle.classList.remove('is-disabled');
+    }
   } else {
-    btn.textContent = 'Pull';
-    btn.dataset.action = 'pull';
-    btn.disabled = false;
-    btn.classList.remove('is-disabled');
-    enableToggle();
+    btn.textContent = _unpushedCount > 0 ? `Push (${_unpushedCount})` : 'Push';
+    btn.dataset.action = 'push';
+    if (canPush) {
+      btn.disabled = false;
+      btn.classList.remove('is-disabled');
+      if (toggle) {
+        toggle.disabled = false;
+        toggle.classList.remove('is-disabled');
+      }
+    } else {
+      btn.disabled = true;
+      btn.classList.add('is-disabled');
+      if (toggle) {
+        toggle.disabled = true;
+        toggle.classList.add('is-disabled');
+      }
+    }
   }
 }
 
@@ -88,7 +119,7 @@ function applyStatusDot(branch, dirty) {
 }
 
 async function refreshStatus() {
-  if (!_workingDir) return;
+  if (!_workingDir || _busy) return;
   const res = await gitCall('git-status');
   if (!res?.ok) return;
   const { branch, dirty, unpushedCount, noCommits } = parseGitStatus(res.stdout);
@@ -100,7 +131,6 @@ async function refreshStatus() {
   _isDirty = dirty;
   _unpushedCount = unpushedCount;
   _hasNoCommits = noCommits;
-  // Invalidate branch cache on status refresh so next open re-fetches
   _cachedBranches = null;
   applyStatusDot(_currentBranch, dirty);
   updatePrimaryBtn();
@@ -112,25 +142,20 @@ function buildActionMenu() {
   if (!d) return;
 
   const canCommit = _isDirty;
-  const canPush = _unpushedCount > 0;
+  const canPush = _unpushedCount !== 0;
 
   const opts = canCommit
     ? [
         { action: 'commit', label: 'Commit changes', meta: 'Stage & commit', enabled: true },
         { action: 'commit-push', label: 'Commit & Push', meta: 'Commit then push', enabled: true },
         { action: 'push', label: 'Push', meta: 'Push to remote', enabled: canPush },
-        { action: 'pull', label: 'Pull', meta: 'Pull from remote', enabled: true },
+        { action: 'push-sync', label: 'Push & Sync', meta: 'Pull then push', enabled: canPush },
       ]
-    : canPush
-      ? [
-          { action: 'push', label: 'Push', meta: 'Push to remote', enabled: true },
-          { action: 'push-sync', label: 'Push & Sync', meta: 'Pull then push', enabled: true },
-          { action: 'pull', label: 'Pull', meta: 'Pull from remote', enabled: true },
-        ]
-      : [
-          { action: 'pull', label: 'Pull', meta: 'Pull from remote', enabled: true },
-          { action: 'push-sync', label: 'Push & Sync', meta: 'Pull then push', enabled: true },
-        ];
+    : [
+        { action: 'push', label: 'Push', meta: 'Push to remote', enabled: canPush },
+        { action: 'push-sync', label: 'Push & Sync', meta: 'Pull then push', enabled: canPush },
+        { action: 'pull', label: 'Pull', meta: 'Pull from remote', enabled: true },
+      ];
 
   d.innerHTML = opts
     .map(
@@ -150,7 +175,6 @@ function closeDropdowns() {
   if (a) a.hidden = true;
 }
 
-// FIX 1: Use cached branches; only hit git-branches IPC when cache is cold
 function openBranchDropdown() {
   const d = $('pcb-branch-dropdown');
   if (!d) return;
@@ -159,14 +183,13 @@ function openBranchDropdown() {
     return;
   }
 
-  // If we have a warm cache, render immediately — no loading flash
   if (_cachedBranches) {
     renderBranchList(d, _cachedBranches);
     d.hidden = false;
     return;
   }
 
-  d.innerHTML = '<div class="pcb-dropdown-loading">Loading branches…</div>';
+  d.innerHTML = '<div class="pcb-dropdown-loading">Loading branches\u2026</div>';
   d.hidden = false;
 
   gitCall('git-branches').then((res) => {
@@ -177,7 +200,7 @@ function openBranchDropdown() {
 }
 
 const _trashSvg =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
 
 function renderBranchList(d, branches) {
   const branchItems = branches.length
@@ -214,10 +237,10 @@ function renderBranchList(d, branches) {
       return;
     }
     createBtn.disabled = true;
-    createBtn.textContent = '…';
+    createBtn.textContent = '\u2026';
     const r = await gitCall('git-create-branch', { branchName: name, checkout: true });
     if (r?.ok) {
-      _cachedBranches = null; // invalidate so next open re-fetches with new branch
+      _cachedBranches = null;
       showToast(`Switched to "${name}"`);
       d.hidden = true;
       await refreshStatus();
@@ -237,21 +260,33 @@ function renderBranchList(d, branches) {
 }
 
 async function executeAction(action) {
+  if (_busy) return;
   if (action === 'commit' || action === 'commit-push') {
     openCommitPopover(action);
     return;
   }
-  if (action === 'pull') {
-    const res = await gitCall('git-pull');
-    res?.ok ? showToast('Pulled successfully') : showToast(res?.stderr || 'Pull failed', true);
+
+  setGitBusy(true);
+  const btn = $('pcb-git-action-btn');
+  const originalLabel = btn?.textContent;
+  if (btn) btn.textContent = '\u2026';
+
+  try {
+    if (action === 'pull') {
+      const res = await gitCall('git-pull');
+      res?.ok ? showToast('Pulled successfully') : showToast(res?.stderr || 'Pull failed', true);
+    } else if (action === 'push-sync') {
+      const res = await gitCall('git-push-sync');
+      res?.ok ? showToast('Synced successfully') : showToast(res?.stderr || 'Sync failed', true);
+    } else {
+      const res = await gitCall('git-push');
+      res?.ok ? showToast('Pushed successfully') : showToast(res?.stderr || 'Push failed', true);
+    }
+  } finally {
+    setGitBusy(false);
+    if (btn && originalLabel) btn.textContent = originalLabel;
     await refreshStatus();
-    return;
   }
-  const res = await (action === 'push-sync' ? gitCall('git-push-sync') : gitCall('git-push'));
-  res?.ok
-    ? showToast(action === 'push-sync' ? 'Synced successfully' : 'Pushed successfully')
-    : showToast(res?.stderr || 'Failed', true);
-  await refreshStatus();
 }
 
 function openCommitPopover(action) {
@@ -268,8 +303,51 @@ function closeCommitPopover() {
   const p = $('pcb-commit-popover');
   if (p) p.hidden = true;
   const m = $('pcb-commit-msg');
-  if (m) m.value = '';
+  if (m) {
+    m.value = '';
+    m.disabled = false;
+  }
   _pendingAction = null;
+}
+
+async function performCommit() {
+  if (_busy) return;
+  const msg = $('pcb-commit-msg')?.value.trim();
+  if (!msg) {
+    $('pcb-commit-msg')?.focus();
+    return;
+  }
+
+  const isPushAfter = _pendingAction === 'commit-push';
+  setGitBusy(true);
+  setCommitPopoverBusy(true, 'Committing\u2026');
+
+  try {
+    const commitRes = await gitCall('git-commit', { message: msg });
+    if (!commitRes?.ok) {
+      showToast(commitRes?.stderr || 'Commit failed', true);
+      return;
+    }
+
+    if (isPushAfter) {
+      setCommitPopoverBusy(true, 'Pushing\u2026');
+      const pushRes = await gitCall('git-push');
+      if (pushRes?.ok) {
+        showToast('Committed & pushed successfully');
+      } else {
+        // Commit worked but push failed — tell the user clearly
+        showToast('Committed. Push failed: ' + (pushRes?.stderr || 'unknown error'), true);
+      }
+    } else {
+      showToast('Committed successfully');
+    }
+
+    closeCommitPopover();
+    await refreshStatus();
+  } finally {
+    setGitBusy(false);
+    setCommitPopoverBusy(false, isPushAfter ? 'Commit & Push' : 'Commit');
+  }
 }
 
 function showConfirm(message, okLabel, onConfirm) {
@@ -303,26 +381,6 @@ function closeConfirm() {
   const p = $('pcb-confirm-popover');
   if (p) p.hidden = true;
   _confirmCallback = null;
-}
-
-async function performCommit() {
-  const msg = $('pcb-commit-msg')?.value.trim();
-  if (!msg) {
-    $('pcb-commit-msg')?.focus();
-    return;
-  }
-  const res = await gitCall('git-commit', { message: msg });
-  if (!res?.ok) {
-    showToast(res?.stderr || 'Commit failed', true);
-    return;
-  }
-  showToast('Committed successfully');
-  if (_pendingAction === 'commit-push') {
-    const pr = await gitCall('git-push');
-    pr?.ok ? showToast('Pushed successfully') : showToast(pr?.stderr || 'Push failed', true);
-  }
-  closeCommitPopover();
-  await refreshStatus();
 }
 
 function onDocClick(e) {
@@ -365,6 +423,7 @@ export function createGitBar() {
 
     $('pcb-branch-btn')?.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (_busy) return;
       const a = $('pcb-action-dropdown');
       if (a) a.hidden = true;
       openBranchDropdown();
@@ -382,7 +441,7 @@ export function createGitBar() {
             const r = await gitCall('git-delete-branch', { branch: branchToDelete });
             if (r?.ok) {
               _cachedBranches = null;
-              showToast(`Deleted branch "${branchToDelete}"`);
+              showToast(`Deleted "${branchToDelete}"`);
               await refreshStatus();
             } else {
               showToast(r?.stderr || 'Delete failed', true);
@@ -394,7 +453,7 @@ export function createGitBar() {
       const b = e.target.closest('[data-branch]');
       if (b) {
         $('pcb-branch-dropdown').hidden = true;
-        _cachedBranches = null; // invalidate after checkout
+        _cachedBranches = null;
         const r = await gitCall('git-checkout-branch', { branch: b.dataset.branch });
         r?.ok
           ? showToast(`Switched to ${b.dataset.branch}`)
@@ -405,14 +464,14 @@ export function createGitBar() {
 
     $('pcb-git-action-btn')?.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (e.currentTarget.disabled) return;
+      if (e.currentTarget.disabled || _busy) return;
       closeDropdowns();
       await executeAction(e.currentTarget.dataset.action || 'push');
     });
 
     $('pcb-git-action-toggle')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (e.currentTarget.disabled) return;
+      if (e.currentTarget.disabled || _busy) return;
       const b = $('pcb-branch-dropdown');
       if (b) b.hidden = true;
       buildActionMenu();
@@ -428,7 +487,10 @@ export function createGitBar() {
       }
     });
 
-    $('pcb-commit-cancel')?.addEventListener('click', closeCommitPopover);
+    $('pcb-commit-cancel')?.addEventListener('click', () => {
+      if (_busy) return;
+      closeCommitPopover();
+    });
     $('pcb-commit-confirm')?.addEventListener('click', performCommit);
     $('pcb-commit-msg')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) performCommit();
@@ -445,7 +507,8 @@ export function createGitBar() {
       clearInterval(_pollTimer);
       _pollTimer = null;
     }
-    _cachedBranches = null; // clear cache on project switch
+    _cachedBranches = null;
+    _busy = false;
     closeCommitPopover();
     closeDropdowns();
     init(workingDir);
@@ -460,6 +523,7 @@ export function createGitBar() {
     closeCommitPopover();
     closeConfirm();
     _cachedBranches = null;
+    _busy = false;
     _workingDir = null;
   }
 
