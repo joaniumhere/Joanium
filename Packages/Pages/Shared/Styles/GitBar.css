@@ -423,6 +423,12 @@
   animation: fadeScaleIn 0.18s var(--motion-smooth);
 }
 
+/* Branch-delete confirm appears on the left, aligned with the branch button */
+#pcb-confirm-popover {
+  left: 12px;
+  right: auto;
+}
+
 .pcb-commit-textarea {
   width: 100%;
   border: 1px solid var(--border);
