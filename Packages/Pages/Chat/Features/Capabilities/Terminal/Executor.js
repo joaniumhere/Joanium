@@ -51,6 +51,22 @@ async function ipcReadFile(filePath) {
   if (!result?.ok) throw new Error(result?.error ?? `Could not read file: ${filePath}`);
   return { content: result.content, totalLines: result.totalLines, sizeBytes: result.sizeBytes };
 }
+// ── File-diff helpers (used by write handlers to emit joanium:file-changed) ──
+function _emitFileDiff(filePath, before, after) {
+  try {
+    window.dispatchEvent(
+      new CustomEvent('joanium:file-changed', {
+        detail: { filePath, before: before ?? '', after: after ?? '' },
+      }),
+    );
+  } catch {}
+}
+async function _readAndEmitFileDiff(filePath, before) {
+  try {
+    const r = await ipcReadFile(filePath);
+    _emitFileDiff(filePath, before, r.content);
+  } catch {}
+}
 async function ipcWriteFile(filePath, content) {
   const result = await window.electronAPI?.invoke?.('write-ai-file', {
     filePath: filePath,
@@ -359,12 +375,16 @@ export const { handles: handles, execute: execute } = createExecutor({
       if (null == content) throw new Error('Missing required param: content');
       const append = !0 === params.append || 'true' === params.append;
       onStage(`✍️ ${append ? 'Appending to' : 'Writing'} ${filePath}`);
+      let _diffBefore = '';
+      try { _diffBefore = (await ipcReadFile(filePath)).content; } catch { _diffBefore = ''; }
       const result = await window.electronAPI?.invoke?.('write-ai-file', {
         filePath: filePath,
         content: content,
         append: append,
       });
       if (!result?.ok) throw new Error(result?.error ?? 'File write failed');
+      if (append) { _readAndEmitFileDiff(filePath, _diffBefore); }
+      else { _emitFileDiff(filePath, _diffBefore, content); }
       return `✅ File ${append ? 'appended' : 'written'}: ${result.path} (${result.bytes} bytes)`;
     },
     apply_file_patch: async (params, onStage) => {
@@ -374,6 +394,8 @@ export const { handles: handles, execute: execute } = createExecutor({
         throw new Error('Missing required param: search');
       if ('string' != typeof replace) throw new Error('Missing required param: replace');
       onStage(`🩹 Patching ${filePath}`);
+      let _diffBefore = '';
+      try { _diffBefore = (await ipcReadFile(filePath)).content; } catch { _diffBefore = ''; }
       const result = await window.electronAPI?.invoke?.('apply-file-patch', {
         filePath: filePath,
         search: search,
@@ -381,6 +403,7 @@ export const { handles: handles, execute: execute } = createExecutor({
         replaceAll: replace_all,
       });
       if (!result?.ok) throw new Error(result?.error ?? 'File patch failed');
+      _readAndEmitFileDiff(filePath, _diffBefore);
       return `✅ Patched ${result.path} (${result.replacements} replacement${1 !== result.replacements ? 's' : ''})`;
     },
     replace_lines_in_file: async (params, onStage) => {
@@ -395,6 +418,8 @@ export const { handles: handles, execute: execute } = createExecutor({
       if (null == end_line) throw new Error('Missing required param: end_line');
       if ('string' != typeof replacement) throw new Error('Missing required param: replacement');
       onStage(`Replacing lines ${start_line}-${end_line} in ${filePath}`);
+      let _diffBefore = '';
+      try { _diffBefore = (await ipcReadFile(filePath)).content; } catch { _diffBefore = ''; }
       const result = await window.electronAPI?.invoke?.('replace-lines-in-file', {
         filePath: filePath,
         startLine: start_line,
@@ -402,6 +427,7 @@ export const { handles: handles, execute: execute } = createExecutor({
         replacement: replacement,
       });
       if (!result?.ok) throw new Error(result?.error ?? 'Line replacement failed');
+      _readAndEmitFileDiff(filePath, _diffBefore);
       return `✅ Replaced lines ${result.startLine}-${result.endLine} in ${result.path}`;
     },
     insert_into_file: async (params, onStage) => {
@@ -409,6 +435,8 @@ export const { handles: handles, execute: execute } = createExecutor({
       if (!filePath?.trim()) throw new Error('Missing required param: path');
       if ('string' != typeof content) throw new Error('Missing required param: content');
       onStage(`Inserting text into ${filePath}`);
+      let _diffBefore = '';
+      try { _diffBefore = (await ipcReadFile(filePath)).content; } catch { _diffBefore = ''; }
       const result = await window.electronAPI?.invoke?.('insert-into-file', {
         filePath: filePath,
         content: content,
@@ -417,6 +445,7 @@ export const { handles: handles, execute: execute } = createExecutor({
         anchor: params.anchor,
       });
       if (!result?.ok) throw new Error(result?.error ?? 'Insert failed');
+      _readAndEmitFileDiff(filePath, _diffBefore);
       return `✅ Inserted text into ${result.path} using ${result.mode} targeting (${result.position})`;
     },
     create_folder: async (params, onStage) => {
@@ -432,12 +461,15 @@ export const { handles: handles, execute: execute } = createExecutor({
       if (!source_path?.trim()) throw new Error('Missing required param: source_path');
       if (!destination_path?.trim()) throw new Error('Missing required param: destination_path');
       onStage(`Copying ${source_path}`);
+      let _destBefore = '';
+      try { _destBefore = (await ipcReadFile(destination_path)).content; } catch {}
       const result = await window.electronAPI?.invoke?.('copy-item', {
         sourcePath: source_path,
         destinationPath: destination_path,
         overwrite: params.overwrite,
       });
       if (!result?.ok) throw new Error(result?.error ?? 'Copy failed');
+      _readAndEmitFileDiff(destination_path, _destBefore);
       return `✅ Copied ${result.source} -> ${result.destination}`;
     },
     move_item: async (params, onStage) => {
@@ -445,12 +477,18 @@ export const { handles: handles, execute: execute } = createExecutor({
       if (!source_path?.trim()) throw new Error('Missing required param: source_path');
       if (!destination_path?.trim()) throw new Error('Missing required param: destination_path');
       onStage(`Moving ${source_path}`);
+      let _srcBefore = '';
+      try { _srcBefore = (await ipcReadFile(source_path)).content; } catch {}
+      let _destBefore = '';
+      try { _destBefore = (await ipcReadFile(destination_path)).content; } catch {}
       const result = await window.electronAPI?.invoke?.('move-item', {
         sourcePath: source_path,
         destinationPath: destination_path,
         overwrite: params.overwrite,
       });
       if (!result?.ok) throw new Error(result?.error ?? 'Move failed');
+      _emitFileDiff(source_path, _srcBefore, '');
+      _emitFileDiff(destination_path, _destBefore, _srcBefore);
       return `✅ Moved ${result.source} -> ${result.destination}`;
     },
     git_status: async (params, onStage) => {
@@ -550,8 +588,11 @@ export const { handles: handles, execute: execute } = createExecutor({
       const { path: itemPath } = params;
       if (!itemPath?.trim()) throw new Error('Missing required param: path');
       onStage(`🗑️ Deleting ${itemPath}`);
+      let _before = '';
+      try { _before = (await ipcReadFile(itemPath)).content; } catch {}
       const result = await window.electronAPI?.invoke?.('delete-item', { itemPath: itemPath });
       if (!result?.ok) throw new Error(result?.error ?? 'Delete failed');
+      _emitFileDiff(itemPath, _before, '');
       return `✅ Successfully deleted: ${itemPath}`;
     },
     start_local_server: async (params, onStage) => {
@@ -903,11 +944,10 @@ export const { handles: handles, execute: execute } = createExecutor({
       if (s >= e)
         throw new Error(`start_line (${start_line}) must be less than end_line (${end_line})`);
       const deleted = e - s;
-      return (
-        lines.splice(s, deleted),
-        await ipcWriteFile(filePath, joinLines(lines)),
-        `✅ Deleted ${deleted} line${1 !== deleted ? 's' : ''} (${start_line}–${end_line}) from ${filePath}\nFile now has ${lines.length} lines (was ${totalLines}).`
-      );
+      lines.splice(s, deleted);
+      await ipcWriteFile(filePath, joinLines(lines));
+      _emitFileDiff(filePath, content, joinLines(lines));
+      return `✅ Deleted ${deleted} line${1 !== deleted ? 's' : ''} (${start_line}–${end_line}) from ${filePath}\nFile now has ${lines.length} lines (was ${totalLines}).`;
     },
     move_lines: async (params, onStage) => {
       const {
@@ -934,11 +974,10 @@ export const { handles: handles, execute: execute } = createExecutor({
         );
       const block = lines.splice(s, e - s),
         insertAt = t > e ? t - block.length : t;
-      return (
-        lines.splice(insertAt, 0, ...block),
-        await ipcWriteFile(filePath, joinLines(lines)),
-        `✅ Moved ${block.length} line${1 !== block.length ? 's' : ''} (${start_line}–${end_line}) to position ${target_line} in ${filePath}`
-      );
+      lines.splice(insertAt, 0, ...block);
+      await ipcWriteFile(filePath, joinLines(lines));
+      _emitFileDiff(filePath, content, joinLines(lines));
+      return `✅ Moved ${block.length} line${1 !== block.length ? 's' : ''} (${start_line}–${end_line}) to position ${target_line} in ${filePath}`;
     },
     duplicate_lines: async (params, onStage) => {
       const { path: filePath, start_line: start_line, end_line: end_line } = params;
@@ -951,11 +990,10 @@ export const { handles: handles, execute: execute } = createExecutor({
         s = clampLine(start_line, lines.length) - 1,
         e = clampLine(end_line, lines.length),
         block = lines.slice(s, e);
-      return (
-        lines.splice(e, 0, ...block),
-        await ipcWriteFile(filePath, joinLines(lines)),
-        `✅ Duplicated ${block.length} line${1 !== block.length ? 's' : ''} (${start_line}–${end_line}) — copy inserted at line ${e + 1} in ${filePath}`
-      );
+      lines.splice(e, 0, ...block);
+      await ipcWriteFile(filePath, joinLines(lines));
+      _emitFileDiff(filePath, content, joinLines(lines));
+      return `✅ Duplicated ${block.length} line${1 !== block.length ? 's' : ''} (${start_line}–${end_line}) — copy inserted at line ${e + 1} in ${filePath}`;
     },
     sort_lines_in_range: async (params, onStage) => {
       const { path: filePath, start_line: start_line, end_line: end_line } = params;
@@ -975,11 +1013,10 @@ export const { handles: handles, execute: execute } = createExecutor({
             cb = trimBeforeSort ? b.trimStart() : b;
           return descending ? cb.localeCompare(ca) : ca.localeCompare(cb);
         });
-      return (
-        lines.splice(s, block.length, ...sorted),
-        await ipcWriteFile(filePath, joinLines(lines)),
-        `✅ Sorted ${block.length} line${1 !== block.length ? 's' : ''} (${start_line}–${end_line}) in ${descending ? 'descending' : 'ascending'} order in ${filePath}`
-      );
+      lines.splice(s, block.length, ...sorted);
+      await ipcWriteFile(filePath, joinLines(lines));
+      _emitFileDiff(filePath, content, joinLines(lines));
+      return `✅ Sorted ${block.length} line${1 !== block.length ? 's' : ''} (${start_line}–${end_line}) in ${descending ? 'descending' : 'ascending'} order in ${filePath}`;
     },
     indent_lines: async (params, onStage) => {
       const { path: filePath, start_line: start_line, end_line: end_line } = params;
@@ -1006,10 +1043,9 @@ export const { handles: handles, execute: execute } = createExecutor({
             : lines[i].replace(new RegExp(`^ {1,${Math.abs(amount)}}`), '');
           stripped !== lines[i] && ((lines[i] = stripped), changed++);
         }
-      return (
-        await ipcWriteFile(filePath, joinLines(lines)),
-        `✅ ${adding ? 'Indented' : 'Dedented'} ${changed} line${1 !== changed ? 's' : ''} by ${useTabs ? '1 tab' : `${Math.abs(amount)} space${1 !== Math.abs(amount) ? 's' : ''}`} in ${filePath}`
-      );
+      await ipcWriteFile(filePath, joinLines(lines));
+      _emitFileDiff(filePath, content, joinLines(lines));
+      return `✅ ${adding ? 'Indented' : 'Dedented'} ${changed} line${1 !== changed ? 's' : ''} by ${useTabs ? '1 tab' : `${Math.abs(amount)} space${1 !== Math.abs(amount) ? 's' : ''}`} in ${filePath}`;
     },
     wrap_lines: async (params, onStage) => {
       const { path: filePath, start_line: start_line, end_line: end_line } = params;

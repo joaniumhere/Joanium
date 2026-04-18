@@ -90,3 +90,6 @@
 
 /* 31. GitBar */
 @import '../../../Shared/Styles/GitBar.css';
+
+/* 32. File Diff Panel */
+@import './FileDiffTracker.css';

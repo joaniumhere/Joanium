@@ -42,6 +42,7 @@ import {
 } from '../../Features/Core/ChatMemory.js';
 import { initTerminalObserver } from '../../Features/UI/TerminalComponent.js';
 import { getChatHTML, ensureDropOverlay, getDropOverlay } from './Templates/ChatTemplate.js';
+import { createFileDiffTracker } from './Features/FileDiffTracker.js';
 import { createEnhanceFeature } from './Features/ChatEnhance.js';
 import { createBrowserPreviewFeature } from './Features/BrowserPreview.js';
 
@@ -268,6 +269,7 @@ export function mount(outlet, { settings: _settings, navigate: _navigate }) {
     },
     onProjectChanged = () => {
       (syncProjectUI(), prewarmAgentContext().catch(() => {}));
+      if (!state.workspacePath) diffTracker.reset();
     };
   (window.addEventListener('ow:settings-saved', onSettingsSaved),
     window.addEventListener('ow:user-profile-updated', onUserProfileUpdated),
@@ -284,6 +286,15 @@ export function mount(outlet, { settings: _settings, navigate: _navigate }) {
   gitBar = createGitBar();
   gitBar.init(state.activeProject?.rootPath ?? null);
   // Git bar end
+
+  // File diff tracker — project-only, resets on new chat
+  const diffTracker = createFileDiffTracker();
+  diffTracker.init();
+  const _origStartNewChat = startNewChat;
+  function startNewChatAndReset(...args) {
+    diffTracker.reset();
+    return _origStartNewChat(...args);
+  }
   ensureDropOverlay();
   let dragCounter = 0;
   const onDragOver = (e) => {
@@ -314,8 +325,8 @@ export function mount(outlet, { settings: _settings, navigate: _navigate }) {
     document.addEventListener('dragleave', onDragLeave),
     document.addEventListener('drop', onDrop),
     shouldStartFresh && !pendingId
-      ? startNewChat()
-      : !pendingId &&
+    ? startNewChatAndReset()
+    : !pendingId &&
         state.messages.length > 0 &&
         state.messages.length &&
         (showChatView(),
@@ -364,6 +375,7 @@ export function mount(outlet, { settings: _settings, navigate: _navigate }) {
         welcomeChips?.removeEventListener('click', onStarterChipClick),
         enhanceFeature.cleanup(),
         browserPreviewFeature.cleanup(),
+        diffTracker.destroy(),
         stopGeneration());
       const overlay = getDropOverlay();
       overlay && (overlay.style.opacity = '0');

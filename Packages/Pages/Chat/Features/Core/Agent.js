@@ -386,7 +386,7 @@ function buildActiveProjectHint(activeProject = state.activeProject, mode = 'run
       (lines.push('Project info to keep in mind:'), lines.push(activeProject.context)),
     'planning' === mode
       ? lines.push(
-          'Treat this project folder as the default workspace for file, code, and terminal requests.',
+          'Treat this project folder as the default workspace for file, code, and terminal requests. (If the user asks to create any files or folders just do it in the workspace unless the user asks you to do it in a different folder)',
         )
       : lines.push(
           'This project is currently open. Treat this workspace as the default directory unless the user asks for another one.',
