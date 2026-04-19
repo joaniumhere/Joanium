@@ -10,7 +10,14 @@ import {
   createSubAgentRunElement,
   isSubAgentRunAttachment,
 } from './SubAgentPanels.js';
-const REASONING_TAG_NAMES = new Set(['think', 'thinking', 'reason', 'reasoning', 'analysis']),
+const REASONING_TAG_NAMES = new Set([
+    'think',
+    'thinking',
+    'reason',
+    'reasoning',
+    'analysis',
+    'reflection',
+  ]),
   BROWSER_TOOL_LABELS = {
     spawn_sub_agents: 'Delegating to focused sub-agents...',
     browser_navigate: 'Opening the website...',
