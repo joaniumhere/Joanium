@@ -250,7 +250,9 @@ export function register() {
     const stageRes = await runGit('git add -A', workingDir);
     if (!stageRes.ok) return stageRes;
 
-    const commitRes = await runGitArgs(['git', 'commit', '-m', message], workingDir);
+    const commitRes = await runGitArgs(['git', 'commit', '-m', message], workingDir, {
+      timeout: 300_000,
+    });
 
     if (!commitRes.ok && commitRes.category === GitErrorCategory.NOTHING) {
       return { ...commitRes, ok: true, noop: true };
@@ -274,8 +276,16 @@ export function register() {
     }
 
     if (res.category === GitErrorCategory.DIVERGED) {
-      const pullRes = await runGitNet('git pull --rebase', workingDir);
-      if (!pullRes.ok) return pullRes;
+      // Abort any stale rebase state left over from a previous failed attempt
+      // before starting a fresh pull. This is the main cause of lag / "not going"
+      // when there are multiple unpushed commits and the remote has diverged.
+      await runGit('git rebase --abort', workingDir).catch(() => {});
+
+      // Use merge (not rebase) so that multiple local commits are preserved as-is
+      // and the pull can't produce per-commit conflicts that stall the process.
+      const pullRes = await runGitNet('git pull --no-rebase', workingDir);
+      if (!pullRes.ok && pullRes.category !== GitErrorCategory.NOTHING) return pullRes;
+
       res = await runGitNet('git push', workingDir);
       if (!res.ok && res.category === GitErrorCategory.NO_UPSTREAM) {
         return runGitNet('git push -u origin HEAD', workingDir);
@@ -294,8 +304,18 @@ export function register() {
         hint: 'No working directory provided.',
       };
 
-    const pullRes = await runGitNet('git pull --rebase', workingDir);
-    if (!pullRes.ok && pullRes.category !== GitErrorCategory.NOTHING) return pullRes;
+    // Abort any stale rebase state before pulling
+    await runGit('git rebase --abort', workingDir).catch(() => {});
+
+    const pullRes = await runGitNet('git pull --no-rebase', workingDir);
+    // Allow NOTHING (already up to date) and NO_UPSTREAM through — both are fine
+    // to ignore here since the push step handles NO_UPSTREAM with -u origin HEAD.
+    if (
+      !pullRes.ok &&
+      pullRes.category !== GitErrorCategory.NOTHING &&
+      pullRes.category !== GitErrorCategory.NO_UPSTREAM
+    )
+      return pullRes;
 
     let res = await runGitNet('git push', workingDir);
     if (res.ok) return res;
