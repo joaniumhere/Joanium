@@ -1,5 +1,5 @@
 import { state } from '../../../../../System/State.js';
-import { fetchWithTools } from '../../../../../Features/AI/index.js';
+import { fetchStreamingWithTools } from '../../../../../Features/AI/index.js';
 
 let _workingDir = null,
   _pollTimer = null,
@@ -432,9 +432,7 @@ async function generateAICommitMessage() {
   _setAiGenerating(true);
 
   try {
-    // The existing 'git-diff' handler in TerminalIPC accepts { workingDir, staged }
-    // and returns { ok, stdout, ... }. We fetch both staged + unstaged in parallel
-    // to give the AI the full picture of all pending changes.
+    // Fetch both staged + unstaged diffs in parallel to give the AI the full picture.
     const [unstagedRes, stagedRes] = await Promise.all([
       gitCall('git-diff', { staged: false }),
       gitCall('git-diff', { staged: true }),
@@ -456,7 +454,29 @@ async function generateAICommitMessage() {
         ? combined.slice(0, 8000) + '\n\n…(diff truncated for length)'
         : combined;
 
-    const result = await fetchWithTools(
+    const textarea = $('pcb-commit-msg');
+    if (!textarea) return;
+
+    // Clear the textarea before streaming begins
+    textarea.value = '';
+
+    // Raw accumulation buffer — every token goes here regardless of content.
+    // We filter this before displaying so thinking blocks never appear in the textarea.
+    let rawBuffer = '';
+
+    // Strips complete AND unclosed thinking blocks from any model's output.
+    // Complete blocks (<think>...</think>) are removed entirely.
+    // Unclosed opening tags hide everything that follows until the closing tag arrives.
+    function filterThinking(text) {
+      return text
+        .replace(/<(think|thinking|thought|scratchpad|reasoning|reflection)[^>]*>[\s\S]*?<\/\1>\s*/gi, '')
+        .replace(/<(think|thinking|thought|scratchpad|reasoning|reflection)[^>]*>[\s\S]*/gi, '')
+        .trim();
+    }
+
+    // Stream tokens directly into the textarea as they arrive — the shimmer
+    // stays active the whole time and only stops once the stream is fully done.
+    await fetchStreamingWithTools(
       state.selectedProvider,
       state.selectedModel,
       [{ role: 'user', content: `Git diff:\n\n${diff}`, attachments: [] }],
@@ -468,21 +488,27 @@ async function generateAICommitMessage() {
         'If extra context is useful, add a blank line then a short body (2–4 lines max).',
         'Return ONLY the raw commit message text — no markdown, no quotes, no explanation.',
       ].join(' '),
-      [],
+      [], // no tools
+      (token) => {
+        if (!document.contains(textarea)) return;
+        rawBuffer += token;
+        // Update the textarea with thinking blocks stripped out in real-time.
+        // While a block is open (closing tag not yet received) everything after
+        // the opening tag is hidden, so the user never sees thinking content.
+        textarea.value = filterThinking(rawBuffer);
+      },
     );
 
-    const textarea = $('pcb-commit-msg');
-    if (!textarea) return;
+    // Final clean pass once the full stream is in
+    textarea.value = filterThinking(rawBuffer);
 
-    if (result.type === 'text' && result.text && result.text !== '(empty response)') {
-      // Typewriter reveal while the shimmer is still running
-      await _typeIntoTextarea(textarea, result.text.trim());
-    } else {
+    if (!textarea.value.trim()) {
       showToast('AI returned an empty response', true);
     }
   } catch (err) {
     showToast('AI generation failed: ' + (err?.message ?? String(err)), true);
   } finally {
+    // Shimmer stops only after the AI stream has fully completed
     _setAiGenerating(false);
     $('pcb-commit-msg')?.focus();
   }

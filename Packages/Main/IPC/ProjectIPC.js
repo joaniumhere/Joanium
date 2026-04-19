@@ -79,7 +79,14 @@ function runGitArgs(args, workingDir, opts = {}) {
           resolve({ ok: true, stdout: stdout || '', stderr: stderr || '', exitCode });
         } else {
           const { category, hint } = classifyGitError(stderr, stdout);
-          resolve({ ok: false, stdout: stdout || '', stderr: stderr || '', exitCode, category, hint });
+          resolve({
+            ok: false,
+            stdout: stdout || '',
+            stderr: stderr || '',
+            exitCode,
+            category,
+            hint,
+          });
         }
       },
     );
