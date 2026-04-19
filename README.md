@@ -8,111 +8,196 @@
 </p>
 
 <p align="center">
-  <strong>Think once, Ship more</strong>
+  <strong>The AI desktop assistant that actually lives on your machine.</strong><br>
+  <sub>Multi-model chat · Scheduled automations · Background agents · MCP · Real integrations</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/joanium/joanium/releases"><img src="https://img.shields.io/github/v/release/joanium/joanium?include_prereleases&style=for-the-badge" alt="GitHub release"></a>
-  <a href="https://github.com/joanium/joanium/stargazers"><img src="https://img.shields.io/github/stars/joanium/joanium?style=for-the-badge&color=yellow" alt="GitHub Stars"></a>
-  <a href="https://github.com/joanium/joanium/issues"><img src="https://img.shields.io/github/issues/joanium/joanium?style=for-the-badge&color=red" alt="Open Issues"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
-  <a href="https://joeljolly.vercel.app/"><img src="https://img.shields.io/badge/Built%20by-Joel%20Jolly-blueviolet?style=for-the-badge" alt="Built by Joel Jolly"></a>
+  <a href="https://github.com/joanium/joanium/actions/workflows/ci.yml"><img src="https://github.com/joanium/joanium/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/joanium/joanium/releases"><img src="https://img.shields.io/github/v/release/joanium/joanium?include_prereleases&style=flat-square&label=release" alt="GitHub release"></a>
+  <a href="https://github.com/joanium/joanium/stargazers"><img src="https://img.shields.io/github/stars/joanium/joanium?style=flat-square&color=yellow" alt="GitHub Stars"></a>
+  <a href="https://github.com/joanium/joanium/issues"><img src="https://img.shields.io/github/issues/joanium/joanium?style=flat-square&color=red" alt="Open Issues"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="Platform">
+  <img src="https://img.shields.io/badge/node-%3E%3D24-green?style=flat-square" alt="Node.js">
+  <img src="https://img.shields.io/badge/built%20with-Electron-47848F?style=flat-square&logo=electron" alt="Electron">
 </p>
 
 <p align="center">
   <a href="https://joanium.com">🌐 Website</a> ·
   <a href="https://joanium.com/docs">📖 Docs</a> ·
   <a href="https://joanium.com/marketplace">🛍️ Marketplace</a> ·
-  <a href="https://www.joanium.com/download">⬇️ Download</a>
+  <a href="https://www.joanium.com/download">⬇️ Download</a> ·
+  <a href="https://github.com/joanium/joanium/discussions">💬 Discussions</a>
 </p>
 
 ---
 
-Joanium is a local-first desktop app for people who want an AI assistant that can actually work with projects, files, tools, schedules, personal context, and real integrations instead of acting like a thin chat wrapper.
+> **Joanium** is a local-first AI desktop app that goes far beyond a chat window. It knows your projects and files, runs automations on a schedule, operates background agents, connects to GitHub / Gmail / Drive, and supports every major AI provider — all without sending your data to the cloud.
 
-It combines multi-provider chat, workspace-aware assistance, scheduled automations, autonomous agents, MCP, browser tooling, markdown-based skills and personas, and a discovery-driven extension system in one desktop product.
+---
 
-## 🤔 Why not just use ChatGPT or Claude.ai?
+## 🎬 Demo
 
-Those are great chat apps. Joanium is a different thing entirely — it lives on your machine, knows your files, runs jobs while you sleep, and connects to the tools you actually use.
+<!-- TODO: Add a screen recording / GIF here — even a short one will dramatically increase engagement -->
 
-|                                   | ChatGPT / Claude.ai  | Joanium                  |
-| --------------------------------- | -------------------- | ------------------------ |
-| Your files & projects             | ❌ Upload every time | ✅ Always in context     |
-| Runs tasks on a schedule          | ❌                   | ✅ Automations + Agents  |
-| GitHub, Gmail, Drive integrations | ❌ Limited           | ✅ Native                |
-| Your data stays on your machine   | ❌ Cloud only        | ✅ 100% local-first      |
-| Use any AI model                  | ❌ Locked in         | ✅ 10+ providers         |
-| Extensible with custom tools      | ❌                   | ✅ Full extension system |
+> 📸 Screenshots and a demo GIF are coming soon. In the meantime, [download the app](https://www.joanium.com/download) and see it for yourself.
 
-## ✨ What you actually get
+---
+
+## 🤔 Why Joanium instead of ChatGPT or Claude.ai?
+
+Those are great chat apps. Joanium is a different product entirely — it lives on your machine, understands your workspace, runs jobs while you sleep, and plugs into the tools you actually use.
+
+| Capability                        | ChatGPT / Claude.ai       | **Joanium**                 |
+| --------------------------------- | ------------------------- | --------------------------- |
+| Reads your project files          | ❌ Upload every time      | ✅ Always in context        |
+| Runs tasks on a schedule          | ❌                        | ✅ Automations + Agents     |
+| GitHub, Gmail, Drive integrations | ⚠️ Limited / plugin-based | ✅ Native first-class tools |
+| Your data stays on your machine   | ❌ Cloud only             | ✅ 100% local-first         |
+| Use any AI model                  | ❌ Locked in              | ✅ 10+ providers            |
+| Works fully offline               | ❌                        | ✅ With Ollama / LM Studio  |
+| Extensible with custom tools      | ❌                        | ✅ Skills, Personas, MCP    |
+| Background autonomous agents      | ❌                        | ✅ Built-in                 |
+
+---
+
+## ✨ Features
 
 ### 💬 A chat that knows your work
 
-Not just a blank box. Joanium loads your active project, reads your files, runs terminal commands, handles attachments, and keeps separate chat history per project. It's the difference between an assistant and a _coworker_.
+Joanium loads your active project, reads your files, runs terminal commands, handles attachments, and maintains separate chat history per project. Not a blank box — a genuine coworker.
 
 ### ⏰ Automations that run themselves
 
-Set up a job once — _"every morning, pull the latest GitHub issues, summarise them, and ping me on Slack"_ — and it just runs. No babysitting. Built-in data sources include RSS, Reddit, weather, crypto prices, file reads, URL fetches, and more. Built-in outputs include notifications, file creation, webhooks, terminal commands, and integration-specific actions.
+Set up a job once — _"every morning, pull the latest GitHub issues, summarise them, and ping me on Slack"_ — and it just runs. No babysitting required.
 
-### 🕵️ Agents that work in the background
+Built-in **data sources**: RSS feeds, Reddit, weather, crypto prices, file reads, URL fetches, GitHub events, and more.
+Built-in **outputs**: notifications, file writes, webhooks, terminal commands, Slack messages, email, and integration-specific actions.
 
-Reusable scheduled prompts that run against any model and any project. Great for daily code reviews, monitoring changelogs, or anything you'd otherwise have to remember to ask manually.
+### 🕵️ Background agents
+
+Reusable scheduled prompts that run against any model, any project. Perfect for daily code reviews, changelog monitoring, PR summaries, or anything you'd otherwise have to remember to ask manually.
 
 ### 🎭 Personas & 🧠 Skills
 
-**Personas** change _how_ the assistant talks and thinks — drop in a "senior code reviewer" or a "startup copywriter" and the whole vibe shifts instantly. **Skills** are markdown docs that teach the assistant _what_ to do — enable the ones you need, disable the rest. Both are just files you can edit or share.
+- **Personas** change _how_ the assistant thinks — drop in a "senior code reviewer" or a "startup copywriter" and the whole interaction shifts instantly.
+- **Skills** are markdown docs that teach the assistant _what_ to do — enable the ones you need, disable the rest. Both are just plain files you can edit, version-control, and share.
 
 ### 🔌 Real integrations, not wrappers
 
-GitHub, GitLab, Gmail, Google Drive, Calendar, Sheets, Docs, Contacts, YouTube, Tasks — all connected as first-class tools the assistant can actually use mid-conversation, not just talk about.
+GitHub · GitLab · Gmail · Google Drive · Google Calendar · Google Sheets · Google Docs · Google Contacts · YouTube · Google Tasks
+
+All connected as first-class tools the assistant can actually invoke mid-conversation.
+
+### 🧩 MCP (Model Context Protocol) support
+
+Connect any MCP-compatible server and expose its tools directly to the assistant. The ecosystem is growing fast — Joanium keeps up.
 
 ### 🛍️ Marketplace
 
-Browse and install community-built skills and personas from the Joanium marketplace with one click. Ship your own too.
+Browse and install community-built Skills and Personas with one click. Publish your own.
 
-## ⬇️ Get started in 60 seconds
+---
+
+## ⬇️ Install in 60 seconds
+
+**Option A — Download the app**
 
 ```
 1. Go to https://joanium.com
-2. Hit Download
-3. Install it  (Windows · macOS · Linux — all supported)
-4. Finish onboarding — add your API key and you're live
+2. Click Download  (Windows · macOS · Linux — all supported)
+3. Install and run the onboarding wizard
+4. Add an API key for your preferred AI provider
 ```
 
-> 💡 **No API key?** Use **Ollama** for free local models — Joanium supports it out of the box with zero extra config.
+**Option B — Run from source**
 
-## 🔀 Works with your favourite AI
+```bash
+git clone https://github.com/joanium/joanium.git
+cd joanium
+npm install
+npm run dev
+```
+
+> 💡 **No paid API key?** Joanium supports **[Ollama](https://ollama.com)** and **LM Studio** for free fully-local models with zero extra configuration.
+
+---
+
+## 🔀 Works with every major AI provider
 
 Switch models anytime, even mid-conversation. No lock-in, ever.
 
-`Anthropic` · `OpenAI` · `Google Gemini` · `OpenRouter` · `Mistral` · `NVIDIA NIM` · `DeepSeek` · `MiniMax` · `Ollama` · `LM Studio`
+| Provider       | Models                                     |
+| -------------- | ------------------------------------------ |
+| **Anthropic**  | Claude 3.5, Claude 3 Opus, and more        |
+| **OpenAI**     | GPT-4o, o1, o3, and more                   |
+| **Google**     | Gemini 2.0 Flash, Gemini 1.5 Pro, and more |
+| **OpenRouter** | 200+ models via one key                    |
+| **Mistral**    | Mistral Large, Codestral, and more         |
+| **NVIDIA NIM** | Llama 3, Nemotron, and more                |
+| **DeepSeek**   | DeepSeek-V3, DeepSeek-R1                   |
+| **MiniMax**    | MiniMax-01                                 |
+| **Ollama**     | Any local model — Llama, Phi, Gemma, Qwen… |
+| **LM Studio**  | Any GGUF model locally                     |
 
-Full walkthrough → [Docs/Extension-Guide.md](Docs/Extension-Guide.md)
+---
+
+## 🗺️ Roadmap
+
+- [x] Multi-model chat with project context
+- [x] Automations engine with built-in sources and outputs
+- [x] Background agents
+- [x] MCP server support
+- [x] GitHub, Gmail, Drive, Calendar integrations
+- [x] Skills and Personas system
+- [x] Marketplace
+- [ ] Voice input / output
+- [ ] Web browsing agent
+- [ ] Mobile companion app
+- [ ] Team / shared workspaces
+- [ ] Plugin SDK (public)
+
+See [open issues](https://github.com/joanium/joanium/issues) and [discussions](https://github.com/joanium/joanium/discussions) to vote on what ships next.
+
+---
 
 ## 📖 Documentation
 
-|                                                         |                                                     |
+| Doc                                                     | What it covers                                      |
 | ------------------------------------------------------- | --------------------------------------------------- |
-| 🗺️ [Architecture](Docs/Architecture.md)                 | How the app boots, runtime layers, and request flow |
+| 🗺️ [Architecture](Docs/Architecture.md)                 | How the app boots, runtime layers, request flow     |
 | 🧩 [Features](Docs/Features.md)                         | Full product surface and capability map             |
 | 💾 [Data & Persistence](Docs/Data-And-Persistence.md)   | Where state lives and how to back it up             |
 | 🔧 [Extension Guide](Docs/Extension-Guide.md)           | Adding features, engines, pages, IPC, and services  |
 | 📍 [Where To Change What](Docs/Where-To-Change-What.md) | Targeted maintenance map — find the right file fast |
 | 🛠️ [Development Workflow](Docs/Development-Workflow.md) | Scripts, packaging, and contributor workflow        |
 
+---
+
 ## 🤝 Contributing
 
-Contributions are welcome — big or small.
+Contributions are very welcome — big or small. Here's how to get started:
 
-- [CONTRIBUTING.md](CONTRIBUTING.md) — how to get started
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — be cool
-- [SECURITY.md](SECURITY.md) — reporting vulnerabilities
+```bash
+git clone https://github.com/joanium/joanium.git
+cd joanium
+npm install
+npm run dev          # start in dev mode
+npm run lint         # check code style
+```
 
-## 📄 License
-
-MIT. See [LICENSE](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community norms, and [SECURITY.md](SECURITY.md) for responsible disclosure.
 
 ---
 
-<p align="center">Made with ❤️ by <a href="https://joeljolly.vercel.app">Joel Jolly</a></p>
+## 📄 License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+<p align="center">
+  If Joanium is useful to you, a ⭐ on GitHub goes a long way.<br>
+  Made with ❤️ by <a href="https://joeljolly.vercel.app">Joel Jolly</a>
+</p>
