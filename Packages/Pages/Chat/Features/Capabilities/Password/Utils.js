@@ -101,14 +101,12 @@ const WORDS = [
   'venom',
 ];
 function randomInt(max) {
-  const [v] = (function () {
-    if ('function' == typeof globalThis.crypto?.getRandomValues) {
-      const arr = new Uint32Array(1);
-      return (globalThis.crypto.getRandomValues(arr), Array.from(arr));
-    }
-    return Array.from({ length: 1 }, () => Math.floor(4294967295 * Math.random()));
-  })();
-  return v % max;
+  if (typeof globalThis.crypto?.getRandomValues !== 'function') {
+    throw new Error('No cryptographically secure random number generator is available.');
+  }
+  const arr = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(arr);
+  return arr[0] % max;
 }
 export function generatePassword(length, useSymbols, useNumbers, useUppercase) {
   const lower = 'abcdefghijklmnopqrstuvwxyz',
