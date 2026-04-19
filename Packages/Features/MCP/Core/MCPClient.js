@@ -158,7 +158,9 @@ export class MCPRegistry {
     try {
       await session.initialize();
     } catch (err) {
-      console.warn(`[MCP] initialize() failed for "${name}":`, err.message);
+      // Do not log err.message — it may contain sensitive data from env (API keys, tokens).
+      // Log only the error type so the entry is useful without leaking secrets.
+      console.warn(`[MCP] initialize() failed for "${name}" (${err?.name ?? 'Error'})`);
     }
     const tools = await session.listTools().catch(() => []),
       entry = {
