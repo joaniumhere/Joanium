@@ -2,6 +2,8 @@
 .events-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .detail-section-label,
 .event-date-header,

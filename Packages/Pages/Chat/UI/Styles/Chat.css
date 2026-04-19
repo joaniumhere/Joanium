@@ -311,6 +311,10 @@
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
   scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: none;
+  backface-visibility: hidden;
 }
 .message-row {
   box-sizing: border-box;

@@ -12,3 +12,27 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ─── Smooth-scroll performance ───────────────────────────────────────────
+   overscroll-behavior: contain  → stops scroll-chaining at boundaries
+     (no more rubber-banding / page hijack = biggest anti-jank win)
+   -webkit-overflow-scrolling: touch → momentum scrolling in WebKit/Electron
+   ───────────────────────────────────────────────────────────────────────── */
+.activity-list,
+.agent-history-body,
+.agent-modal-body,
+.agent-model-menu,
+.agent-rv-body,
+.agents-scroll,
+.chat-messages,
+.composer-attachments,
+.detail-response,
+.event-detail-body,
+.events-scroll,
+.input-box textarea,
+.usage-scroll,
+#agent-modal-body,
+#agent-response-viewer {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
