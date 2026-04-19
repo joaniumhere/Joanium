@@ -13,14 +13,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/joanium/joanium/actions/workflows/ci.yml"><img src="https://github.com/joanium/joanium/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/joanium/joanium/releases"><img src="https://img.shields.io/github/v/release/joanium/joanium?include_prereleases&style=flat-square&label=release" alt="GitHub release"></a>
-  <a href="https://github.com/joanium/joanium/stargazers"><img src="https://img.shields.io/github/stars/joanium/joanium?style=flat-square&color=yellow" alt="GitHub Stars"></a>
-  <a href="https://github.com/joanium/joanium/issues"><img src="https://img.shields.io/github/issues/joanium/joanium?style=flat-square&color=red" alt="Open Issues"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="Platform">
-  <img src="https://img.shields.io/badge/node-%3E%3D24-green?style=flat-square" alt="Node.js">
-  <img src="https://img.shields.io/badge/built%20with-Electron-47848F?style=flat-square&logo=electron" alt="Electron">
+  <a href="https://github.com/joanium/joanium/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/joanium/joanium/ci.yml?style=for-the-badge&label=CI&logo=github&logoColor=white" alt="CI"></a>
+  <a href="https://github.com/joanium/joanium/releases"><img src="https://img.shields.io/github/v/release/joanium/joanium?include_prereleases&style=for-the-badge&label=release" alt="GitHub release"></a>
+  <a href="https://github.com/joanium/joanium/stargazers"><img src="https://img.shields.io/github/stars/joanium/joanium?style=for-the-badge&color=yellow" alt="GitHub Stars"></a>
+  <a href="https://github.com/joanium/joanium/issues"><img src="https://img.shields.io/github/issues/joanium/joanium?style=for-the-badge&color=red" alt="Open Issues"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555555?style=for-the-badge" alt="Platform">
+  <img src="https://img.shields.io/badge/node-%3E%3D24-43853d?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/built%20with-Electron-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron">
 </p>
 
 <p align="center">
@@ -140,25 +140,6 @@ Switch models anytime, even mid-conversation. No lock-in, ever.
 | **MiniMax**    | MiniMax-01                                 |
 | **Ollama**     | Any local model — Llama, Phi, Gemma, Qwen… |
 | **LM Studio**  | Any GGUF model locally                     |
-
----
-
-## 🗺️ Roadmap
-
-- [x] Multi-model chat with project context
-- [x] Automations engine with built-in sources and outputs
-- [x] Background agents
-- [x] MCP server support
-- [x] GitHub, Gmail, Drive, Calendar integrations
-- [x] Skills and Personas system
-- [x] Marketplace
-- [ ] Voice input / output
-- [ ] Web browsing agent
-- [ ] Mobile companion app
-- [ ] Team / shared workspaces
-- [ ] Plugin SDK (public)
-
-See [open issues](https://github.com/joanium/joanium/issues) and [discussions](https://github.com/joanium/joanium/discussions) to vote on what ships next.
 
 ---
 
