@@ -1,0 +1,131 @@
+name: Announce Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  discord:
+    name: Post to Discord
+    runs-on: ubuntu-latest
+    # Requires secret: DISCORD_WEBHOOK_URL
+    # Set it at: Settings → Secrets and variables → Actions → New repository secret
+    if: ${{ secrets.DISCORD_WEBHOOK_URL != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and send Discord embed
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          REPO_URL: ${{ github.event.repository.html_url }}
+        run: |
+          # Extract the Change Log bullet list from the release body
+          CHANGELOG=$(echo "${RELEASE_BODY}" | awk '/\*\*Change Log\*\*/{found=1; next} found && /^\*/{print} found && /^[^*]/{if(NF==0) next; else exit}' | head -10)
+
+          if [ -z "${CHANGELOG}" ]; then
+            CHANGELOG="See the full release notes for details."
+          fi
+
+          # Escape special characters for JSON
+          CHANGELOG_JSON=$(echo "${CHANGELOG}" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().strip()))")
+
+          curl -fsSL -X POST "${DISCORD_WEBHOOK_URL}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"🚀 Joanium ${RELEASE_TAG} is out\",
+                \"url\": \"${RELEASE_URL}\",
+                \"color\": 5793266,
+                \"description\": ${CHANGELOG_JSON},
+                \"fields\": [
+                  {
+                    \"name\": \"Download\",
+                    \"value\": \"[Get it here](${REPO_URL}/releases/latest)\",
+                    \"inline\": true
+                  },
+                  {
+                    \"name\": \"Changelog\",
+                    \"value\": \"[View all changes](${REPO_URL}/blob/main/CHANGELOG.md)\",
+                    \"inline\": true
+                  }
+                ],
+                \"footer\": {
+                  \"text\": \"Joanium · Local-first AI desktop assistant\"
+                }
+              }]
+            }"
+
+  github-discussion:
+    name: Create GitHub Discussion
+    runs-on: ubuntu-latest
+    permissions:
+      discussions: write
+
+    steps:
+      - name: Create announcement discussion
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release   = context.payload.release;
+            const tagName   = release.tag_name;
+            const version   = tagName.replace(/^v/, '');
+            const body      = release.body || '';
+            const releaseUrl = release.html_url;
+            const repoUrl   = context.payload.repository.html_url;
+
+            // Find the "Announcements" discussion category
+            const categoriesQuery = `
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  discussionCategories(first: 20) {
+                    nodes { id name }
+                  }
+                }
+              }
+            `;
+            const catResult = await github.graphql(categoriesQuery, {
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+            });
+            const categories = catResult.repository.discussionCategories.nodes;
+            const category   = categories.find(c =>
+              /announce/i.test(c.name) || /general/i.test(c.name)
+            ) || categories[0];
+
+            if (!category) {
+              console.log('No discussion category found — skipping.');
+              return;
+            }
+
+            // Extract change log items
+            const clMatch = body.match(/\*\*Change Log\*\*\s*\n+([\s\S]*?)(\n\n|$)/);
+            const bullets = clMatch ? clMatch[1].trim() : '_See the release page for details._';
+
+            const repoId = (await github.graphql(`
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) { id }
+              }
+            `, { owner: context.repo.owner, repo: context.repo.repo })).repository.id;
+
+            await github.graphql(`
+              mutation($repoId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+                createDiscussion(input: {
+                  repositoryId: $repoId,
+                  categoryId:   $categoryId,
+                  title:        $title,
+                  body:         $body
+                }) { discussion { url } }
+              }
+            `, {
+              repoId:     repoId,
+              categoryId: category.id,
+              title:      `🚀 Release ${version}`,
+              body: `## What's new in ${version}\n\n${bullets}\n\n---\n\n📦 [Download](${repoUrl}/releases/latest)  ·  📋 [Full changelog](${repoUrl}/blob/main/CHANGELOG.md)  ·  🔖 [Release notes](${releaseUrl})`,
+            });
+
+            console.log(`Discussion created for ${version}`);

@@ -172,6 +172,25 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, [CODE_OF_CONDUCT.md](
 
 ---
 
+## 🌍 Community
+
+- [GitHub Discussions](https://github.com/joanium/joanium/discussions) — questions, ideas, show-and-tell
+- [Issues](https://github.com/joanium/joanium/issues) — bug reports and feature requests
+- [CHANGELOG](CHANGELOG.md) — full release history
+
+---
+
+## ⭐ Star History
+
+<a href="https://star-history.com/#joanium/joanium&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=joanium/joanium&type=Date&theme=dark">
+    <img src="https://api.star-history.com/svg?repos=joanium/joanium&type=Date" alt="Star History Chart">
+  </picture>
+</a>
+
+---
+
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE).
