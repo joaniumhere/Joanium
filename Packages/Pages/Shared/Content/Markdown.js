@@ -226,41 +226,60 @@ function parseBlocks(lines) {
   }
   return (flushPara(), html);
 }
+function buildCodeBlockHtml(lang, code, open) {
+  const display = lang || 'code',
+    showPreview =
+      !open &&
+      (function (lang, code) {
+        const normalizedLang = String(lang ?? '')
+          .trim()
+          .toLowerCase();
+        if (['html', 'htm', 'xhtml'].includes(normalizedLang)) return !0;
+        const trimmed = String(code ?? '').trim();
+        return /^<!doctype html\b/i.test(trimmed) || /^<html[\s>]/i.test(trimmed);
+      })(lang, code);
+  return (
+    `<div class="code-wrapper${open ? ' is-streaming' : ''}"><div class="code-header"><span class="code-lang">${escapeHtml(display)}</span><div class="code-actions">` +
+    (!open
+      ? `<button class="copy-code-btn" title="Copy code"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>` +
+        (showPreview
+          ? '<button class="preview-code-btn" title="Preview HTML"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.8"/></svg> Preview</button>'
+          : '') +
+        `<button class="download-code-btn" title="Download file" data-lang="${escapeHtml(lang)}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download</button>`
+      : '') +
+    `</div></div>` +
+    `<pre><code${lang ? ` class="language-${escapeHtml(lang)}"` : ''}>${escapeHtml(code)}</code></pre></div>`
+  );
+}
 export function render(text) {
   if (!text) return '';
   const codeBlocks = [];
-  let html = parseBlocks(
-    String(text)
-      .replace(/```([^\n`]*)\n?([\s\S]*?)```/g, (_, rawLang, code) => {
-        const lang = rawLang.trim(),
-          id = `\0CB${codeBlocks.length}\0CB`;
-        return (codeBlocks.push({ lang: lang, code: code.replace(/\n$/, '') }), `\n${id}\n`);
-      })
-      .split('\n'),
-  );
+  // Extract all complete (closed) code fences first
+  let processed = String(text).replace(/```([^\n`]*)\n?([\s\S]*?)```/g, (_, rawLang, code) => {
+    const lang = rawLang.trim(),
+      id = `\0CB${codeBlocks.length}\0CB`;
+    return (
+      codeBlocks.push({ lang: lang, code: code.replace(/\n$/, ''), open: false }),
+      `\n${id}\n`
+    );
+  });
+  // Detect an unclosed/open fence at the end (common during streaming)
+  const openFenceIdx = processed.indexOf('```');
+  if (openFenceIdx !== -1) {
+    const afterFence = processed.slice(openFenceIdx + 3);
+    const newlineIdx = afterFence.indexOf('\n');
+    const lang = (newlineIdx === -1 ? afterFence : afterFence.slice(0, newlineIdx)).trim();
+    const code = newlineIdx === -1 ? '' : afterFence.slice(newlineIdx + 1);
+    const id = `\0CB${codeBlocks.length}\0CB`;
+    codeBlocks.push({ lang: lang, code: code, open: true });
+    processed = processed.slice(0, openFenceIdx) + `\n${id}\n`;
+  }
+  let html = parseBlocks(processed.split('\n'));
   return (
     '\0CB'.replace(/\x00/, '\\x00'),
     (html = html.replace(new RegExp('\0CB(\\d+)\0CB', 'g'), (_, idx) => {
-      const { lang: lang, code: code } = codeBlocks[+idx];
-      return (function (lang, code) {
-        const display = lang || 'code',
-          showPreview = (function (lang, code) {
-            const normalizedLang = String(lang ?? '')
-              .trim()
-              .toLowerCase();
-            if (['html', 'htm', 'xhtml'].includes(normalizedLang)) return !0;
-            const trimmed = String(code ?? '').trim();
-            return /^<!doctype html\b/i.test(trimmed) || /^<html[\s>]/i.test(trimmed);
-          })(lang, code);
-        return (
-          `<div class="code-wrapper"><div class="code-header"><span class="code-lang">${escapeHtml(display)}</span><div class="code-actions"><button class="copy-code-btn" title="Copy code"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>` +
-          (showPreview
-            ? '<button class="preview-code-btn" title="Preview HTML"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.8"/></svg> Preview</button>'
-            : '') +
-          `<button class="download-code-btn" title="Download file" data-lang="${escapeHtml(lang)}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download</button></div></div>` +
-          `<pre><code${lang ? ` class="language-${escapeHtml(lang)}"` : ''}>${escapeHtml(code)}</code></pre></div>`
-        );
-      })(lang, code);
+      const { lang, code, open } = codeBlocks[+idx];
+      return buildCodeBlockHtml(lang, code, open);
     })),
     html
   );

@@ -254,6 +254,25 @@ export function appendTextWithLineBreaks(container, text) {
 export function smoothScrollToBottom() {
   maybeScrollToBottom({ behavior: 'smooth' });
 }
+// Find an unclosed (open) code fence in accumulated streaming text.
+// Returns { stablePart, lang, code } or null if no open fence exists.
+function parseOpenFence(text) {
+  let lastCompleteEnd = 0;
+  const re = /```[^\n`]*\n?[\s\S]*?```/g;
+  let m;
+  while ((m = re.exec(text)) !== null) lastCompleteEnd = m.index + m[0].length;
+  const afterComplete = text.slice(lastCompleteEnd);
+  const idx = afterComplete.indexOf('```');
+  if (idx === -1) return null;
+  const absIdx = lastCompleteEnd + idx;
+  const rest = text.slice(absIdx + 3);
+  const nl = rest.indexOf('\n');
+  return {
+    stablePart: text.slice(0, absIdx),
+    lang: (nl === -1 ? rest : rest.slice(0, nl)).trim(),
+    code: nl === -1 ? '' : rest.slice(nl + 1),
+  };
+}
 export function attachCopyEvent(btn, textToCopy) {
   btn &&
     (btn.onclick = async () => {
@@ -362,7 +381,14 @@ export function createLiveRow(doSendFromStateFn) {
     _cursorEl = null,
     _thinkingState = 'working',
     _replyAttachments = [],
-    _startTime = Date.now();
+    _startTime = Date.now(),
+    _lastStableText = null;
+  // Split replyTextEl into two stable sub-containers so stream() can update
+  // only the open code block without reflowing the already-rendered content.
+  const _stableEl = document.createElement('div');
+  const _codeStreamEl = document.createElement('div');
+  replyTextEl.appendChild(_stableEl);
+  replyTextEl.appendChild(_codeStreamEl);
   const _streamFilter = (function () {
       let _buffer = '',
         _reasoningDepth = 0;
@@ -520,11 +546,40 @@ export function createLiveRow(doSendFromStateFn) {
         if ((visibleChunk && (_accumulated += visibleChunk), !visibleChunk && !didUpdateReasoning))
           return;
         const now = Date.now();
-        (now - _lastRenderAt >= 80 &&
-          ((_lastRenderAt = now),
-          (replyTextEl.innerHTML = renderMarkdown(_accumulated)),
-          replyTextEl.appendChild(_cursorEl)),
-          smoothScrollToBottom());
+        if (now - _lastRenderAt < 80) {
+          smoothScrollToBottom();
+          return;
+        }
+        _lastRenderAt = now;
+        const openFence = parseOpenFence(_accumulated);
+        if (openFence) {
+          // Only re-render the stable prefix when it actually changes
+          if (openFence.stablePart !== _lastStableText) {
+            _lastStableText = openFence.stablePart;
+            _stableEl.innerHTML = renderMarkdown(openFence.stablePart);
+          }
+          // Surgical textContent update on the live code block — zero DOM rebuild
+          let codeEl = _codeStreamEl.querySelector('code');
+          if (!codeEl) {
+            const display = openFence.lang || 'code';
+            _codeStreamEl.innerHTML =
+              `<div class="code-wrapper is-streaming"><div class="code-header"><span class="code-lang">${display}</span><div class="code-actions"></div></div>` +
+              `<pre><code${openFence.lang ? ` class="language-${openFence.lang}"` : ''}></code></pre></div>`;
+            codeEl = _codeStreamEl.querySelector('code');
+          }
+          codeEl.textContent = openFence.code;
+          _codeStreamEl.appendChild(_cursorEl);
+        } else {
+          // No open fence — all accumulated content is stable prose/complete blocks
+          // Keep it in _stableEl only; never touch replyTextEl.innerHTML during streaming
+          if (_accumulated !== _lastStableText) {
+            _lastStableText = _accumulated;
+            _stableEl.innerHTML = renderMarkdown(_accumulated);
+          }
+          if (_codeStreamEl.innerHTML !== '') _codeStreamEl.innerHTML = '';
+          _stableEl.appendChild(_cursorEl);
+        }
+        smoothScrollToBottom();
       },
       clearReply() {
         ((_streamActive = !1),
@@ -532,8 +587,14 @@ export function createLiveRow(doSendFromStateFn) {
           _streamFilter.reset(),
           _cursorEl?.remove(),
           (_cursorEl = null),
+          (_lastStableText = null),
+          (_stableEl.innerHTML = ''),
+          (_codeStreamEl.innerHTML = ''),
+          // finalize() replaces replyTextEl.innerHTML, detaching our sub-containers.
+          // Re-mount them so the next stream() call can use them cleanly.
+          replyTextEl.contains(_stableEl) || replyTextEl.appendChild(_stableEl),
+          replyTextEl.contains(_codeStreamEl) || replyTextEl.appendChild(_codeStreamEl),
           replyTextEl.classList.remove('is-streaming'),
-          (replyTextEl.innerHTML = ''),
           (actionsEl.style.display = 'none'));
       },
       finalize(markdown, usage, provider, modelId) {

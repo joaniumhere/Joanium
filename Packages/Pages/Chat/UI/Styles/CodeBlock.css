@@ -14,6 +14,21 @@
   overflow: hidden;
   margin: 12px 0;
   animation: fadeScaleIn 0.35s var(--motion-smooth);
+  /* Force a GPU compositing layer so overflow:hidden reliably clips
+     child scrollbars to the border-radius in Chromium/Electron */
+  transform: translateZ(0);
+  isolation: isolate;
+}
+.code-wrapper.is-streaming {
+  border-color: var(--accent, #a855f7);
+  opacity: 0.85;
+}
+/* Give the pre its own bottom radius + thin scrollbar so the
+   bottom-right corner matches the bottom-left visually */
+.code-wrapper pre {
+  border-radius: 0 0 calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 .code-header {
   justify-content: space-between;
