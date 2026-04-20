@@ -14,7 +14,7 @@ authors:
     website: "https://joeljolly.vercel.app"
 repository-code: "https://github.com/joanium/joanium"
 url: "https://joanium.com"
-license: MIT
+license: Apache License 2.0
 keywords:
   - ai-assistant
   - local-first
