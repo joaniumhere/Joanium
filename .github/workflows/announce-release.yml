@@ -2,7 +2,7 @@ name: 📣 Announce Release
 
 on:
   workflow_run:
-    workflows: ['Upload Release Asset']
+    workflows: ['📦 Upload Release Asset']
     types: [completed]
 
 permissions: read-all
