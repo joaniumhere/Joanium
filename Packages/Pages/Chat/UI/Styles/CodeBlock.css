@@ -13,6 +13,7 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   margin: 12px 0;
+  max-height: 480px;
   animation: fadeScaleIn 0.35s var(--motion-smooth);
   /* Force a GPU compositing layer so overflow:hidden reliably clips
      child scrollbars to the border-radius in Chromium/Electron */
@@ -27,6 +28,9 @@
    bottom-right corner matches the bottom-left visually */
 .code-wrapper pre {
   border-radius: 0 0 calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px);
+  max-height: 440px;
+  overflow-y: auto;
+  overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
