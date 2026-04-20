@@ -5,11 +5,11 @@
   "auth_header": "Authorization",
   "auth_prefix": "Bearer ",
   "models": {
-    "gpt-5": {
-      "name": "GPT-5",
-      "description": "OpenAI's flagship model — best quality for complex reasoning, vision, and generation",
-      "context_window": 1000000,
-      "max_output": 32768,
+    "gpt-5.4": {
+      "name": "GPT-5.4",
+      "description": "Latest flagship (Mar 2026) — native computer use, 1M context, best coding and reasoning",
+      "context_window": 1048576,
+      "max_output": 128000,
       "inputs": {
         "text": true,
         "image": true,
@@ -17,14 +17,14 @@
         "docx": false
       },
       "pricing": {
-        "input": 1.25,
+        "input": 2.5,
         "output": 10
       }
     },
-    "gpt-4.1": {
-      "name": "GPT-4.1",
-      "description": "Recommended production model — better than GPT-4o, 1M context window",
-      "context_window": 1000000,
+    "gpt-5.4-mini": {
+      "name": "GPT-5.4 Mini",
+      "description": "Fast and efficient GPT-5.4 distillation — 400K context, 2x faster at a fraction of flagship cost",
+      "context_window": 400000,
       "max_output": 32768,
       "inputs": {
         "text": true,
@@ -33,8 +33,40 @@
         "docx": false
       },
       "pricing": {
-        "input": 2,
-        "output": 8
+        "input": 0.75,
+        "output": 4.5
+      }
+    },
+    "gpt-5.4-nano": {
+      "name": "GPT-5.4 Nano",
+      "description": "Cheapest GPT-5.4 variant — 400K context, ideal for classification and high-volume tasks",
+      "context_window": 400000,
+      "max_output": 32768,
+      "inputs": {
+        "text": true,
+        "image": true,
+        "pdf": false,
+        "docx": false
+      },
+      "pricing": {
+        "input": 0.2,
+        "output": 1.25
+      }
+    },
+    "gpt-5": {
+      "name": "GPT-5",
+      "description": "Original GPT-5 (Aug 2025) — strong and affordable, now superseded by the 5.4 series",
+      "context_window": 400000,
+      "max_output": 32768,
+      "inputs": {
+        "text": true,
+        "image": true,
+        "pdf": false,
+        "docx": false
+      },
+      "pricing": {
+        "input": 0.63,
+        "output": 5
       }
     },
     "o3": {
@@ -55,7 +87,7 @@
     },
     "o4-mini": {
       "name": "o4 Mini",
-      "description": "Cost-efficient reasoning model — handles most reasoning tasks at ~half of o3's cost",
+      "description": "Cost-efficient reasoning model — handles most reasoning tasks at roughly half of o3's cost",
       "context_window": 200000,
       "max_output": 100000,
       "inputs": {
@@ -67,6 +99,22 @@
       "pricing": {
         "input": 1.1,
         "output": 4.4
+      }
+    },
+    "gpt-4.1": {
+      "name": "GPT-4.1",
+      "description": "Production workhorse with 1M context — reliable and well-tested for most workflows",
+      "context_window": 1000000,
+      "max_output": 32768,
+      "inputs": {
+        "text": true,
+        "image": true,
+        "pdf": false,
+        "docx": false
+      },
+      "pricing": {
+        "input": 2,
+        "output": 8
       }
     },
     "gpt-4.1-mini": {
@@ -102,7 +150,7 @@
       }
     },
     "gpt-4o": {
-      "name": "GPT-4o",
+      "name": "GPT-4o (Legacy)",
       "description": "Previous-generation flagship — multimodal with 128K context (legacy)",
       "context_window": 128000,
       "max_output": 16384,
@@ -118,8 +166,8 @@
       }
     },
     "gpt-4o-mini": {
-      "name": "GPT-4o Mini",
-      "description": "Budget multimodal model — fast and cost-efficient for focused tasks",
+      "name": "GPT-4o Mini (Legacy)",
+      "description": "Budget multimodal model — fast and cost-efficient for focused tasks (legacy)",
       "context_window": 128000,
       "max_output": 16384,
       "inputs": {
@@ -131,22 +179,6 @@
       "pricing": {
         "input": 0.15,
         "output": 0.6
-      }
-    },
-    "o1": {
-      "name": "o1",
-      "description": "Deep reasoning model — use when o3 isn't enough",
-      "context_window": 200000,
-      "max_output": 100000,
-      "inputs": {
-        "text": true,
-        "image": true,
-        "pdf": false,
-        "docx": false
-      },
-      "pricing": {
-        "input": 15,
-        "output": 60
       }
     }
   }
