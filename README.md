@@ -17,7 +17,7 @@
   <a href="https://github.com/joanium/joanium/releases"><img src="https://img.shields.io/github/v/release/joanium/joanium?include_prereleases&style=for-the-badge&label=release" alt="GitHub release"></a>
   <a href="https://github.com/joanium/joanium/stargazers"><img src="https://img.shields.io/github/stars/joanium/joanium?style=for-the-badge&color=yellow" alt="GitHub Stars"></a>
   <a href="https://github.com/joanium/joanium/issues"><img src="https://img.shields.io/github/issues/joanium/joanium?style=for-the-badge&color=red" alt="Open Issues"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0%20%2B%20Commons%20Clause-blue?style=for-the-badge" alt="Apache 2.0 + Commons Clause License"></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555555?style=for-the-badge" alt="Platform">
   <img src="https://img.shields.io/badge/node-%3E%3D24-43853d?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/built%20with-Electron-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron">
@@ -117,18 +117,18 @@ Browse and install community-built Skills and Personas with one click. Publish y
 
 Switch models anytime, even mid-conversation. No lock-in, ever.
 
-| Provider       | Models                                                            |
-| -------------- | ----------------------------------------------------------------- |
-| **Anthropic**  | Claude Opus 4.7, Claude Sonnet 4.6, Claude Haiku 4.5, and more    |
-| **OpenAI**     | GPT-5.4, GPT-5.3, GPT-5.2, GPT-5.1, GPT-4.1, o3, o4-mini, GPT-4o, and more                     |
-| **Google**     | Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite           |
-| **OpenRouter** | 200+ models via one key                                           |
-| **Mistral**    | Mistral Large 3, Mistral Medium 3.1, Codestral, Devstral 2        |
-| **NVIDIA NIM** | Kimi K2, MiniMax M2.7, Qwen 3.5, DeepSeek V3.2, Gemma 4, and more |
-| **DeepSeek**   | DeepSeek-V3.2 (Chat), DeepSeek-V3.2 (Reasoner)                    |
-| **MiniMax**    | MiniMax M2.7, MiniMax M2.5                                        |
-| **Ollama**     | Any local model — Llama, Phi, Gemma, Qwen…                        |
-| **LM Studio**  | Any GGUF model locally                                            |
+| Provider       | Models                                                                     |
+| -------------- | -------------------------------------------------------------------------- |
+| **Anthropic**  | Claude Opus 4.7, Claude Sonnet 4.6, Claude Haiku 4.5, and more             |
+| **OpenAI**     | GPT-5.4, GPT-5.3, GPT-5.2, GPT-5.1, GPT-4.1, o3, o4-mini, GPT-4o, and more |
+| **Google**     | Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite                    |
+| **OpenRouter** | 200+ models via one key                                                    |
+| **Mistral**    | Mistral Large 3, Mistral Medium 3.1, Codestral, Devstral 2                 |
+| **NVIDIA NIM** | Kimi K2, MiniMax M2.7, Qwen 3.5, DeepSeek V3.2, Gemma 4, and more          |
+| **DeepSeek**   | DeepSeek-V3.2 (Chat), DeepSeek-V3.2 (Reasoner)                             |
+| **MiniMax**    | MiniMax M2.7, MiniMax M2.5                                                 |
+| **Ollama**     | Any local model — Llama, Phi, Gemma, Qwen…                                 |
+| **LM Studio**  | Any GGUF model locally                                                     |
 
 ---
 
@@ -182,7 +182,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, [CODE_OF_CONDUCT.md](
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE).
+This project is licensed under the **Apache License 2.0 with Commons Clause**.
+
+- ✅ Free for personal use, education, and non-commercial open source projects
+- 🚫 Commercial use (selling, hosting as a service, bundling into paid products) requires a separate commercial license from the author
+
+See [LICENSE](LICENSE) for the full terms. For commercial licensing inquiries, contact [Joel Jolly](https://joeljolly.vercel.app).
 
 ---
 
