@@ -5,6 +5,54 @@
   "auth_header": "Authorization",
   "auth_prefix": "Bearer ",
   "models": {
+    "anthropic/claude-opus-4-7": {
+      "name": "Claude Opus 4.7",
+      "description": "Anthropic's latest flagship — best coding, 2576px vision, and self-checking agentic tasks",
+      "context_window": 1000000,
+      "max_output": 32000,
+      "inputs": {
+        "text": true,
+        "image": true,
+        "pdf": true,
+        "docx": false
+      },
+      "pricing": {
+        "input": 5,
+        "output": 25
+      }
+    },
+    "openai/gpt-5.4": {
+      "name": "GPT-5.4",
+      "description": "OpenAI's latest flagship — native computer use, 1M context, unified coding and reasoning",
+      "context_window": 1000000,
+      "max_output": 128000,
+      "inputs": {
+        "text": true,
+        "image": true,
+        "pdf": false,
+        "docx": false
+      },
+      "pricing": {
+        "input": 2.5,
+        "output": 10
+      }
+    },
+    "google/gemini-3.1-pro-preview": {
+      "name": "Gemini 3.1 Pro",
+      "description": "Google's latest flagship — enhanced agentic coding and multimodal reasoning with 1M context",
+      "context_window": 1048576,
+      "max_output": 65536,
+      "inputs": {
+        "text": true,
+        "image": true,
+        "pdf": true,
+        "docx": false
+      },
+      "pricing": {
+        "input": 2,
+        "output": 12
+      }
+    },
     "deepseek/deepseek-r1": {
       "name": "DeepSeek R1",
       "description": "State-of-the-art open reasoning model — rivaling o1 at a fraction of the cost",
@@ -23,7 +71,7 @@
     },
     "meta-llama/llama-4-maverick": {
       "name": "Llama 4 Maverick",
-      "description": "Meta's latest flagship open model — multimodal with strong coding and reasoning",
+      "description": "Meta's open flagship — multimodal with 1M context, strong coding and reasoning",
       "context_window": 1048576,
       "max_output": 16384,
       "inputs": {
@@ -55,7 +103,7 @@
     },
     "qwen/qwen3-235b-a22b": {
       "name": "Qwen 3 235B A22B",
-      "description": "Alibaba's latest flagship MoE — strong reasoning with hybrid thinking mode",
+      "description": "Alibaba's large MoE — strong reasoning with hybrid thinking mode",
       "context_window": 131072,
       "max_output": 16384,
       "inputs": {
@@ -67,6 +115,22 @@
       "pricing": {
         "input": 0.14,
         "output": 0.6
+      }
+    },
+    "qwen/qwen3.6-plus-preview:free": {
+      "name": "Qwen 3.6 Plus (Free)",
+      "description": "Alibaba's latest free preview — 1M context, strong coding, no API key cost via OpenRouter",
+      "context_window": 1000000,
+      "max_output": 16384,
+      "inputs": {
+        "text": true,
+        "image": false,
+        "pdf": false,
+        "docx": false
+      },
+      "pricing": {
+        "input": 0,
+        "output": 0
       }
     },
     "mistralai/mistral-large": {
@@ -85,9 +149,25 @@
         "output": 1.5
       }
     },
+    "mistralai/mistral-small-4": {
+      "name": "Mistral Small 4",
+      "description": "Mistral's unified model — reasoning, vision, and coding in one Apache 2.0 MoE at $0.15/1M",
+      "context_window": 256000,
+      "max_output": 16384,
+      "inputs": {
+        "text": true,
+        "image": true,
+        "pdf": false,
+        "docx": false
+      },
+      "pricing": {
+        "input": 0.15,
+        "output": 0.6
+      }
+    },
     "meta-llama/llama-3.3-70b-instruct": {
       "name": "Llama 3.3 70B Instruct",
-      "description": "Meta's powerful 70B open model — great performance-to-cost ratio",
+      "description": "Meta's proven 70B open model — great performance-to-cost ratio",
       "context_window": 131072,
       "max_output": 8192,
       "inputs": {
