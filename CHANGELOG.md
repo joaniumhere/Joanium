@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2026.421.0] - 2026-04-21
+
+* chore(release): bump version to 2026.421.0
+* Marketplace verfied icon removed
+* Marketplace UI enhancements
+* Added the ability to delete skills and personas
+* Added Codeowners
+* License update
+* Reduced the width of the code blocks
+* Code blocks now has a scrollbar to avoid huge page widths
+* docs(changelog): sync v2026.420.1
+* Update README.md
+* Bug fix: Announce release to use multi line rather than single line
+
+---
+
 ## [2026.420.1] - 2026-04-20
 
 * chore(release): bump version to 2026.420.1
@@ -130,7 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/Joanium/Joanium/compare/v2026.420.1...HEAD
+[Unreleased]: https://github.com/Joanium/Joanium/compare/v2026.421.0...HEAD
+[2026.421.0]: https://github.com/Joanium/Joanium/releases/tag/v2026.421.0
 [2026.420.1]: https://github.com/Joanium/Joanium/releases/tag/v2026.420.1
 [2026.419.0]: https://github.com/joanium/joanium/releases/tag/v2026.419.0
 [2026.418.0]: https://github.com/joanium/joanium/releases/tag/v2026.418.0
