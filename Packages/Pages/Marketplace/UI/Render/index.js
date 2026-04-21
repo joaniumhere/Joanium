@@ -36,6 +36,7 @@ let countEl = null,
   _loading = !1,
   _nextPage = 1,
   _hasMore = !1,
+  _total = 0,
   _origins = [],
   _activeOrigin = '';
 function getTypeLabel(type) {
@@ -47,10 +48,11 @@ function getItemIcon(type) {
     : '\n    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">\n      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-linecap="round" stroke-linejoin="round" />\n    </svg>\n  ';
 }
 function updateListSurface() {
-  // Count
+  // Count — prefer the server-reported total so the badge is accurate on first load
   if (countEl) {
     const label = getTypeLabel(_activeType).toLowerCase();
-    countEl.textContent = `${_items.length} ${label}`;
+    const displayCount = _total > 0 ? _total : _items.length;
+    countEl.textContent = `${displayCount} ${label}`;
   }
 
   // Source
@@ -247,6 +249,7 @@ async function loadItems({ reset: reset = !1 } = {}) {
     ((_items = []),
       (_nextPage = 1),
       (_hasMore = !1),
+      (_total = 0),
       _cardPool?.render(_items),
       updateListSurface());
   else if (!_hasMore || !_nextPage) return;
@@ -270,6 +273,7 @@ async function loadItems({ reset: reset = !1 } = {}) {
     if (!result?.ok) throw new Error(result?.error || 'Marketplace loading failed.');
     ((_activeOrigin = result.origin ?? _activeOrigin),
       (_items = reset ? (result.items ?? []) : mergeItems(_items, result.items ?? [])),
+      (_total = Number(result.total) || _items.length),
       (_nextPage = result.nextPage ?? null),
       (_hasMore = Boolean(result.hasMore)),
       _cardPool?.render(_items));
@@ -329,6 +333,7 @@ export function mount(outlet) {
     (_loading = !1),
     (_nextPage = 1),
     (_hasMore = !1),
+    (_total = 0),
     (_activeOrigin = ''),
     (_cardPool = createCardPool({
       container: gridEl,
