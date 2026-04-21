@@ -344,6 +344,35 @@
   padding-top: 10px;
   border-top: 1px solid var(--border-subtle);
 }
+.skill-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: 0 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-right: auto;
+  opacity: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+.skill-card:hover .skill-delete-btn {
+  opacity: 1;
+}
+.skill-delete-btn:hover {
+  background: rgba(220, 60, 60, 0.1);
+  color: #f87171;
+  border-color: rgba(220, 60, 60, 0.25);
+  transform: translateY(-1px);
+}
 .skill-read-btn {
   display: inline-flex;
   align-items: center;

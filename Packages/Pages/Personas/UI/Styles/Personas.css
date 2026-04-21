@@ -339,6 +339,37 @@
   color: var(--text-primary);
   transform: translateY(-1px);
 }
+.persona-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: 0 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+.persona-card:hover .persona-delete-btn {
+  opacity: 1;
+}
+.persona-delete-btn:hover {
+  background: rgba(220, 60, 60, 0.1);
+  color: #f87171;
+  border-color: rgba(220, 60, 60, 0.25);
+  transform: translateY(-1px);
+}
 .persona-read-btn {
   padding: 0;
   border-radius: 10px;

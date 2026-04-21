@@ -277,6 +277,15 @@ export function getUserContentTarget(kind, publisher, filename) {
     filePath: path.join(rootDir, safePublisher, safeFilename),
   };
 }
+export function deleteUserContent(kind, id) {
+  const entries = readMarkdownEntries(kind);
+  const entry = entries.find((e) => e.id === id);
+  if (!entry) throw new Error(`${kind === 'personas' ? 'Persona' : 'Skill'} not found.`);
+  if (kind === 'personas' && entry.filename.toLowerCase() === 'joana.md')
+    throw new Error('Joana cannot be deleted.');
+  fs.unlinkSync(entry.sourcePath);
+  invalidateLibraryEntries(kind);
+}
 export function writeUserContent(kind, { publisher: publisher, filename: filename }, markdown) {
   const target = getUserContentTarget(kind, publisher, filename);
   return (

@@ -1,6 +1,7 @@
 import { getPersonasHTML } from './Templates/PersonasTemplate.js';
 import { createPersonaCardPool, getAvatarInitials } from './Components/PersonasCards.js';
 import { renderMarkdownToHtml } from '../../../../System/Utils.js';
+import { openConfirm } from '../../../../System/ConfirmDialog.js';
 let activeBanner = null,
   activeNameEl = null,
   personasGrid = null,
@@ -130,6 +131,23 @@ export function mount(outlet, { navigate: navigate }) {
             modalBackdrop.classList.add('open'),
             document.body.classList.add('modal-open'));
         })(persona);
+      },
+      onDeletePersona: async (persona) => {
+        const confirmed = await openConfirm({
+          title: `Delete "${persona.name}"?`,
+          body: 'This will permanently remove the persona file. This cannot be undone.',
+          confirmText: 'Delete',
+          variant: 'danger',
+        });
+        if (!confirmed) return;
+        const result = await window.electronAPI?.invoke?.('delete-persona', persona.id);
+        if (result?.ok) {
+          if (_activePersona?.id === persona.id) _activePersona = null;
+          _allPersonas = _allPersonas.filter((p) => p.id !== persona.id);
+          render(searchInput?.value?.trim() ?? '');
+        } else {
+          console.error('[Personas] Delete failed:', result?.error);
+        }
       },
     })));
   const onSearchInput = () => {

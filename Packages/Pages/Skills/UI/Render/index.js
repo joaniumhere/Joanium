@@ -1,5 +1,6 @@
 import { getHTML } from './Templates/SkillsTemplate.js';
 import { openConfirm, closeConfirm } from './Components/SkillsConfirm.js';
+import { openConfirm as openDeleteConfirm } from '../../../../System/ConfirmDialog.js';
 import { createCardPool } from '../../../../System/CardPool.js';
 import { renderMarkdownToHtml } from '../../../../System/Utils.js';
 let skillsGrid = null,
@@ -46,6 +47,16 @@ function createSkillCard() {
     (card._currentSkill = null),
     (card.innerHTML =
       '\n    <div class="skill-card-head">\n      <div class="skill-icon">\n        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">\n          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-linecap="round" stroke-linejoin="round"/>\n        </svg>\n      </div>\n      <div class="skill-card-title-group">\n        <div class="skill-name-row">\n          <div class="skill-name"></div>\n          <span class="skill-verified" hidden aria-label="Verified Joanium skill" title="Verified Joanium skill">\n            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">\n              <path d="M9 12.75l2.25 2.25L15 9.75" stroke-linecap="round" stroke-linejoin="round"/>\n              <path d="M12 3l2.6 1.2 2.84-.34 1.2 2.6 2.36 1.62-.8 2.74.8 2.74-2.36 1.62-1.2 2.6-2.84-.34L12 21l-2.6-1.2-2.84.34-1.2-2.6L3 15.92l.8-2.74L3 10.44l2.36-1.62 1.2-2.6 2.84.34L12 3z" stroke-linecap="round" stroke-linejoin="round"/>\n            </svg>\n          </span>\n        </div>\n        <div class="skill-meta-row">\n          <span class="skill-badge">Skill</span>\n          <span class="skill-publisher"></span>\n        </div>\n      </div>\n      <label class="skill-toggle" title="">\n        <input type="checkbox" class="skill-toggle-input" />\n        <span class="skill-toggle-track"></span>\n      </label>\n    </div>\n    <div class="skill-trigger" style="display:none">\n      <span class="skill-trigger-label">When</span>\n      <span class="skill-trigger-text"></span>\n    </div>\n    <div class="skill-description" style="display:none"></div>\n    <div class="skill-card-footer">\n      <button class="skill-read-btn" type="button">\n        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">\n          <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" stroke-linecap="round" stroke-linejoin="round"/>\n          <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" stroke-linecap="round" stroke-linejoin="round"/>\n        </svg>\n        Read\n      </button>\n    </div>'));
+  const footer = card.querySelector('.skill-card-footer');
+  if (footer) {
+    const deleteBtn = document.createElement('button');
+    ((deleteBtn.className = 'skill-delete-btn'),
+      (deleteBtn.type = 'button'),
+      (deleteBtn.title = 'Delete skill'),
+      (deleteBtn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round" stroke-linejoin="round"/></svg>'));
+    footer.appendChild(deleteBtn);
+  }
   const toggleInput = card.querySelector('.skill-toggle-input'),
     toggleLabel = card.querySelector('.skill-toggle');
   return (
@@ -71,6 +82,25 @@ function createSkillCard() {
     }),
     card.querySelector('.skill-read-btn')?.addEventListener('click', (e) => {
       (e.stopPropagation(), card._currentSkill && openModal(card._currentSkill));
+    }),
+    card.querySelector('.skill-delete-btn')?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const skill = card._currentSkill;
+      if (!skill) return;
+      const confirmed = await openDeleteConfirm({
+        title: `Delete "${skill.name}"?`,
+        body: 'This will permanently remove the skill file. This cannot be undone.',
+        confirmText: 'Delete',
+        variant: 'danger',
+      });
+      if (!confirmed) return;
+      const result = await window.electronAPI?.invoke?.('delete-skill', skill.id);
+      if (result?.ok) {
+        _allSkills = _allSkills.filter((s) => s.id !== skill.id);
+        render(searchInput?.value?.trim() ?? '');
+      } else {
+        console.error('[Skills] Delete failed:', result?.error);
+      }
     }),
     card
   );

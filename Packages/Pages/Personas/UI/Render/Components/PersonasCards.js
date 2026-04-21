@@ -18,6 +18,7 @@ export function createPersonaCardPool({
   onDeactivatePersona: onDeactivatePersona,
   onChatPersona: onChatPersona,
   onReadPersona: onReadPersona,
+  onDeletePersona: onDeletePersona,
 }) {
   const pool = new Map(),
     active = new Set();
@@ -42,6 +43,22 @@ export function createPersonaCardPool({
       card.querySelector('.persona-chat-btn')?.addEventListener('click', async (event) => {
         (event.stopPropagation(),
           card._currentPersona && (await onChatPersona(card._currentPersona)));
+      }),
+      (() => {
+        const footer = card.querySelector('.persona-card-footer');
+        if (footer) {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'persona-delete-btn';
+          deleteBtn.type = 'button';
+          deleteBtn.title = 'Delete persona';
+          deleteBtn.style.display = 'none';
+          deleteBtn.innerHTML =
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          footer.appendChild(deleteBtn);
+        }
+      })(),
+      card.querySelector('.persona-delete-btn')?.addEventListener('click', async (event) => {
+        (event.stopPropagation(), card._currentPersona && onDeletePersona?.(card._currentPersona));
       }),
       card
     );
@@ -73,6 +90,9 @@ export function createPersonaCardPool({
       deactivateBtn = card.querySelector('.persona-deactivate-btn');
     ((activateBtn.style.display = isActive ? 'none' : ''),
       (deactivateBtn.style.display = isActive ? '' : 'none'));
+    const deleteBtn = card.querySelector('.persona-delete-btn');
+    if (deleteBtn)
+      deleteBtn.style.display = persona.filename.toLowerCase() === 'joana.md' ? 'none' : '';
   }
   return {
     render: function (items, activePersonaId) {

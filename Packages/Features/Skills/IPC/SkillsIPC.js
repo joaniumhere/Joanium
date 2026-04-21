@@ -34,5 +34,16 @@ export function register() {
       } catch (err) {
         return { ok: !1, error: err.message };
       }
+    }),
+    ipcMain.handle('delete-skill', (_e, id) => {
+      try {
+        return (
+          ContentLibraryService.deleteUserContent('skills', id),
+          invalidateSysPrompt(),
+          { ok: !0 }
+        );
+      } catch (err) {
+        return { ok: !1, error: err.message };
+      }
     }));
 }

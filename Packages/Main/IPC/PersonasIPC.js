@@ -40,5 +40,16 @@ export function register() {
       } catch (err) {
         return { ok: !1, error: err.message };
       }
+    }),
+    ipcMain.handle('delete-persona', (_e, id) => {
+      try {
+        return (
+          ContentLibraryService.deleteUserContent('personas', id),
+          invalidateSysPrompt(),
+          { ok: !0 }
+        );
+      } catch (err) {
+        return { ok: !1, error: err.message };
+      }
     }));
 }
