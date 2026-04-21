@@ -44,27 +44,33 @@ jobs:
           VERSION="${TAG#v}"
 
           BULLETS=$(echo "${BODY}" \
-            | awk '/\*\*Change Log\*\*/{p=1;next} p && /^\*/{print;n++} n>=8{exit}' \
-            | sed 's/\\/\\\\/g; s/"/\\"/g' \
-            | tr '\n' '\\n')
+            | awk '/\*\*Change Log\*\*/{p=1;next} p && /^\*/{print;n++} n>=8{exit}')
 
           [ -z "${BULLETS}" ] && BULLETS="See the release notes for details."
 
+          PAYLOAD=$(jq -n \
+            --arg title "🚀 Joanium ${VERSION} released" \
+            --arg url "${URL}" \
+            --arg desc "${BULLETS}" \
+            --arg download "https://www.joanium.com/download" \
+            --arg changelog "${REPO}/blob/main/CHANGELOG.md" \
+            '{
+              embeds: [{
+                title: $title,
+                url: $url,
+                color: 5793266,
+                description: $desc,
+                fields: [
+                  { name: "Download", value: ("[joanium.com/download](" + $download + ")"), inline: true },
+                  { name: "Changelog", value: ("[CHANGELOG.md](" + $changelog + ")"), inline: true }
+                ],
+                footer: { text: "Joanium · local-first AI desktop assistant" }
+              }]
+            }')
+
           curl -fsSL -X POST "${DISCORD_WEBHOOK_URL}" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"embeds\": [{
-                \"title\": \"🚀 Joanium ${VERSION} released\",
-                \"url\": \"${URL}\",
-                \"color\": 5793266,
-                \"description\": \"${BULLETS}\",
-                \"fields\": [
-                  { \"name\": \"Download\", \"value\": \"[joanium.com/download](https://www.joanium.com/download)\", \"inline\": true },
-                  { \"name\": \"Changelog\", \"value\": \"[CHANGELOG.md](${REPO}/blob/main/CHANGELOG.md)\", \"inline\": true }
-                ],
-                \"footer\": { \"text\": \"Joanium · local-first AI desktop assistant\" }
-              }]
-            }"
+            -d "${PAYLOAD}"
 
   github-discussion:
     name: Create GitHub Discussion
