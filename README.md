@@ -17,7 +17,7 @@
   <a href="https://github.com/joanium/joanium/releases"><img src="https://img.shields.io/github/v/release/joanium/joanium?include_prereleases&style=for-the-badge&label=release" alt="GitHub release"></a>
   <a href="https://github.com/joanium/joanium/stargazers"><img src="https://img.shields.io/github/stars/joanium/joanium?style=for-the-badge&color=yellow" alt="GitHub Stars"></a>
   <a href="https://github.com/joanium/joanium/issues"><img src="https://img.shields.io/github/issues/joanium/joanium?style=for-the-badge&color=red" alt="Open Issues"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0%20%2B%20Commons%20Clause-blue?style=for-the-badge" alt="Apache 2.0 + Commons Clause License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue?style=for-the-badge" alt="Apache 2.0 License"></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555555?style=for-the-badge" alt="Platform">
   <img src="https://img.shields.io/badge/node-%3E%3D24-43853d?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
   <img src="https://img.shields.io/badge/built%20with-Electron-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron">
@@ -180,12 +180,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, [CODE_OF_CONDUCT.md](
 
 ## 📄 License
 
-This project is licensed under the **Apache License 2.0 with Commons Clause**.
+This project is licensed under the **[Apache License 2.0](LICENSE)**.
 
-- ✅ Free for personal use, education, and non-commercial open source projects
-- 🚫 Commercial use (selling, hosting as a service, bundling into paid products) requires a separate commercial license from the author
-
-See [LICENSE](LICENSE) for the full terms. For commercial licensing inquiries, contact [Joel Jolly](https://joeljolly.vercel.app).
+See [LICENSE](LICENSE) for the full terms.
 
 ---
 
